@@ -7,6 +7,7 @@ import BookingView from './views/BookingView';
 import LoginView from './views/LoginView';
 import TicketPassModal from './components/TicketPassModal';
 import { getSharedBookings, fetchSharedBookings, cancelSharedBooking, subscribeToInventoryUpdates } from './services/inventorySync';
+import { supabase } from './services/supabaseClient';
 import { MOVIES, CINEMAS, INITIAL_BOOKINGS } from './data/mockData';
 import { Zap, Heart, Shield, Film, X, Sun, Moon } from 'lucide-react';
 
@@ -93,6 +94,49 @@ export default function App() {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
   };
 
+  // Listen for Supabase OAuth redirect or session restoration
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user && !currentUser) {
+        const u = session.user;
+        const verifiedUser = {
+          id: u.id,
+          name: u.user_metadata?.full_name || u.email?.split('@')[0] || 'Member',
+          email: u.email,
+          initials: (u.user_metadata?.full_name || u.email || 'FS').substring(0, 2).toUpperCase(),
+          provider: u.app_metadata?.provider || 'google',
+          sessionToken: session.access_token,
+          isVerified: true,
+          verifiedAt: new Date().toISOString(),
+        };
+        setCurrentUser(verifiedUser);
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        const u = session.user;
+        const verifiedUser = {
+          id: u.id,
+          name: u.user_metadata?.full_name || u.email?.split('@')[0] || 'Member',
+          email: u.email,
+          initials: (u.user_metadata?.full_name || u.email || 'FS').substring(0, 2).toUpperCase(),
+          provider: u.app_metadata?.provider || 'google',
+          sessionToken: session.access_token,
+          isVerified: true,
+          verifiedAt: new Date().toISOString(),
+        };
+        setCurrentUser(verifiedUser);
+        try {
+          sessionStorage.setItem('flashseat_user', JSON.stringify(verifiedUser));
+          localStorage.setItem('flashseat_user', JSON.stringify(verifiedUser));
+        } catch {}
+      }
+    });
+
+    return () => subscription?.unsubscribe();
+  }, []);
+
   const handleLoginSuccess = (user) => {
     setCurrentUser(user);
     try {
@@ -105,6 +149,7 @@ export default function App() {
   const handleLogout = () => {
     setCurrentUser(null);
     try {
+      supabase.auth.signOut();
       sessionStorage.removeItem('flashseat_user');
       localStorage.removeItem('flashseat_user');
     } catch {}
