@@ -893,78 +893,45 @@
 
           const orderData = orderRes.data;
 
-          // 2. Open Razorpay Checkout modal
-          if (typeof Razorpay === 'undefined') {
-            btnPayRazorpay.disabled = false;
+          const isPlaceholderKey = !orderData.key_id || orderData.key_id.includes('placeholder');
+
+          const onPaymentSuccess = async function (rzpResp) {
+            btnPayRazorpay.innerHTML = '🔒 Verifying Payment...';
+            const verifyRes = await apiFetch(`${API_BASE}/payments/verify`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                event_id: EVENT_ID,
+                reservation_id: activeReservation.reservation_id,
+                user_id: currentUserId,
+                razorpay_order_id: rzpResp.razorpay_order_id,
+                razorpay_payment_id: rzpResp.razorpay_payment_id,
+                razorpay_signature: rzpResp.razorpay_signature
+              })
+            });
+
             btnPayRazorpay.innerHTML = originalText;
-            showAlert('warning', 'Razorpay SDK Unavailable', 'Razorpay Checkout script could not be loaded. Please check your internet connection.');
-            return;
-          }
+            btnPayRazorpay.disabled = false;
 
-          const options = {
-            key: orderData.key_id,
-            amount: orderData.amount,
-            currency: orderData.currency || 'INR',
-            name: 'FlashSeat Arena',
-            description: `Seat ${orderData.seat_id} (${EVENT_ID})`,
-            order_id: orderData.razorpay_order_id,
-            handler: async function (rzpResp) {
-              btnPayRazorpay.innerHTML = '🔒 Verifying Payment...';
-              const verifyRes = await apiFetch(`${API_BASE}/payments/verify`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  event_id: EVENT_ID,
-                  reservation_id: activeReservation.reservation_id,
-                  user_id: currentUserId,
-                  razorpay_order_id: rzpResp.razorpay_order_id,
-                  razorpay_payment_id: rzpResp.razorpay_payment_id,
-                  razorpay_signature: rzpResp.razorpay_signature
-                })
-              });
-
-              btnPayRazorpay.innerHTML = originalText;
-              btnPayRazorpay.disabled = false;
-
-              if (verifyRes.ok && verifyRes.status === 200) {
-                const seatId = activeReservation.seat_id;
-                const rid = activeReservation.reservation_id;
-                recordUserBooking(seatId, rid);
-                const ticketUrl = `ticket.html${isMockMode ? '?mock=1&' : '?'}event_id=${EVENT_ID}&rid=${rid}`;
-                showAlert('success', 'Payment Successful & Confirmed!', `Seat ${seatId} confirmed via Razorpay (${rzpResp.razorpay_payment_id})! <a href="${ticketUrl}" class="btn btn-primary btn-sm" style="margin-left: 0.5rem; text-decoration: none;">🎟️ View Digital Ticket</a>`);
-                hideActiveReservation();
-                fetchSeats();
-              } else if (verifyRes.status === 410) {
-                const refundId = verifyRes.data && verifyRes.data.refund_id ? ` (Refund ID: ${verifyRes.data.refund_id})` : '';
-                showAlert('error', 'Hold Expired', `Your hold expired before payment was verified. An automatic refund has been initiated${refundId}.`);
-                hideActiveReservation();
-                fetchSeats();
-              } else {
-                handleApiError(verifyRes, 'Payment verification failed');
-              }
-            },
-            modal: {
-              ondismiss: function () {
-                btnPayRazorpay.innerHTML = originalText;
-                btnPayRazorpay.disabled = false;
-                if (paymentNotice) {
-                  paymentNotice.textContent = 'Checkout was closed. Your seat hold remains active until the countdown expires.';
-                  paymentNotice.style.display = 'block';
-                }
-              }
-            },
-            prefill: {
-              name: currentUserId,
-              email: `${currentUserId}@example.com`,
-              contact: '9999999999'
-            },
-            theme: {
-              color: '#6366f1'
+            if (verifyRes.ok && verifyRes.status === 200) {
+              const seatId = activeReservation.seat_id;
+              const rid = activeReservation.reservation_id;
+              recordUserBooking(seatId, rid);
+              const ticketUrl = `ticket.html${isMockMode ? '?mock=1&' : '?'}event_id=${EVENT_ID}&rid=${rid}`;
+              showAlert('success', 'Payment Successful & Confirmed!', `Seat ${seatId} confirmed via Razorpay (${rzpResp.razorpay_payment_id})! <a href="${ticketUrl}" class="btn btn-primary btn-sm" style="margin-left: 0.5rem; text-decoration: none;">🎟️ View Digital Ticket</a>`);
+              hideActiveReservation();
+              fetchSeats();
+            } else if (verifyRes.status === 410) {
+              const refundId = verifyRes.data && verifyRes.data.refund_id ? ` (Refund ID: ${verifyRes.data.refund_id})` : '';
+              showAlert('error', 'Hold Expired', `Your hold expired before payment was verified. An automatic refund has been initiated${refundId}.`);
+              hideActiveReservation();
+              fetchSeats();
+            } else {
+              handleApiError(verifyRes, 'Payment verification failed');
             }
           };
 
-          const rzpInstance = new Razorpay(options);
-          rzpInstance.on('payment.failed', function (failResp) {
+          const onPaymentFailure = function (failResp) {
             btnPayRazorpay.innerHTML = originalText;
             btnPayRazorpay.disabled = false;
             const errDesc = failResp.error ? (failResp.error.description || failResp.error.code) : 'Payment failed';
@@ -973,8 +940,104 @@
               paymentNotice.style.display = 'block';
             }
             showAlert('error', 'Payment Failed', errDesc);
-          });
-          rzpInstance.open();
+          };
+
+          const onDismiss = function () {
+            btnPayRazorpay.innerHTML = originalText;
+            btnPayRazorpay.disabled = false;
+            if (paymentNotice) {
+              paymentNotice.textContent = 'Checkout was closed. Your seat hold remains active until the countdown expires.';
+              paymentNotice.style.display = 'block';
+            }
+          };
+
+          function openTestCheckoutModal() {
+            const modal = document.getElementById('modal-razorpay-checkout');
+            const seatEl = document.getElementById('rzp-modal-seat');
+            const orderEl = document.getElementById('rzp-modal-order-id');
+            const amountEl = document.getElementById('rzp-modal-amount');
+            const btnSuccess = document.getElementById('btn-rzp-test-success');
+            const btnFail = document.getElementById('btn-rzp-test-fail');
+            const btnClose = document.getElementById('btn-close-rzp-modal');
+
+            if (!modal) {
+              if (confirm(`FlashSeat Test Mode: Authorize payment of ₹${(orderData.amount / 100).toFixed(2)} for seat ${orderData.seat_id}?`)) {
+                onPaymentSuccess({
+                  razorpay_order_id: orderData.razorpay_order_id,
+                  razorpay_payment_id: 'pay_test_' + Math.random().toString(36).substring(2, 10),
+                  razorpay_signature: 'sig_test_' + Math.random().toString(36).substring(2, 12)
+                });
+              } else {
+                onDismiss();
+              }
+              return;
+            }
+
+            if (seatEl) seatEl.textContent = orderData.seat_id;
+            if (orderEl) orderEl.textContent = orderData.razorpay_order_id;
+            if (amountEl) amountEl.textContent = `₹${(orderData.amount / 100).toFixed(2)}`;
+
+            modal.style.display = 'flex';
+
+            const newSuccess = btnSuccess.cloneNode(true);
+            const newFail = btnFail.cloneNode(true);
+            const newClose = btnClose.cloneNode(true);
+            btnSuccess.parentNode.replaceChild(newSuccess, btnSuccess);
+            btnFail.parentNode.replaceChild(newFail, btnFail);
+            btnClose.parentNode.replaceChild(newClose, btnClose);
+
+            newSuccess.addEventListener('click', () => {
+              modal.style.display = 'none';
+              onPaymentSuccess({
+                razorpay_order_id: orderData.razorpay_order_id,
+                razorpay_payment_id: 'pay_test_' + Math.random().toString(36).substring(2, 10),
+                razorpay_signature: 'sig_test_' + Math.random().toString(36).substring(2, 12)
+              });
+            });
+
+            newFail.addEventListener('click', () => {
+              modal.style.display = 'none';
+              onPaymentFailure({ error: { description: 'Test card payment was declined by bank simulator.' } });
+            });
+
+            newClose.addEventListener('click', () => {
+              modal.style.display = 'none';
+              onDismiss();
+            });
+          }
+
+          // If placeholder key or Razorpay SDK is unavailable, open the interactive test modal directly
+          if (isPlaceholderKey || typeof Razorpay === 'undefined') {
+            openTestCheckoutModal();
+            return;
+          }
+
+          // Otherwise attempt live Razorpay Checkout SDK with fallback on error
+          try {
+            const options = {
+              key: orderData.key_id,
+              amount: orderData.amount,
+              currency: orderData.currency || 'INR',
+              name: 'FlashSeat Arena',
+              description: `Seat ${orderData.seat_id} (${EVENT_ID})`,
+              order_id: orderData.razorpay_order_id,
+              handler: onPaymentSuccess,
+              modal: { ondismiss: onDismiss },
+              prefill: {
+                name: currentUserId,
+                email: `${currentUserId}@example.com`,
+                contact: '9999999999'
+              },
+              theme: { color: '#6366f1' }
+            };
+
+            const rzpInstance = new Razorpay(options);
+            rzpInstance.on('payment.failed', onPaymentFailure);
+            rzpInstance.open();
+          } catch (sdkErr) {
+            console.warn('Razorpay SDK error, falling back to test checkout modal:', sdkErr);
+            openTestCheckoutModal();
+          }
 
         } catch (err) {
           btnPayRazorpay.disabled = false;
@@ -1226,7 +1289,7 @@
     const consistencyTag = document.getElementById('consistency-tag');
 
     const canvas = document.getElementById('chart');
-    const ctx = canvas ? canvas.getContext('2d') : null;
+    const ctx = canvas ? canvas.getContext('2d', { willReadFrequently: true }) : null;
 
     const historyData = [];
     const ROLLING_WINDOW_MS = 60000;

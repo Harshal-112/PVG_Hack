@@ -744,6 +744,84 @@
       return jsonResponse({ ok: true }, 200);
     }
 
+    // 15. Razorpay Payments Mock Endpoints
+    if (parsedPath.match(/^\/api\/v1\/payments\/order$/) && method === 'POST') {
+      let body = {};
+      try { body = init && init.body ? JSON.parse(init.body) : {}; } catch (e) {}
+      const res = reservations[body.reservation_id];
+      if (!res) {
+        return jsonResponse({ error: 'RESERVATION_NOT_FOUND', message: 'Reservation not found' }, 404);
+      }
+      if (res.status === 'CONFIRMED') {
+        return jsonResponse({ error: 'ALREADY_CONFIRMED', message: 'Reservation is already confirmed' }, 409);
+      }
+      if (res.status !== 'HELD' || res.expires_at_ms <= Date.now()) {
+        return jsonResponse({ error: 'HOLD_EXPIRED', message: 'Reservation hold has expired' }, 410);
+      }
+      const orderId = 'order_mock_' + Math.random().toString(36).substring(2, 12);
+      return jsonResponse({
+        payment_id: 'pay_int_' + Math.random().toString(36).substring(2, 10),
+        razorpay_order_id: orderId,
+        amount: 50000,
+        currency: 'INR',
+        key_id: 'rzp_test_placeholder_key_id',
+        seat_id: res.seat_id,
+        event_id: body.event_id || 'evt1',
+        expires_at_ms: res.expires_at_ms
+      }, 201);
+    }
+
+    if (parsedPath.match(/^\/api\/v1\/payments\/verify$/) && method === 'POST') {
+      let body = {};
+      try { body = init && init.body ? JSON.parse(init.body) : {}; } catch (e) {}
+      const res = reservations[body.reservation_id];
+      if (!res) {
+        return jsonResponse({ error: 'RESERVATION_NOT_FOUND', message: 'Reservation not found' }, 404);
+      }
+      if (res.status === 'CONFIRMED') {
+        return jsonResponse({
+          status: 'CONFIRMED',
+          booking_reference: `BK-${(body.event_id || 'EVT1').toUpperCase()}-${res.seat_id}-${body.reservation_id.substring(0, 8).toUpperCase()}`,
+          event_id: body.event_id || 'evt1',
+          seat_id: res.seat_id,
+          user_id: body.user_id,
+          amount: 50000,
+          currency: 'INR',
+          payment_id: body.razorpay_payment_id || 'pay_test_mock',
+          order_id: body.razorpay_order_id,
+          idempotent: true
+        }, 200);
+      }
+      if (res.status !== 'HELD' || res.expires_at_ms <= Date.now()) {
+        return jsonResponse({
+          error: 'HOLD_EXPIRED',
+          message: 'Reservation hold expired during checkout. Refund initiated.',
+          refund_id: 'rfnd_mock_' + Math.random().toString(36).substring(2, 10)
+        }, 410);
+      }
+
+      // Confirm seat
+      res.status = 'CONFIRMED';
+      seats[res.seat_id] = 'SOLD';
+      soldMap[res.seat_id] = body.reservation_id;
+      delete owners[res.seat_id];
+      pgBookings.add(res.seat_id);
+
+      const bookingRef = `BK-${(body.event_id || 'EVT1').toUpperCase()}-${res.seat_id}-${body.reservation_id.substring(0, 8).toUpperCase()}`;
+      return jsonResponse({
+        status: 'CONFIRMED',
+        booking_reference: bookingRef,
+        event_id: body.event_id || 'evt1',
+        seat_id: res.seat_id,
+        user_id: body.user_id,
+        amount: 50000,
+        currency: 'INR',
+        payment_id: body.razorpay_payment_id || 'pay_test_mock',
+        order_id: body.razorpay_order_id,
+        idempotent: false
+      }, 200);
+    }
+
     return jsonResponse({ error: 'NOT_FOUND', message: 'Endpoint not found in mock API' }, 404);
   };
 })();
