@@ -16,12 +16,13 @@ import {
 export default function PaymentGatewayModal({
   bookingData,
   onClose,
-  onPaymentSuccess
+  onPaymentSuccess,
+  onExpired
 }) {
   const [payMethod, setPayMethod] = useState('upi'); // 'upi' | 'razorpay'
   const [copiedUpi, setCopiedUpi] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
-  const [timerSeconds, setTimerSeconds] = useState(299); // 5 min countdown
+  const [timerSeconds, setTimerSeconds] = useState(120); // 2 min countdown (120 seconds)
   
   // Card form state
   const [cardNumber, setCardNumber] = useState('');
@@ -32,14 +33,21 @@ export default function PaymentGatewayModal({
   const upiId = 'harshalsnerkar0946@okicici';
   const grandTotal = bookingData?.grandTotal || 756;
 
-  // Countdown timer effect
+  // Countdown timer effect with 2-minute auto-release
   useEffect(() => {
-    if (timerSeconds <= 0) return;
+    if (timerSeconds <= 0) {
+      if (onExpired) {
+        onExpired();
+      } else {
+        onClose();
+      }
+      return;
+    }
     const interval = setInterval(() => {
       setTimerSeconds((prev) => Math.max(0, prev - 1));
     }, 1000);
     return () => clearInterval(interval);
-  }, [timerSeconds]);
+  }, [timerSeconds, onExpired, onClose]);
 
   const formatTimer = (secs) => {
     const mins = Math.floor(secs / 60);

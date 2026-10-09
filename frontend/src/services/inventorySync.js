@@ -150,7 +150,7 @@ export async function fetchLockedSeats(screeningId) {
 }
 
 /**
- * Read active seat holds (synchronous, with 5-min TTL pruning)
+ * Read active seat holds (synchronous, with 2-min TTL pruning)
  */
 export function getSharedHolds(screeningId = null) {
   try {
@@ -237,7 +237,7 @@ export async function acquireSeatHold(screeningId, seatCodes, user) {
 
   const userName = user?.name || 'Customer';
   const now = Date.now();
-  const ttlMs = 5 * 60 * 1000; // 5-minute hold TTL
+  const ttlMs = 2 * 60 * 1000; // 2-minute hold TTL (120,000 ms)
   const expiresAtMs = now + ttlMs;
 
   try {

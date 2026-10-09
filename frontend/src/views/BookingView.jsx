@@ -644,6 +644,17 @@ export default function BookingView({
             releaseSeatHold(screeningId, selectedSeats.map(s => s.code), currentUser);
             setPaymentModalData(null);
           }}
+          onExpired={() => {
+            // Auto release hold when 2-minute timer runs out without payment
+            releaseSeatHold(screeningId, selectedSeats.map(s => s.code), currentUser);
+            setPaymentModalData(null);
+            setSelectedSeats([]);
+            setCollisionAlert({
+              title: 'Seat Hold Expired (2-Minute Window)',
+              message: 'Your 2-minute payment window has expired. The held seats have been automatically released for other customers.',
+              type: 'warning'
+            });
+          }}
           onPaymentSuccess={handlePaymentSuccess}
         />
       )}
