@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import DateSlider from '../components/DateSlider';
 import ShowtimeCard from '../components/ShowtimeCard';
 import { CINEMAS, MOVIES } from '../data/mockData';
@@ -24,14 +24,54 @@ export default function ShowtimesView({
   });
   const [selectedFormat, setSelectedFormat] = useState('All Formats');
   const [activeShowtime, setActiveShowtime] = useState({
-    id: 'st3',
-    time: '05:15 PM',
-    format: 'Dolby Atmos',
+    id: 'st1',
+    time: '10:00 AM',
+    format: '2D',
     cinemaId: 'apex_grand',
     cinemaName: 'Apex Grand Cinemas • Screen 2'
   });
 
   const formats = ['All Formats', '2D', '3D', 'IMAX 2D', '4DX', 'Dolby Atmos'];
+
+  // Filter cinemas and their showtimes based on selectedFormat
+  const filteredCinemas = useMemo(() => {
+    return CINEMAS.map((cinema) => {
+      const matchingShowtimes = cinema.showtimes.filter((slot) => {
+        if (selectedFormat === 'All Formats') return true;
+        return slot.format.toLowerCase().trim() === selectedFormat.toLowerCase().trim();
+      });
+
+      return {
+        ...cinema,
+        showtimes: matchingShowtimes,
+      };
+    }).filter((cinema) => cinema.showtimes.length > 0);
+  }, [selectedFormat]);
+
+  // Synchronize activeShowtime when selectedFormat changes to ensure matching selection
+  useEffect(() => {
+    if (filteredCinemas.length > 0) {
+      const allSlots = filteredCinemas.flatMap((c) =>
+        c.showtimes.map((slot) => ({ ...slot, cinemaId: c.id, cinemaName: c.name }))
+      );
+      const isCurrentValid = allSlots.some(
+        (s) => s.id === activeShowtime?.id && s.cinemaId === activeShowtime?.cinemaId
+      );
+      if (!isCurrentValid && allSlots.length > 0) {
+        setActiveShowtime(allSlots[0]);
+      }
+    }
+  }, [selectedFormat, filteredCinemas, activeShowtime?.id, activeShowtime?.cinemaId]);
+
+  // Movies available for now-showing
+  const availableMovies = useMemo(() => {
+    const nowShowing = MOVIES.filter((m) => m.releaseType === 'now_showing');
+    if (selectedFormat === 'All Formats') return nowShowing;
+    const formatFiltered = nowShowing.filter((m) =>
+      m.formats?.some((f) => f.toLowerCase().trim() === selectedFormat.toLowerCase().trim())
+    );
+    return formatFiltered.length > 0 ? formatFiltered : nowShowing;
+  }, [selectedFormat]);
 
   return (
     <div className="space-y-8 animate-fadeIn pb-16">
@@ -96,13 +136,15 @@ export default function ShowtimesView({
             <select
               value={selectedMovie?.id}
               onChange={(e) => {
-                const found = MOVIES.find(m => m.id === e.target.value);
+                const found = MOVIES.find((m) => m.id === e.target.value);
                 if (found) onChangeMovie(found);
               }}
               className="w-full sm:w-56 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
             >
-              {MOVIES.filter(m => m.releaseType === 'now_showing').map((m) => (
-                <option key={m.id} value={m.id} className="dark:bg-slate-900 dark:text-white">{m.title}</option>
+              {availableMovies.map((m) => (
+                <option key={m.id} value={m.id} className="dark:bg-slate-900 dark:text-white">
+                  {m.title}
+                </option>
               ))}
             </select>
           </div>
@@ -133,36 +175,57 @@ export default function ShowtimesView({
           {/* Format & Period Filter Strip */}
           <div className="flex items-center justify-between gap-3 overflow-x-auto pb-2 border-b border-slate-200 dark:border-slate-800">
             <div className="flex items-center gap-1.5 flex-shrink-0">
-              {formats.map((fmt) => (
-                <button
-                  key={fmt}
-                  onClick={() => setSelectedFormat(fmt)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                    selectedFormat === fmt
-                      ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-sm'
-                      : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
-                  }`}
-                >
-                  {fmt}
-                </button>
-              ))}
+              {formats.map((fmt) => {
+                const isSelected = selectedFormat === fmt;
+                return (
+                  <button
+                    key={fmt}
+                    onClick={() => setSelectedFormat(fmt)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-sm ring-2 ring-indigo-500/30'
+                        : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-indigo-600 dark:hover:text-indigo-400'
+                    }`}
+                  >
+                    {fmt}
+                  </button>
+                );
+              })}
             </div>
 
-            <span className="text-xs text-slate-400 dark:text-slate-500 hidden sm:inline flex-shrink-0">
-              3 Cinemas Available
+            <span className="text-xs text-slate-400 dark:text-slate-500 hidden sm:inline flex-shrink-0 font-medium">
+              {filteredCinemas.length} {filteredCinemas.length === 1 ? 'Cinema' : 'Cinemas'} Available {selectedFormat !== 'All Formats' ? `• ${selectedFormat}` : ''}
             </span>
           </div>
 
           {/* Cinema Cards List */}
           <div className="space-y-4">
-            {CINEMAS.map((cinema) => (
-              <ShowtimeCard
-                key={cinema.id}
-                cinema={cinema}
-                selectedShowtime={activeShowtime}
-                onSelectShowtime={(slot) => setActiveShowtime(slot)}
-              />
-            ))}
+            {filteredCinemas.length > 0 ? (
+              filteredCinemas.map((cinema) => (
+                <ShowtimeCard
+                  key={cinema.id}
+                  cinema={cinema}
+                  selectedShowtime={activeShowtime}
+                  onSelectShowtime={(slot) => setActiveShowtime(slot)}
+                />
+              ))
+            ) : (
+              <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-10 text-center space-y-3">
+                <Film className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto" />
+                <h4 className="text-base font-bold text-slate-800 dark:text-slate-200">
+                  No {selectedFormat} Screenings Available
+                </h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+                  There are currently no {selectedFormat} showtimes scheduled for {selectedMovie?.title}. Switch to "All Formats" to see other formats.
+                </p>
+                <button
+                  onClick={() => setSelectedFormat('All Formats')}
+                  className="mt-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors cursor-pointer shadow-sm"
+                >
+                  View All Formats
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
