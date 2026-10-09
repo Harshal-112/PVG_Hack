@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 450" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient -->
+    <radialGradient id="dpBg" cx="50%" cy="40%" r="75%">
+      <stop offset="0%" stop-color="#450a0a"/>
+      <stop offset="40%" stop-color="#1e1b4b"/>
+      <stop offset="80%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#020617"/>
+    </radialGradient>
+
+    <!-- Deadpool Red Gradient -->
+    <linearGradient id="dpRed" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ef4444"/>
+      <stop offset="60%" stop-color="#b91c1c"/>
+      <stop offset="100%" stop-color="#7f1d1d"/>
+    </linearGradient>
+
+    <!-- Wolverine Yellow Gradient -->
+    <linearGradient id="wolvYellow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fde047"/>
+      <stop offset="50%" stop-color="#eab308"/>
+      <stop offset="100%" stop-color="#a16207"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background Base -->
+  <rect width="300" height="450" fill="url(#dpBg)" rx="14"/>
+
+  <!-- Claw Slash Marks in Background -->
+  <g stroke="#f59e0b" stroke-width="3" stroke-linecap="round" opacity="0.4">
+    <line x1="60" y1="50" x2="110" y2="280"/>
+    <line x1="120" y1="40" x2="170" y2="270"/>
+    <line x1="180" y1="50" x2="230" y2="280"/>
+  </g>
+
+  <!-- Split Face Emblem (Left: Deadpool, Right: Wolverine) -->
+  <g transform="translate(150, 180) scale(1.15)">
+    <!-- Heart Background / Badge Base -->
+    <!-- Left Half: Deadpool (Red) -->
+    <path d="M 0 -55 Q -40 -40 -40 0 Q -40 40 0 55 Z" fill="url(#dpRed)" stroke="#111827" stroke-width="3"/>
+    <!-- Right Half: Wolverine (Yellow) -->
+    <path d="M 0 -55 Q 40 -40 40 0 Q 40 40 0 55 Z" fill="url(#wolvYellow)" stroke="#111827" stroke-width="3"/>
+
+    <!-- Center Cut Line -->
+    <line x1="0" y1="-56" x2="0" y2="56" stroke="#0f172a" stroke-width="4"/>
+
+    <!-- Left Eye (Deadpool Eye Patch & White Eye) -->
+    <ellipse cx="-18" cy="-5" rx="14" ry="20" fill="#0f172a"/>
+    <ellipse cx="-16" cy="-5" rx="6" ry="10" fill="#ffffff"/>
+
+    <!-- Right Eye (Wolverine Cowl & Eye) -->
+    <path d="M 4 -35 Q 28 -30 38 -5 Q 26 0 10 -2 Z" fill="#0284c7"/>
+    <ellipse cx="18" cy="-5" rx="6" ry="9" fill="#ffffff" stroke="#0f172a" stroke-width="1.5"/>
+
+    <!-- Wolverine Whisker / Cowl Wing -->
+    <path d="M 28 -30 Q 55 -60 52 -20 Q 40 -10 28 -15 Z" fill="#0284c7"/>
+  </g>
+
+  <!-- Studio Header -->
+  <g transform="translate(150, 32)">
+    <rect x="-42" y="-10" width="84" height="20" fill="#dc2626" rx="2"/>
+    <text x="0" y="4" font-family="system-ui, sans-serif" font-size="9" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="2">MARVEL</text>
+    <text x="0" y="24" font-family="system-ui, sans-serif" font-size="8" font-weight="700" fill="#94a3b8" text-anchor="middle" letter-spacing="3">STUDIOS</text>
+  </g>
+
+  <!-- Bottom Text Section -->
+  <rect x="0" y="290" width="300" height="160" fill="linear-gradient(180deg, transparent 0%, #030712 60%)"/>
+
+  <!-- DEADPOOL -->
+  <text x="150" y="340" font-family="Impact, system-ui, sans-serif" font-size="30" font-weight="900" fill="#ef4444" text-anchor="middle" letter-spacing="2" filter="drop-shadow(0 2px 5px rgba(0,0,0,0.9))">
+    DEADPOOL
+  </text>
+
+  <!-- & WOLVERINE -->
+  <text x="150" y="372" font-family="Impact, system-ui, sans-serif" font-size="28" font-weight="900" fill="#facc15" text-anchor="middle" letter-spacing="2" filter="drop-shadow(0 2px 5px rgba(0,0,0,0.9))">
+    &amp; WOLVERINE
+  </text>
+
+  <text x="150" y="415" font-family="system-ui, sans-serif" font-size="9" font-weight="800" fill="#f87171" text-anchor="middle" letter-spacing="4">
+    EXCLUSIVELY IN THEATERS
+  </text>
+  <text x="150" y="432" font-family="system-ui, sans-serif" font-size="7.5" font-weight="600" fill="#94a3b8" text-anchor="middle" letter-spacing="1.5">
+    EXPERIENCE IN 4DX 3D &bull; DOLBY ATMOS
+  </text>
+</svg>

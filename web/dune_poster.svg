@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 450" width="100%" height="100%">
+  <defs>
+    <!-- Arrakis Sunset Sky Gradient -->
+    <radialGradient id="duneSky" cx="50%" cy="30%" r="75%">
+      <stop offset="0%" stop-color="#fdba74"/>
+      <stop offset="30%" stop-color="#ea580c"/>
+      <stop offset="65%" stop-color="#9a3412"/>
+      <stop offset="100%" stop-color="#270e04"/>
+    </radialGradient>
+
+    <!-- Twin Suns / Eclipse Glow -->
+    <radialGradient id="arrakisSun" cx="50%" cy="40%" r="45%">
+      <stop offset="0%" stop-color="#fffbeb" stop-opacity="0.95"/>
+      <stop offset="30%" stop-color="#fef08a" stop-opacity="0.8"/>
+      <stop offset="60%" stop-color="#f97316" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#c2410c" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Dune Sand Ridges Gradient -->
+    <linearGradient id="sandRidge1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#c2410c"/>
+      <stop offset="50%" stop-color="#9a3412"/>
+      <stop offset="100%" stop-color="#431407"/>
+    </linearGradient>
+
+    <linearGradient id="sandRidge2" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ea580c"/>
+      <stop offset="100%" stop-color="#7c2d12"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Sky Base -->
+  <rect width="300" height="450" fill="url(#duneSky)" rx="14"/>
+
+  <!-- Giant Blazing Sun -->
+  <circle cx="150" cy="160" r="90" fill="url(#arrakisSun)"/>
+  <circle cx="150" cy="160" r="48" fill="#fffbeb" opacity="0.9"/>
+
+  <!-- Distant Sand Dunes -->
+  <path d="M 0 250 Q 80 200 160 230 T 300 210 L 300 450 L 0 450 Z" fill="url(#sandRidge1)"/>
+  
+  <!-- Giant Sandworm Silhouette Arc -->
+  <path d="M 200 240 Q 240 170 270 210 Q 290 230 300 260 L 300 320 Q 260 270 200 240 Z" fill="#2d0c03" opacity="0.85"/>
+
+  <!-- Foreground Dunes -->
+  <path d="M 0 290 Q 90 250 190 290 Q 250 310 300 280 L 300 450 L 0 450 Z" fill="url(#sandRidge2)"/>
+  <path d="M 0 350 Q 110 320 220 360 L 300 350 L 300 450 L 0 450 Z" fill="#290d05"/>
+
+  <!-- Paul Atreides Silhouette on Dune Crest -->
+  <g transform="translate(145, 235) scale(0.65)" fill="#1c0702">
+    <!-- Cloak / Body -->
+    <path d="M 0 0 Q -8 -20 -3 -35 Q 0 -42 5 -42 Q 10 -42 13 -35 Q 18 -20 10 0 Z"/>
+    <!-- Head with Hood -->
+    <circle cx="5" cy="-45" r="7"/>
+    <!-- Flowing Cloak Tail -->
+    <path d="M -3 -30 Q -25 -25 -32 -10 Q -20 -18 -3 -20 Z"/>
+    <!-- Crysknife Staff -->
+    <line x1="18" y1="-50" x2="16" y2="10" stroke="#fef08a" stroke-width="1.8"/>
+  </g>
+
+  <!-- Studio Header -->
+  <g transform="translate(150, 30)">
+    <text x="0" y="0" font-family="system-ui, sans-serif" font-size="8.5" font-weight="900" fill="#fef08a" text-anchor="middle" letter-spacing="4">WARNER BROS. &bull; LEGENDARY</text>
+  </g>
+
+  <!-- Title Section -->
+  <rect x="0" y="340" width="300" height="110" fill="linear-gradient(180deg, transparent 0%, #0d0301 60%)"/>
+
+  <!-- D U N E -->
+  <text x="150" y="380" font-family="'Cinzel', 'Times New Roman', serif" font-size="44" font-weight="900" fill="#ffedd5" text-anchor="middle" letter-spacing="14" filter="drop-shadow(0 3px 6px rgba(0,0,0,0.9))">
+    DUNE
+  </text>
+
+  <!-- PART TWO -->
+  <text x="150" y="405" font-family="system-ui, sans-serif" font-size="12" font-weight="800" fill="#f97316" text-anchor="middle" letter-spacing="6">
+    PART TWO
+  </text>
+
+  <text x="150" y="428" font-family="system-ui, sans-serif" font-size="7.5" font-weight="700" fill="#fed7aa" text-anchor="middle" letter-spacing="2">
+    EXPERIENCE IT IN IMAX 70MM
+  </text>
+</svg>

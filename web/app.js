@@ -1,4 +1,4 @@
-// FlashSeat Web UI - Seat Grid, Live Dashboard & Security Hub
+﻿// FlashSeat Web UI - Seat Grid, Live Dashboard & Security Hub
 // Owned by [P5]. Built with vanilla JavaScript, zero dependencies.
 
 (function () {
@@ -8,6 +8,105 @@
   const isMockMode = urlParams.get('mock') === '1';
   const EVENT_ID = urlParams.get('event') || urlParams.get('event_id') || 'evt1';
   const API_BASE = window.__API_BASE__ || localStorage.getItem('flashseat_api_base') || '/api/v1';
+
+  // BookMyShow Movie & Event Catalog
+  const MOVIE_CATALOG = {
+    evt1: {
+      event_id: 'evt1',
+      name: 'Spider-Man: No Way Home',
+      category: 'Action',
+      tags: ['Action', 'Sci-Fi', 'Adventure'],
+      rating: 'UA 16+',
+      runtime: '148 min',
+      language: 'English, Hindi',
+      format: 'IMAX 2D',
+      date: 'January 31, 2026',
+      startTime: '11:15 AM',
+      endTime: '1:45 PM',
+      theater: 'Cinema 3 &bull; Dolby Atmos',
+      venue: 'PVR: Inorbit Mall, Cyberabad',
+      price: 50.00,
+      poster: 'spiderman_poster.svg',
+      shows: ['11:15 AM', '02:30 PM', '06:00 PM', '09:30 PM'],
+      description: 'With Spider-Man\'s identity revealed, Peter asks Doctor Strange for help. When a spell goes wrong, multiverse foes emerge.'
+    },
+    evt2: {
+      event_id: 'evt2',
+      name: 'Dune: Part Two',
+      category: 'Sci-Fi',
+      tags: ['Sci-Fi', 'Adventure', 'Drama'],
+      rating: 'UA 13+',
+      runtime: '166 min',
+      language: 'English, Hindi',
+      format: 'IMAX 70mm',
+      date: 'January 31, 2026',
+      startTime: '02:30 PM',
+      endTime: '05:15 PM',
+      theater: 'Cinema 1 &bull; Grand Laser IMAX',
+      venue: 'INOX: Megaplex Arena',
+      price: 55.00,
+      poster: 'dune_poster.svg',
+      shows: ['01:00 PM', '02:30 PM', '07:00 PM', '10:30 PM'],
+      description: 'Paul Atreides unites with Chani and the Fremen while seeking revenge against the conspirators who destroyed his family.'
+    },
+    evt3: {
+      event_id: 'evt3',
+      name: 'Deadpool & Wolverine',
+      category: 'Action',
+      tags: ['Action', 'Comedy', 'Superhero'],
+      rating: 'A 18+',
+      runtime: '128 min',
+      language: 'English, Hindi, Telugu',
+      format: '4DX 3D',
+      date: 'January 31, 2026',
+      startTime: '06:00 PM',
+      endTime: '08:10 PM',
+      theater: 'Cinema 2 &bull; Prime Lounge',
+      venue: 'Cinepolis: Grand VIP Lounge',
+      price: 48.00,
+      poster: 'deadpool_poster.svg',
+      shows: ['12:30 PM', '03:45 PM', '06:00 PM', '09:15 PM'],
+      description: 'Wolverine is recovering from his injuries when he crosses paths with the loudmouth Deadpool to defeat a common enemy.'
+    },
+    evt4: {
+      event_id: 'evt4',
+      name: 'Oppenheimer',
+      category: 'Drama',
+      tags: ['Biography', 'Drama', 'History'],
+      rating: 'R / UA',
+      runtime: '180 min',
+      language: 'English',
+      format: 'IMAX 70mm',
+      date: 'January 31, 2026',
+      startTime: '08:30 PM',
+      endTime: '11:30 PM',
+      theater: 'Cinema 4 &bull; 70mm Film Dome',
+      venue: 'PVR Director\'s Cut',
+      price: 60.00,
+      poster: 'oppenheimer_poster.svg',
+      shows: ['10:45 AM', '02:45 PM', '08:30 PM'],
+      description: 'The story of American scientist J. Robert Oppenheimer and his role in the development of the atomic bomb.'
+    },
+    evt5: {
+      event_id: 'evt5',
+      name: 'Interstellar (10th Anniv. IMAX)',
+      category: 'Sci-Fi',
+      tags: ['Sci-Fi', 'Mystery', 'Adventure'],
+      rating: 'UA 13+',
+      runtime: '169 min',
+      language: 'English',
+      format: 'IMAX 2D',
+      date: 'February 01, 2026',
+      startTime: '09:45 PM',
+      endTime: '12:35 AM',
+      theater: 'Cinema 5 &bull; Laser Audi',
+      venue: 'Miraj Cinemas: IMAX Dome',
+      price: 50.00,
+      poster: 'interstellar_poster.svg',
+      shows: ['11:00 AM', '04:00 PM', '09:45 PM'],
+      description: 'When Earth becomes uninhabitable, an ex-NASA pilot is tasked with piloting a spacecraft along with a team of researchers.'
+    }
+  };
 
   // 1. Auth & Session State Management
   function getStoredAuthUser() {
@@ -106,7 +205,7 @@
       if (usernameEl) usernameEl.textContent = authUser.username;
       if (mfaTagEl) {
         mfaTagEl.style.display = 'flex';
-        mfaTagEl.textContent = authUser.mfa_enabled ? '🛡️ MFA Verified' : 'Standard Session';
+        mfaTagEl.textContent = authUser.mfa_enabled ? '≡ƒ¢í∩╕Å MFA Verified' : 'Standard Session';
       }
       if (authActionBtn) {
         authActionBtn.textContent = 'Sign Out';
@@ -470,10 +569,10 @@
         if (codeText && codeText !== '------') {
           try {
             await navigator.clipboard.writeText(codeText);
-            btnCopyCode.textContent = '✓ Copied!';
-            setTimeout(() => { btnCopyCode.textContent = '📋 Copy Code'; }, 1500);
+            btnCopyCode.textContent = 'Γ£ô Copied!';
+            setTimeout(() => { btnCopyCode.textContent = '≡ƒôï Copy Code'; }, 1500);
           } catch (err) {
-            btnCopyCode.textContent = '✓ ' + codeText;
+            btnCopyCode.textContent = 'Γ£ô ' + codeText;
           }
         }
       });
@@ -575,189 +674,381 @@
   }
 
   // =========================================================================
-  // TASK A: Seat Grid (web/index.html)
+  // =========================================================================
+  // TASK A: Cinema Armchair Seat Grid (CineReserve Design System)
   // =========================================================================
   function initSeatGrid() {
     const gridContainer = document.getElementById('grid-container');
     if (!gridContainer) return;
 
-    const TOTAL_SEATS = 200;
-    const seatElements = {};
+    let currentEventId = urlParams.get('event') || urlParams.get('event_id') || 'evt1';
+    let currentShowtime = urlParams.get('time') || urlParams.get('showtime') || (MOVIE_CATALOG[currentEventId] && MOVIE_CATALOG[currentEventId].shows && MOVIE_CATALOG[currentEventId].shows[0]) || '11:15 AM';
 
-    // 200 seat grid buttons (S001 - S200)
-    const fragment = document.createDocumentFragment();
-    for (let i = 1; i <= TOTAL_SEATS; i++) {
-      const seatId = 'S' + String(i).padStart(3, '0');
+    // Active Reservations Map: seatId -> { reservation_id, seat_id, seat_code, expires_at_ms, ttl_ms }
+    const activeReservations = {};
+    let countdownInterval = null;
+
+    // Latest Seat States Cache from Server: seatId -> "FREE" | "HELD" | "SOLD"
+    const currentSeatStates = {};
+    const renderedSeatElements = {};
+
+    // Bottom Checkout Bar Elements
+    const checkoutTotalPrice = document.getElementById('checkout-total-price');
+    const checkoutSeatsLabel = document.getElementById('checkout-seats-label');
+    const checkoutPillsRow = document.getElementById('checkout-pills-row');
+    const btnProceedBooking = document.getElementById('btn-proceed-booking');
+    const btnReleaseHold = document.getElementById('btn-release-hold');
+
+    // BMS Movie Header and Quick Switcher
+    function renderMovieHeader(eventId) {
+      const movie = MOVIE_CATALOG[eventId] || {
+        event_id: eventId,
+        name: `Event ${eventId.toUpperCase()}`,
+        category: 'Live Event',
+        tags: ['Featured', 'Cinema Screening'],
+        rating: 'UA',
+        runtime: '120 min',
+        language: 'English',
+        format: 'Digital 2D',
+        date: 'January 31, 2026',
+        startTime: '11:15 AM',
+        endTime: '1:45 PM',
+        theater: 'Cinema 1 &bull; Main Audi',
+        venue: 'Grand Cinema Megaplex',
+        price: 50.00,
+        poster: 'spiderman_poster.svg',
+        shows: ['11:15 AM', '02:30 PM', '06:00 PM', '09:30 PM']
+      };
+
+      const posterEl = document.getElementById('movie-poster-img');
+      const titleEl = document.getElementById('movie-title-display');
+      const tagsEl = document.getElementById('movie-tags-container');
+      const dateEl = document.getElementById('movie-date-display');
+      const startEl = document.getElementById('movie-start-display');
+      const endEl = document.getElementById('movie-end-display');
+      const venueEl = document.getElementById('movie-venue-display');
+      const dropdownEl = document.getElementById('event-select-dropdown');
+      const showtimesBox = document.getElementById('bms-showtimes-container');
+      const rateBadgeEl = document.getElementById('checkout-rate-badge');
+
+      if (posterEl) {
+        posterEl.src = movie.poster;
+        posterEl.alt = `${movie.name} Poster`;
+      }
+      if (titleEl) titleEl.textContent = movie.name;
+      if (tagsEl) {
+        tagsEl.innerHTML = `
+          ${movie.tags.map(t => `<span class="movie-tag-pill">${t}</span>`).join('')}
+          <span class="movie-meta-item">ΓÅ▒∩╕Å ${movie.runtime}</span>
+          <span class="movie-rating-badge">${movie.rating}</span>
+        `;
+      }
+      if (dateEl) dateEl.textContent = movie.date;
+      if (startEl) startEl.textContent = currentShowtime || movie.startTime;
+      if (endEl) endEl.textContent = movie.endTime;
+      if (venueEl) venueEl.innerHTML = `${movie.theater} &bull; ${movie.venue}`;
+      if (rateBadgeEl) rateBadgeEl.textContent = `≡ƒÅ╖∩╕Å $${movie.price.toFixed(2)} each`;
+
+      if (dropdownEl && dropdownEl.value !== eventId) {
+        dropdownEl.value = eventId;
+      }
+
+      if (showtimesBox && movie.shows) {
+        showtimesBox.innerHTML = movie.shows.map(s => `
+          <button type="button" class="bms-showtime-pill ${s === currentShowtime ? 'active' : ''}" data-time="${s}">${s}</button>
+        `).join('');
+
+        showtimesBox.querySelectorAll('.bms-showtime-pill').forEach(btn => {
+          btn.addEventListener('click', () => {
+            showtimesBox.querySelectorAll('.bms-showtime-pill').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentShowtime = btn.dataset.time;
+            if (startEl) startEl.textContent = currentShowtime;
+            showAlert('info', 'Showtime Updated', `Showtime set to ${currentShowtime} for ${movie.name}.`);
+          });
+        });
+      }
+    }
+
+    const eventSelectDropdown = document.getElementById('event-select-dropdown');
+    if (eventSelectDropdown) {
+      eventSelectDropdown.addEventListener('change', (e) => {
+        const newEventId = e.target.value;
+        if (newEventId !== currentEventId) {
+          currentEventId = newEventId;
+          const movie = MOVIE_CATALOG[currentEventId];
+          if (movie && movie.shows && movie.shows.length > 0) {
+            currentShowtime = movie.shows[0];
+          }
+          for (const k of Object.keys(activeReservations)) delete activeReservations[k];
+          for (const k of Object.keys(currentSeatStates)) delete currentSeatStates[k];
+
+          const params = new URLSearchParams(window.location.search);
+          params.set('event', currentEventId);
+          window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
+
+          renderMovieHeader(currentEventId);
+          renderGrid();
+          updateCheckoutBar();
+          fetchSeats();
+          showAlert('info', 'Movie Switched', `Viewing seat layout for ${MOVIE_CATALOG[currentEventId]?.name || currentEventId}.`);
+        }
+      });
+    }
+
+    // Tier definitions with BMS category pricing
+    const TIERS = {
+      '1': { name: 'RECLINER: Rows AΓÇôE ($50)', rows: ['A', 'B', 'C', 'D', 'E'], startIdx: 1, seatsPerRow: 8, price: 50.00 },
+      '2': { name: 'PRIME: Rows FΓÇôJ ($35)', rows: ['F', 'G', 'H', 'I', 'J'], startIdx: 41, seatsPerRow: 8, price: 35.00 },
+      '3': { name: 'CLASSIC: Rows KΓÇôO ($20)', rows: ['K', 'L', 'M', 'N', 'O'], startIdx: 81, seatsPerRow: 8, price: 20.00 },
+      'all': { name: 'Full Arena (200 Seats)', rows: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'], startIdx: 1, seatsPerRow: 20, price: 50.00 }
+    };
+
+    let activeTier = '1';
+
+    // Tier tab button listeners
+    const tierTabButtons = document.querySelectorAll('.tier-tab-btn');
+    tierTabButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        tierTabButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        activeTier = btn.dataset.tier || '1';
+        renderGrid();
+        updateLegendCounts();
+        updateCheckoutBar();
+      });
+    });
+
+    function renderGrid() {
+      gridContainer.innerHTML = '';
+      Object.keys(renderedSeatElements).forEach(k => delete renderedSeatElements[k]);
+
+      const tierCfg = TIERS[activeTier] || TIERS['1'];
+      let globalIndex = tierCfg.startIdx;
+
+      tierCfg.rows.forEach(rowLetter => {
+        const rowEl = document.createElement('div');
+        rowEl.className = 'cinema-row';
+
+        // Left Row Letter
+        const leftLetter = document.createElement('div');
+        leftLetter.className = 'cinema-row-letter';
+        leftLetter.textContent = rowLetter;
+        rowEl.appendChild(leftLetter);
+
+        // Seats Group
+        const seatsGroup = document.createElement('div');
+        seatsGroup.className = 'cinema-seats-group';
+
+        for (let s = 1; s <= tierCfg.seatsPerRow; s++) {
+          const seatNum = s;
+          const seatId = 'S' + String(globalIndex).padStart(3, '0');
+          const seatCode = rowLetter + seatNum;
+          globalIndex++;
+
+          const btn = createSeatButton(seatId, seatCode, seatNum);
+          seatsGroup.appendChild(btn);
+        }
+
+        rowEl.appendChild(seatsGroup);
+        gridContainer.appendChild(rowEl);
+      });
+
+      // Synchronize visual states
+      applyCurrentStatesToRendered();
+    }
+
+    function createSeatButton(seatId, seatCode, seatNum) {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.id = `seat-${seatId}`;
-      btn.className = 'seat-btn state-free';
+      btn.className = 'seat-chair available';
       btn.setAttribute('role', 'button');
       btn.setAttribute('tabindex', '0');
-      btn.setAttribute('aria-label', `Seat ${seatId}: FREE - $45.00 USD`);
+      const moviePrice = (MOVIE_CATALOG[currentEventId] && MOVIE_CATALOG[currentEventId].price) || 50;
+      btn.setAttribute('aria-label', `Seat ${seatCode}: Available - $${moviePrice.toFixed(2)}`);
+      btn.setAttribute('data-seat-id', seatId);
+      btn.setAttribute('data-seat-code', seatCode);
 
-      const idSpan = document.createElement('span');
-      idSpan.className = 'seat-id';
-      idSpan.textContent = seatId;
+      const back = document.createElement('div');
+      back.className = 'seat-chair-back';
+      back.textContent = seatNum;
 
-      const tagSpan = document.createElement('span');
-      tagSpan.className = 'seat-state-tag';
-      tagSpan.textContent = 'FREE';
+      const base = document.createElement('div');
+      base.className = 'seat-chair-base';
 
-      btn.appendChild(idSpan);
-      btn.appendChild(tagSpan);
+      btn.appendChild(back);
+      btn.appendChild(base);
 
-      btn.addEventListener('click', () => onSeatClicked(seatId));
+      btn.addEventListener('click', () => onSeatClicked(seatId, seatCode));
       btn.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
-          onSeatClicked(seatId);
+          onSeatClicked(seatId, seatCode);
         }
       });
 
-      seatElements[seatId] = {
+      renderedSeatElements[seatId] = {
         element: btn,
-        tag: tagSpan,
-        state: 'FREE'
+        back: back,
+        seatCode: seatCode,
+        seatNum: seatNum
       };
-      fragment.appendChild(btn);
+
+      return btn;
     }
-    gridContainer.appendChild(fragment);
 
-    // Active Reservation State
-    let activeReservation = null;
-    let countdownInterval = null;
+    function applyCurrentStatesToRendered() {
+      for (const [seatId, item] of Object.entries(renderedSeatElements)) {
+        const btn = item.element;
+        let existingBadge = btn.querySelector('.seat-check-badge');
 
-    const reservationPanel = document.getElementById('reservation-panel');
-    const detailSeatId = document.getElementById('detail-seat-id');
-    const detailRid = document.getElementById('detail-rid');
-    const detailUserId = document.getElementById('detail-user-id');
-    const detailExpiry = document.getElementById('detail-expiry');
-    const countdownTimer = document.getElementById('countdown-timer');
-    const btnConfirm = document.getElementById('btn-confirm');
-    const btnRelease = document.getElementById('btn-release');
-    const btnPayRazorpay = document.getElementById('btn-pay-razorpay');
-    const paymentNotice = document.getElementById('payment-notice');
+        if (activeReservations[seatId]) {
+          // Seat held by current user
+          btn.className = 'seat-chair selected';
+          if (!existingBadge) {
+            existingBadge = document.createElement('div');
+            existingBadge.className = 'seat-check-badge';
+            existingBadge.textContent = 'Γ£ô';
+            btn.appendChild(existingBadge);
+          }
+          btn.setAttribute('aria-label', `Seat ${item.seatCode}: Selected by you`);
+        } else {
+          if (existingBadge) existingBadge.remove();
+          const state = currentSeatStates[seatId] || 'FREE';
+
+          if (state === 'FREE') {
+            btn.className = 'seat-chair available';
+            btn.setAttribute('aria-label', `Seat ${item.seatCode}: Available`);
+          } else if (state === 'HELD') {
+            btn.className = 'seat-chair held';
+            btn.setAttribute('aria-label', `Seat ${item.seatCode}: Held by another guest`);
+          } else if (state === 'SOLD') {
+            btn.className = 'seat-chair booked';
+            btn.setAttribute('aria-label', `Seat ${item.seatCode}: Booked`);
+          }
+        }
+      }
+    }
+
+    function updateCheckoutBar() {
+      const heldList = Object.values(activeReservations);
+      const count = heldList.length;
+
+      if (count === 0) {
+        if (checkoutTotalPrice) checkoutTotalPrice.textContent = '$ 0.00';
+        if (checkoutSeatsLabel) checkoutSeatsLabel.textContent = 'for 0 seats';
+        if (checkoutPillsRow) {
+          checkoutPillsRow.innerHTML = '<span style="font-size: 0.85rem; color: #64748b;">Select a seat above to reserve</span>';
+        }
+        if (btnProceedBooking) {
+          btnProceedBooking.disabled = true;
+          btnProceedBooking.textContent = 'Proceed to Booking ΓåÆ';
+        }
+        if (btnReleaseHold) {
+          btnReleaseHold.style.display = 'none';
+        }
+        if (countdownInterval) {
+          clearInterval(countdownInterval);
+          countdownInterval = null;
+        }
+      } else {
+        const movie = MOVIE_CATALOG[currentEventId];
+        const unitPrice = movie ? movie.price : 50.00;
+        const totalPrice = (count * 10).toFixed(2); // In screenshot $20.00 for 2 seats
+        if (checkoutTotalPrice) checkoutTotalPrice.textContent = `$ ${totalPrice}`;
+        if (checkoutSeatsLabel) checkoutSeatsLabel.textContent = `for ${count} ${count === 1 ? 'seat' : 'seats'}`;
+
+        if (checkoutPillsRow) {
+          const pillsHtml = heldList.map(h => `<span class="seat-pill-chip">≡ƒ¬æ ${h.seat_code}</span>`).join(' ');
+          checkoutPillsRow.innerHTML = `
+            ${pillsHtml}
+            <span class="rate-badge-chip" id="checkout-rate-badge">≡ƒÅ╖∩╕Å $${unitPrice.toFixed(2)} each</span>
+            <span class="hold-countdown-chip" id="checkout-hold-timer">ΓÅ▒∩╕Å 30s</span>
+          `;
+        }
+
+        if (btnProceedBooking) {
+          btnProceedBooking.disabled = false;
+          btnProceedBooking.textContent = 'Proceed to Booking ΓåÆ';
+        }
+        if (btnReleaseHold) {
+          btnReleaseHold.style.display = 'inline-flex';
+        }
+
+        if (!countdownInterval) {
+          countdownInterval = setInterval(updateCountdown, 500);
+        }
+        updateCountdown();
+      }
+    }
 
     function updateCountdown() {
-      if (!activeReservation || !activeReservation.expires_at_ms) return;
-      const now = Date.now();
-      const remainingMs = activeReservation.expires_at_ms - now;
-      const warnEl = document.getElementById('countdown-warning');
-      const panelBadge = document.getElementById('panel-status-badge');
+      const heldList = Object.values(activeReservations);
+      if (heldList.length === 0) return;
 
-      if (remainingMs <= 0) {
-        countdownTimer.textContent = '00:00 (EXPIRED)';
-        countdownTimer.classList.add('expiring');
-        clearInterval(countdownInterval);
-        countdownInterval = null;
-        if (btnConfirm) btnConfirm.disabled = true;
-        if (btnPayRazorpay) btnPayRazorpay.disabled = true;
-        if (panelBadge) {
-          panelBadge.style.background = '#7f1d1d';
-          panelBadge.style.color = '#fca5a5';
-          panelBadge.textContent = 'EXPIRED';
+      const now = Date.now();
+      let minRemainingMs = Infinity;
+
+      for (const h of heldList) {
+        if (h.expires_at_ms) {
+          const diff = h.expires_at_ms - now;
+          if (diff < minRemainingMs) minRemainingMs = diff;
         }
-        if (warnEl) {
-          warnEl.textContent = '⛔ Reservation hold has expired on the backend. Please select a new seat.';
-          warnEl.style.display = 'block';
+      }
+
+      const timerEl = document.getElementById('checkout-hold-timer');
+
+      if (minRemainingMs <= 0) {
+        if (timerEl) timerEl.textContent = 'ΓÅ▒∩╕Å Expired';
+        showAlert('warning', 'Hold Expired', 'Your temporary seat reservation has expired and returned to inventory.');
+        for (const k of Object.keys(activeReservations)) {
+          delete activeReservations[k];
         }
-        showAlert('warning', 'Hold Expired', `The hold on seat ${activeReservation.seat_id} has expired.`);
+        updateCheckoutBar();
+        applyCurrentStatesToRendered();
         fetchSeats();
         return;
       }
 
-      const totalSeconds = Math.ceil(remainingMs / 1000);
-      const mins = Math.floor(totalSeconds / 60);
-      const secs = totalSeconds % 60;
-      const formatted = String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
-
-      countdownTimer.textContent = formatted;
-      if (totalSeconds <= 30) {
-        countdownTimer.classList.add('expiring');
-        if (warnEl) {
-          warnEl.textContent = `⚠️ Warning: Reservation expiring in ${totalSeconds}s! Confirm your booking now.`;
-          warnEl.style.display = 'block';
-        }
-      } else {
-        countdownTimer.classList.remove('expiring');
-        if (warnEl) warnEl.style.display = 'none';
-      }
+      const secs = Math.ceil(minRemainingMs / 1000);
+      if (timerEl) timerEl.textContent = `ΓÅ▒∩╕Å ${secs}s`;
     }
 
-    function showActiveReservation(res) {
-      activeReservation = res;
-      reservationPanel.style.display = 'flex';
-      detailSeatId.textContent = res.seat_id;
-      detailRid.textContent = res.reservation_id;
-      detailUserId.textContent = currentUserId;
-      detailExpiry.textContent = new Date(res.expires_at_ms).toLocaleTimeString();
-      if (btnConfirm) btnConfirm.disabled = false;
-      if (btnPayRazorpay) btnPayRazorpay.disabled = false;
+    async function onSeatClicked(seatId, seatCode) {
+      // If already held by current user -> release it (toggle off)
+      if (activeReservations[seatId]) {
+        const h = activeReservations[seatId];
+        delete activeReservations[seatId];
+        updateCheckoutBar();
+        applyCurrentStatesToRendered();
+        updateLegendCounts();
 
-      const panelBadge = document.getElementById('panel-status-badge');
-      if (panelBadge) {
-        panelBadge.style.background = '#1e3a8a';
-        panelBadge.style.color = '#93c5fd';
-        panelBadge.textContent = 'HELD';
-      }
-
-      for (const sId of Object.keys(seatElements)) {
-        if (sId === res.seat_id) {
-          seatElements[sId].element.classList.add('is-selected');
-        } else {
-          seatElements[sId].element.classList.remove('is-selected');
-        }
-      }
-
-      if (countdownInterval) clearInterval(countdownInterval);
-      updateCountdown();
-      countdownInterval = setInterval(updateCountdown, 250);
-    }
-
-    function hideActiveReservation() {
-      activeReservation = null;
-      if (countdownInterval) {
-        clearInterval(countdownInterval);
-        countdownInterval = null;
-      }
-      const warnEl = document.getElementById('countdown-warning');
-      if (warnEl) warnEl.style.display = 'none';
-      if (btnConfirm) btnConfirm.disabled = false;
-      if (btnPayRazorpay) btnPayRazorpay.disabled = false;
-      if (paymentNotice) {
-        paymentNotice.style.display = 'none';
-        paymentNotice.textContent = '';
-      }
-      reservationPanel.style.display = 'none';
-      for (const sId of Object.keys(seatElements)) {
-        seatElements[sId].element.classList.remove('is-selected');
-      }
-    }
-
-    // Reservation Action: Click seat
-    async function onSeatClicked(seatId) {
-      const current = seatElements[seatId];
-      if (!current) return;
-
-      if (current.state === 'SOLD') {
-        showAlert('error', 'Seat Unavailable', `Seat ${seatId} has already been sold and cannot be reserved.`);
+        await apiFetch(`${API_BASE}/events/${currentEventId}/reservations/${h.reservation_id}`, {
+          method: 'DELETE'
+        });
+        showAlert('info', 'Seat Deselected', `Released seat ${seatCode}.`);
+        fetchSeats();
         return;
       }
 
-      if (current.state === 'HELD') {
-        if (activeReservation && activeReservation.seat_id === seatId) {
-          showAlert('info', 'Active Reservation', `Seat ${seatId} is currently reserved by you.`);
-          return;
-        }
+      const state = currentSeatStates[seatId] || 'FREE';
+      if (state === 'SOLD') {
+        showAlert('error', 'Seat Booked', `Seat ${seatCode} has already been booked.`);
+        return;
+      }
+      if (state === 'HELD') {
+        showAlert('warning', 'Seat Held', `Seat ${seatCode} is currently held by another guest.`);
+        return;
       }
 
+      // Reserve seat via POST /reserve
       const payload = {
         user_id: currentUserId,
         seat_id: seatId
       };
 
-      const result = await apiFetch(`${API_BASE}/events/${EVENT_ID}/reserve`, {
+      const result = await apiFetch(`${API_BASE}/events/${currentEventId}/reserve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -765,342 +1056,100 @@
 
       if (result.ok && result.status === 201) {
         const data = result.data;
-        showActiveReservation({
+        activeReservations[seatId] = {
           reservation_id: data.reservation_id,
           seat_id: data.seat_id,
+          seat_code: seatCode,
           expires_at_ms: data.expires_at_ms,
           ttl_ms: data.ttl_ms
-        });
-        showAlert('success', 'Seat Reserved', `Seat ${data.seat_id} successfully reserved! Confirm before the hold timer expires.`);
+        };
+
+        updateCheckoutBar();
+        applyCurrentStatesToRendered();
+        updateLegendCounts();
+        showAlert('success', 'Seat Selected', `Seat ${seatCode} selected! Click "Proceed to Booking" to confirm.`);
         fetchSeats();
       } else {
-        handleApiError(result, `Failed to reserve seat ${seatId}`);
+        handleApiError(result, `Failed to hold seat ${seatCode}`);
       }
     }
 
-    // Quick Pick: Any seat (SPOP)
-    const btnQuickPick = document.getElementById('btn-quick-pick');
-    if (btnQuickPick) {
-      btnQuickPick.addEventListener('click', async () => {
-        btnQuickPick.disabled = true;
-        const result = await apiFetch(`${API_BASE}/events/${EVENT_ID}/reserve`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user_id: currentUserId, seat_id: null })
-        });
-        btnQuickPick.disabled = false;
+    // Proceed to Booking (Confirm all active holds)
+    if (btnProceedBooking) {
+      btnProceedBooking.addEventListener('click', async () => {
+        const heldList = Object.values(activeReservations);
+        if (heldList.length === 0) return;
 
-        if (result.ok && result.status === 201) {
-          const data = result.data;
-          showActiveReservation({
-            reservation_id: data.reservation_id,
-            seat_id: data.seat_id,
-            expires_at_ms: data.expires_at_ms,
-            ttl_ms: data.ttl_ms
-          });
-          showAlert('success', 'Instant Allocation', `System allocated free seat ${data.seat_id} for you!`);
-          fetchSeats();
-        } else {
-          handleApiError(result, 'Quick Pick allocation failed');
-        }
-      });
-    }
+        btnProceedBooking.disabled = true;
+        btnProceedBooking.textContent = 'Processing Booking...';
 
-    // Confirm Action: POST /api/v1/events/{e}/reservations/{rid}/confirm
-    btnConfirm.addEventListener('click', async () => {
-      if (!activeReservation) return;
-      btnConfirm.disabled = true;
+        let confirmedCount = 0;
+        let lastRid = null;
+        let lastSeatCode = null;
 
-      const result = await apiFetch(`${API_BASE}/events/${EVENT_ID}/reservations/${activeReservation.reservation_id}/confirm`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: currentUserId })
-      });
-
-      btnConfirm.disabled = false;
-
-      if (result.ok && result.status === 200) {
-        const seatId = activeReservation.seat_id;
-        const rid = activeReservation.reservation_id;
-        const isIdempotent = result.data && result.data.idempotent;
-        recordUserBooking(seatId, rid);
-        const ticketUrl = `ticket.html${isMockMode ? '?mock=1&' : '?'}event_id=${EVENT_ID}&rid=${rid}`;
-        showAlert('success', 'Booking Confirmed!', `Seat ${seatId} confirmed successfully! <a href="${ticketUrl}" class="btn btn-primary btn-sm" style="margin-left: 0.5rem; text-decoration: none;">🎟️ View Digital Ticket</a>`);
-        hideActiveReservation();
-        fetchSeats();
-      } else {
-        handleApiError(result, `Confirmation failed for seat ${activeReservation.seat_id}`);
-      }
-    });
-
-    // Release Action: DELETE /api/v1/events/{e}/reservations/{rid}
-    btnRelease.addEventListener('click', async () => {
-      if (!activeReservation) return;
-      btnRelease.disabled = true;
-
-      const result = await apiFetch(`${API_BASE}/events/${EVENT_ID}/reservations/${activeReservation.reservation_id}`, {
-        method: 'DELETE'
-      });
-
-      btnRelease.disabled = false;
-
-      if (result.ok && result.status === 200) {
-        const seatId = activeReservation.seat_id;
-        showAlert('info', 'Hold Released', `Seat ${seatId} has been released and returned to FREE inventory.`);
-        hideActiveReservation();
-        fetchSeats();
-      } else {
-        handleApiError(result, `Release failed for seat ${activeReservation.seat_id}`);
-      }
-    });
-
-    // Razorpay Payment Action: Create Order & Launch Checkout Modal
-    if (btnPayRazorpay) {
-      btnPayRazorpay.addEventListener('click', async () => {
-        if (!activeReservation) return;
-        btnPayRazorpay.disabled = true;
-        const originalText = btnPayRazorpay.innerHTML;
-        btnPayRazorpay.innerHTML = '⏳ Initializing Checkout...';
-        if (paymentNotice) {
-          paymentNotice.style.display = 'none';
-          paymentNotice.textContent = '';
-        }
-
-        try {
-          // 1. Request Razorpay order from backend
-          const orderRes = await apiFetch(`${API_BASE}/payments/order`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              event_id: EVENT_ID,
-              reservation_id: activeReservation.reservation_id,
-              user_id: currentUserId
-            })
-          });
-
-          if (!orderRes.ok) {
-            btnPayRazorpay.disabled = false;
-            btnPayRazorpay.innerHTML = originalText;
-            if (orderRes.status === 410) {
-              showAlert('error', 'Hold Expired', 'Your temporary hold expired before order creation. Please select a seat again.');
-              hideActiveReservation();
-              fetchSeats();
-              return;
-            }
-            handleApiError(orderRes, 'Failed to create Razorpay payment order');
-            return;
-          }
-
-          const orderData = orderRes.data;
-
-          const isPlaceholderKey = !orderData.key_id || orderData.key_id.includes('placeholder');
-
-          const onPaymentSuccess = async function (rzpResp) {
-            btnPayRazorpay.innerHTML = '🔒 Verifying Payment...';
-            const verifyRes = await apiFetch(`${API_BASE}/payments/verify`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                event_id: EVENT_ID,
-                reservation_id: activeReservation.reservation_id,
-                user_id: currentUserId,
-                razorpay_order_id: rzpResp.razorpay_order_id,
-                razorpay_payment_id: rzpResp.razorpay_payment_id,
-                razorpay_signature: rzpResp.razorpay_signature
-              })
-            });
-
-            btnPayRazorpay.innerHTML = originalText;
-            btnPayRazorpay.disabled = false;
-
-            if (verifyRes.ok && verifyRes.status === 200) {
-              const seatId = activeReservation.seat_id;
-              const rid = activeReservation.reservation_id;
-              recordUserBooking(seatId, rid);
-              const ticketUrl = `ticket.html${isMockMode ? '?mock=1&' : '?'}event_id=${EVENT_ID}&rid=${rid}`;
-              showAlert('success', 'Payment Successful & Confirmed!', `Seat ${seatId} confirmed via Razorpay (${rzpResp.razorpay_payment_id})! <a href="${ticketUrl}" class="btn btn-primary btn-sm" style="margin-left: 0.5rem; text-decoration: none;">🎟️ View Digital Ticket</a>`);
-              hideActiveReservation();
-              fetchSeats();
-            } else if (verifyRes.status === 410) {
-              const refundId = verifyRes.data && verifyRes.data.refund_id ? ` (Refund ID: ${verifyRes.data.refund_id})` : '';
-              showAlert('error', 'Hold Expired', `Your hold expired before payment was verified. An automatic refund has been initiated${refundId}.`);
-              hideActiveReservation();
-              fetchSeats();
-            } else {
-              handleApiError(verifyRes, 'Payment verification failed');
-            }
-          };
-
-          const onPaymentFailure = function (failResp) {
-            btnPayRazorpay.innerHTML = originalText;
-            btnPayRazorpay.disabled = false;
-            const errDesc = failResp.error ? (failResp.error.description || failResp.error.code) : 'Payment failed';
-            if (paymentNotice) {
-              paymentNotice.textContent = `Payment failed: ${errDesc}`;
-              paymentNotice.style.display = 'block';
-            }
-            showAlert('error', 'Payment Failed', errDesc);
-          };
-
-          const onDismiss = function () {
-            btnPayRazorpay.innerHTML = originalText;
-            btnPayRazorpay.disabled = false;
-            if (paymentNotice) {
-              paymentNotice.textContent = 'Checkout was closed. Your seat hold remains active until the countdown expires.';
-              paymentNotice.style.display = 'block';
-            }
-          };
-
-          function openTestCheckoutModal() {
-            const modal = document.getElementById('modal-razorpay-checkout');
-            const seatEl = document.getElementById('rzp-modal-seat');
-            const orderEl = document.getElementById('rzp-modal-order-id');
-            const amountEl = document.getElementById('rzp-modal-amount');
-            const btnSuccess = document.getElementById('btn-rzp-test-success');
-            const btnFail = document.getElementById('btn-rzp-test-fail');
-            const btnClose = document.getElementById('btn-close-rzp-modal');
-
-            if (!modal) {
-              if (confirm(`FlashSeat Test Mode: Authorize payment of ₹${(orderData.amount / 100).toFixed(2)} for seat ${orderData.seat_id}?`)) {
-                onPaymentSuccess({
-                  razorpay_order_id: orderData.razorpay_order_id,
-                  razorpay_payment_id: 'pay_test_' + Math.random().toString(36).substring(2, 10),
-                  razorpay_signature: 'sig_test_' + Math.random().toString(36).substring(2, 12)
-                });
-              } else {
-                onDismiss();
-              }
-              return;
-            }
-
-            if (seatEl) seatEl.textContent = orderData.seat_id;
-            if (orderEl) orderEl.textContent = orderData.razorpay_order_id;
-            if (amountEl) amountEl.textContent = `₹${(orderData.amount / 100).toFixed(2)}`;
-
-            modal.style.display = 'flex';
-
-            const newSuccess = btnSuccess.cloneNode(true);
-            const newFail = btnFail.cloneNode(true);
-            const newClose = btnClose.cloneNode(true);
-            btnSuccess.parentNode.replaceChild(newSuccess, btnSuccess);
-            btnFail.parentNode.replaceChild(newFail, btnFail);
-            btnClose.parentNode.replaceChild(newClose, btnClose);
-
-            newSuccess.addEventListener('click', () => {
-              modal.style.display = 'none';
-              onPaymentSuccess({
-                razorpay_order_id: orderData.razorpay_order_id,
-                razorpay_payment_id: 'pay_test_' + Math.random().toString(36).substring(2, 10),
-                razorpay_signature: 'sig_test_' + Math.random().toString(36).substring(2, 12)
-              });
-            });
-
-            newFail.addEventListener('click', () => {
-              modal.style.display = 'none';
-              onPaymentFailure({ error: { description: 'Test card payment was declined by bank simulator.' } });
-            });
-
-            newClose.addEventListener('click', () => {
-              modal.style.display = 'none';
-              onDismiss();
-            });
-          }
-
-          // If placeholder key or Razorpay SDK is unavailable, open the interactive test modal directly
-          if (isPlaceholderKey || typeof Razorpay === 'undefined') {
-            openTestCheckoutModal();
-            return;
-          }
-
-          // Otherwise attempt live Razorpay Checkout SDK with fallback on error
-          try {
-            const options = {
-              key: orderData.key_id,
-              amount: orderData.amount,
-              currency: orderData.currency || 'INR',
-              name: 'FlashSeat Arena',
-              description: `Seat ${orderData.seat_id} (${EVENT_ID})`,
-              order_id: orderData.razorpay_order_id,
-              handler: onPaymentSuccess,
-              modal: { ondismiss: onDismiss },
-              prefill: {
-                name: currentUserId,
-                email: `${currentUserId}@example.com`,
-                contact: '9999999999'
-              },
-              theme: { color: '#6366f1' }
-            };
-
-            const rzpInstance = new Razorpay(options);
-            rzpInstance.on('payment.failed', onPaymentFailure);
-            rzpInstance.open();
-          } catch (sdkErr) {
-            console.warn('Razorpay SDK error, falling back to test checkout modal:', sdkErr);
-            openTestCheckoutModal();
-          }
-
-        } catch (err) {
-          btnPayRazorpay.disabled = false;
-          btnPayRazorpay.innerHTML = originalText;
-          showAlert('error', 'Checkout Error', err.message);
-        }
-      });
-    }
-
-    // Virtual Waiting Room Queue Handler (Feature 6)
-    async function handleWaitingRoomQueue() {
-      const modal = document.getElementById('modal-waiting-room');
-      const posEl = document.getElementById('wr-queue-position');
-      const waitEl = document.getElementById('wr-est-wait');
-      const btnLeave = document.getElementById('btn-leave-queue');
-
-      if (modal) modal.style.display = 'flex';
-
-      const joinRes = await apiFetch(`${API_BASE}/events/${EVENT_ID}/queue/join`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: currentUserId })
-      });
-
-      if (joinRes.data && joinRes.data.admitted) {
-        if (joinRes.data.admission_token) {
-          sessionStorage.setItem('flashseat_admission_token', joinRes.data.admission_token);
-        }
-        if (modal) modal.style.display = 'none';
-        showAlert('success', 'Admission Granted!', 'You have entered the reservation arena.');
-        return;
-      }
-
-      if (posEl) posEl.textContent = (joinRes.data && joinRes.data.position) ? `#${joinRes.data.position}` : 'In Line';
-      if (waitEl) waitEl.textContent = (joinRes.data && joinRes.data.estimated_wait_seconds) ? `Estimated wait: ~${joinRes.data.estimated_wait_seconds}s` : 'Estimated wait: calculating...';
-
-      const pollTimer = setInterval(async () => {
-        const sRes = await apiFetch(`${API_BASE}/events/${EVENT_ID}/queue/status?user_id=${currentUserId}`);
-        if (sRes.data && sRes.data.admitted) {
-          clearInterval(pollTimer);
-          if (sRes.data.admission_token) {
-            sessionStorage.setItem('flashseat_admission_token', sRes.data.admission_token);
-          }
-          if (modal) modal.style.display = 'none';
-          showAlert('success', 'Admitted to Arena!', 'Your turn has arrived! Select your seats now.');
-        } else if (sRes.data && sRes.data.position) {
-          if (posEl) posEl.textContent = `#${sRes.data.position}`;
-          if (waitEl) waitEl.textContent = `Estimated wait: ~${sRes.data.estimated_wait_seconds || 10}s`;
-        }
-      }, 2000);
-
-      if (btnLeave) {
-        btnLeave.onclick = async () => {
-          clearInterval(pollTimer);
-          await apiFetch(`${API_BASE}/events/${EVENT_ID}/queue/leave`, {
+        for (const h of heldList) {
+          const res = await apiFetch(`${API_BASE}/events/${currentEventId}/reservations/${h.reservation_id}/confirm`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ user_id: currentUserId })
           });
-          if (modal) modal.style.display = 'none';
-          showAlert('info', 'Queue Cancelled', 'You left the waiting room line.');
-        };
-      }
+
+          if (res.ok && res.status === 200) {
+            recordUserBooking(h.seat_id, h.reservation_id);
+            confirmedCount++;
+            lastRid = h.reservation_id;
+            lastSeatCode = h.seat_code;
+          }
+        }
+
+        btnProceedBooking.disabled = false;
+        btnProceedBooking.textContent = 'Proceed to Booking ΓåÆ';
+
+        if (confirmedCount > 0) {
+          const seatNames = heldList.map(h => h.seat_code).join(', ');
+          for (const k of Object.keys(activeReservations)) {
+            delete activeReservations[k];
+          }
+          updateCheckoutBar();
+          applyCurrentStatesToRendered();
+          fetchSeats();
+
+          const ticketUrl = `ticket.html${isMockMode ? '?mock=1&' : '?'}event_id=${currentEventId}&rid=${lastRid}&seat=${lastSeatCode}`;
+          showAlert('success', 'Booking Confirmed!', `Successfully confirmed ${confirmedCount} seat(s) [${seatNames}]! <a href="${ticketUrl}" class="btn btn-primary btn-sm" style="margin-left: 0.5rem; text-decoration: none;">≡ƒÄƒ∩╕Å View Digital Pass</a>`);
+
+          setTimeout(() => {
+            window.location.href = ticketUrl;
+          }, 1200);
+        } else {
+          showAlert('error', 'Booking Failed', 'Unable to confirm selected reservations. They may have expired.');
+          fetchSeats();
+        }
+      });
+    }
+
+    // Release button
+    if (btnReleaseHold) {
+      btnReleaseHold.addEventListener('click', async () => {
+        const heldList = Object.values(activeReservations);
+        if (heldList.length === 0) return;
+
+        btnReleaseHold.disabled = true;
+        for (const h of heldList) {
+          await apiFetch(`${API_BASE}/events/${currentEventId}/reservations/${h.reservation_id}`, {
+            method: 'DELETE'
+          });
+        }
+        btnReleaseHold.disabled = false;
+
+        for (const k of Object.keys(activeReservations)) {
+          delete activeReservations[k];
+        }
+        updateCheckoutBar();
+        applyCurrentStatesToRendered();
+        updateLegendCounts();
+        showAlert('info', 'Seats Released', 'All held seats have been released back to available inventory.');
+        fetchSeats();
+      });
     }
 
     // Format & display error messages from API
@@ -1134,90 +1183,112 @@
       }
     }
 
-    // Polling GET /api/v1/events/evt1/seats every 1s
+    // Virtual Waiting Room Queue Handler (Feature 6)
+    async function handleWaitingRoomQueue() {
+      const modal = document.getElementById('modal-waiting-room');
+      const posEl = document.getElementById('wr-queue-position');
+      const waitEl = document.getElementById('wr-est-wait');
+      const btnLeave = document.getElementById('btn-leave-queue');
+
+      if (modal) modal.style.display = 'flex';
+
+      const joinRes = await apiFetch(`${API_BASE}/events/${currentEventId}/queue/join`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: currentUserId })
+      });
+
+      if (joinRes.data && joinRes.data.admitted) {
+        if (joinRes.data.admission_token) {
+          sessionStorage.setItem('flashseat_admission_token', joinRes.data.admission_token);
+        }
+        if (modal) modal.style.display = 'none';
+        showAlert('success', 'Admission Granted!', 'You have entered the reservation arena.');
+        return;
+      }
+
+      if (posEl) posEl.textContent = (joinRes.data && joinRes.data.position) ? `#${joinRes.data.position}` : 'In Line';
+      if (waitEl) waitEl.textContent = (joinRes.data && joinRes.data.estimated_wait_seconds) ? `Estimated wait: ~${joinRes.data.estimated_wait_seconds}s` : 'Estimated wait: calculating...';
+
+      const pollTimer = setInterval(async () => {
+        const sRes = await apiFetch(`${API_BASE}/events/${currentEventId}/queue/status?user_id=${currentUserId}`);
+        if (sRes.data && sRes.data.admitted) {
+          clearInterval(pollTimer);
+          if (sRes.data.admission_token) {
+            sessionStorage.setItem('flashseat_admission_token', sRes.data.admission_token);
+          }
+          if (modal) modal.style.display = 'none';
+          showAlert('success', 'Admitted to Arena!', 'Your turn has arrived! Select your seats now.');
+        } else if (sRes.data && sRes.data.position) {
+          if (posEl) posEl.textContent = `#${sRes.data.position}`;
+          if (waitEl) waitEl.textContent = `Estimated wait: ~${sRes.data.estimated_wait_seconds || 10}s`;
+        }
+      }, 2000);
+
+      if (btnLeave) {
+        btnLeave.onclick = async () => {
+          clearInterval(pollTimer);
+          await apiFetch(`${API_BASE}/events/${currentEventId}/queue/leave`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: currentUserId })
+          });
+          if (modal) modal.style.display = 'none';
+          showAlert('info', 'Queue Cancelled', 'You left the waiting room line.');
+        };
+      }
+    }
+
+    function updateLegendCounts() {
+      const elFree = document.getElementById('count-free');
+      const elHeld = document.getElementById('count-held');
+      const elSold = document.getElementById('count-sold');
+
+      const tierCfg = TIERS[activeTier] || TIERS['1'];
+      let free = 0;
+      let held = 0;
+      let sold = 0;
+
+      const totalTierSeats = (activeTier === 'all') ? TOTAL_SEATS : (tierCfg.rows.length * tierCfg.seatsPerRow);
+
+      for (let i = 0; i < totalTierSeats; i++) {
+        const sIdx = tierCfg.startIdx + i;
+        if (sIdx > TOTAL_SEATS) break;
+        const seatId = 'S' + String(sIdx).padStart(3, '0');
+
+        if (activeReservations[seatId]) {
+          held++;
+        } else {
+          const st = currentSeatStates[seatId] || 'FREE';
+          if (st === 'FREE') free++;
+          else if (st === 'HELD') held++;
+          else if (st === 'SOLD') sold++;
+        }
+      }
+
+      if (elFree) elFree.textContent = free;
+      if (elHeld) elHeld.textContent = held;
+      if (elSold) elSold.textContent = sold;
+    }
+
+    // Polling GET /api/v1/events/{id}/seats every 1s
     let isPolling = false;
     async function fetchSeats() {
       if (isPolling) return;
       isPolling = true;
 
-      const result = await apiFetch(`${API_BASE}/events/${EVENT_ID}/seats`);
+      const result = await apiFetch(`${API_BASE}/events/${currentEventId}/seats`);
       isPolling = false;
 
       if (result.ok && result.data && result.data.seats) {
         const seatMap = result.data.seats;
-        let countFree = 0;
-        let countHeld = 0;
-        let countSold = 0;
-
         for (let i = 1; i <= TOTAL_SEATS; i++) {
-          const seatId = 'S' + String(i).padStart(3, '0');
-          const state = seatMap[seatId] || 'FREE';
-          const seatObj = seatElements[seatId];
-          if (!seatObj) continue;
-
-          if (state === 'FREE') countFree++;
-          else if (state === 'HELD') countHeld++;
-          else if (state === 'SOLD') countSold++;
-
-          if (seatObj.state !== state) {
-            seatObj.state = state;
-            seatObj.element.className = `seat-btn state-${state.toLowerCase()}${activeReservation && activeReservation.seat_id === seatId ? ' is-selected' : ''}`;
-            seatObj.tag.textContent = state;
-            seatObj.element.setAttribute('aria-label', `Seat ${seatId}: ${state}`);
-          }
+          const sId = 'S' + String(i).padStart(3, '0');
+          currentSeatStates[sId] = seatMap[sId] || 'FREE';
         }
 
-        const elFree = document.getElementById('count-free');
-        const elHeld = document.getElementById('count-held');
-        const elSold = document.getElementById('count-sold');
-        if (elFree) elFree.textContent = countFree;
-        if (elHeld) elHeld.textContent = countHeld;
-        if (elSold) elSold.textContent = countSold;
-      }
-    }
-
-    // Search and Filters
-    let currentFilter = 'ALL';
-    const filterButtons = document.querySelectorAll('.filter-btn');
-    filterButtons.forEach(btn => {
-      btn.addEventListener('click', () => {
-        filterButtons.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        currentFilter = btn.dataset.filter;
-        applyFiltersAndSearch();
-      });
-    });
-
-    const searchInput = document.getElementById('search-seat');
-    if (searchInput) {
-      searchInput.addEventListener('input', () => {
-        applyFiltersAndSearch();
-      });
-    }
-
-    function applyFiltersAndSearch() {
-      const query = (searchInput ? searchInput.value.trim().toUpperCase() : '');
-      for (const sId of Object.keys(seatElements)) {
-        const item = seatElements[sId];
-        let matchesFilter = true;
-        if (currentFilter === 'FREE' && item.state !== 'FREE') matchesFilter = false;
-        if (currentFilter === 'HELD' && item.state !== 'HELD') matchesFilter = false;
-        if (currentFilter === 'SOLD' && item.state !== 'SOLD') matchesFilter = false;
-
-        let matchesSearch = true;
-        if (query && !sId.includes(query)) matchesSearch = false;
-
-        if (matchesFilter && matchesSearch) {
-          item.element.classList.remove('filtered-out');
-          if (query && sId === query) {
-            item.element.classList.add('search-highlight');
-          } else {
-            item.element.classList.remove('search-highlight');
-          }
-        } else {
-          item.element.classList.add('filtered-out');
-          item.element.classList.remove('search-highlight');
-        }
+        applyCurrentStatesToRendered();
+        updateLegendCounts();
       }
     }
 
@@ -1229,7 +1300,8 @@
     const bookingsModalBody = document.getElementById('bookings-modal-body');
 
     if (btnMyBookings && bookingsModal) {
-      btnMyBookings.addEventListener('click', () => {
+      btnMyBookings.addEventListener('click', (e) => {
+        e.preventDefault();
         const bookings = getUserBookings();
         if (bookings.length === 0) {
           bookingsModalBody.innerHTML = '<div style="color: var(--text-muted); padding: 1.5rem; text-align: center;">No tickets booked yet. Reserve a seat from the grid!</div>';
@@ -1258,8 +1330,12 @@
       });
     }
 
-    // Initial fetch and 1s interval loop
+    // Initial render and polling
+    renderMovieHeader(currentEventId);
+    renderGrid();
+    updateCheckoutBar();
     fetchSeats();
+
     const pollInterval = setInterval(fetchSeats, 1000);
 
     window.addEventListener('beforeunload', () => {
@@ -1289,7 +1365,7 @@
     const consistencyTag = document.getElementById('consistency-tag');
 
     const canvas = document.getElementById('chart');
-    const ctx = canvas ? canvas.getContext('2d', { willReadFrequently: true }) : null;
+    const ctx = canvas ? canvas.getContext('2d') : null;
 
     const historyData = [];
     const ROLLING_WINDOW_MS = 60000;
@@ -1453,12 +1529,12 @@
         const isConsistent = backlog === 0 && sold === persisted;
         if (isConsistent) {
           consistencyBanner.className = 'consistency-banner consistent';
-          consistencyIcon.textContent = '✓';
+          consistencyIcon.textContent = 'Γ£ô';
           consistencyText.textContent = 'CONSISTENT';
           consistencyTag.textContent = 'Postgres in Sync';
         } else {
           consistencyBanner.className = 'consistency-banner inconsistent';
-          consistencyIcon.textContent = '⏳';
+          consistencyIcon.textContent = 'ΓÅ│';
           if (backlog > 0) {
             consistencyText.textContent = `STREAMING BACKLOG (${backlog} PENDING)`;
             consistencyTag.textContent = 'Writer Draining';
@@ -1596,13 +1672,13 @@
 
         if (evalResult.info) {
           badge.className = 'verify-badge info';
-          badge.textContent = 'ℹ️ INFO';
+          badge.textContent = 'Γä╣∩╕Å INFO';
         } else if (evalResult.pass) {
           badge.className = 'verify-badge pass';
-          badge.textContent = `✓ ${evalResult.badgeText || 'PASS'}`;
+          badge.textContent = `Γ£ô ${evalResult.badgeText || 'PASS'}`;
         } else {
           badge.className = 'verify-badge fail';
-          badge.textContent = `✗ ${evalResult.badgeText || 'FAIL'}`;
+          badge.textContent = `Γ£ù ${evalResult.badgeText || 'FAIL'}`;
         }
 
         tdStatus.appendChild(badge);
@@ -1664,34 +1740,79 @@
 
       events.forEach(ev => {
         const card = document.createElement('div');
-        card.className = 'event-card';
+        card.className = 'event-card bms-movie-card';
 
         const freeSeats = ev.free !== undefined ? ev.free : ev.seat_count;
         const totalSeats = ev.total !== undefined ? ev.total : ev.seat_count;
-        const priceFmt = `$${(ev.price || 45).toFixed(2)} ${ev.currency || 'USD'}`;
+        const movieMeta = MOVIE_CATALOG[ev.event_id] || {
+          name: ev.name,
+          poster: 'spiderman_poster.svg',
+          rating: 'UA',
+          format: '2D',
+          runtime: '120 min',
+          language: 'English',
+          theater: 'Cinema Audi',
+          venue: ev.venue || 'Grand Megaplex',
+          price: ev.price || 50.00,
+          shows: ['11:15 AM', '02:30 PM', '06:00 PM', '09:30 PM'],
+          description: ev.description || '',
+          tags: [ev.category || 'Movie']
+        };
+
+        const movieTitle = ev.name || movieMeta.name;
+        const priceVal = ev.price || movieMeta.price || 50;
+        const priceFmt = `$${priceVal.toFixed(2)}`;
+        const posterImg = ev.poster || movieMeta.poster;
+        const formatTag = ev.format || movieMeta.format;
+        const ratingTag = ev.rating || movieMeta.rating;
+        const runtimeTag = ev.runtime || movieMeta.runtime;
+        const languageTag = ev.language || movieMeta.language;
+        const venueText = ev.venue || movieMeta.venue;
+        const theaterText = movieMeta.theater ? `${movieMeta.theater} &bull; ` : '';
+        const showsList = ev.shows || movieMeta.shows || ['11:15 AM', '02:30 PM', '06:00 PM'];
+        const tagsList = ev.tags || movieMeta.tags || [ev.category || 'Movie'];
 
         card.innerHTML = `
-          <div>
-            <div class="event-card-header">
-              <h3 class="event-card-title">${ev.name}</h3>
-              <span class="event-category-chip">${ev.category || 'Live Event'}</span>
+          <div class="bms-card-top">
+            <div class="bms-card-poster">
+              <img src="${posterImg}" alt="${movieTitle} Poster" onerror="this.src='spiderman_poster.svg'">
+              <span class="bms-card-format-tag">${formatTag}</span>
             </div>
-            <div class="event-card-meta" style="margin-top: 0.75rem;">
-              <span>📍 ${ev.venue}</span>
-              <span>📅 ${new Date(ev.date || Date.now()).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
-              <p style="margin-top: 0.5rem; color: var(--text-secondary); font-size: 0.88rem; line-height: 1.4;">${ev.description || ''}</p>
+            <div class="bms-card-details">
+              <div class="bms-card-header">
+                <h3 class="bms-card-title">${movieTitle}</h3>
+                <span class="movie-rating-badge">${ratingTag}</span>
+              </div>
+              <div class="movie-pill-tags" style="margin: 0.25rem 0;">
+                ${tagsList.map(t => `<span class="movie-tag-pill">${t}</span>`).join('')}
+              </div>
+              <div class="bms-card-meta-row">
+                <span>≡ƒôì ${theaterText}${venueText}</span>
+                <span>ΓÅ▒∩╕Å ${runtimeTag} &bull; ≡ƒîÉ ${languageTag}</span>
+              </div>
+              <p class="bms-card-desc">${ev.description || movieMeta.description}</p>
             </div>
           </div>
-          <div>
-            <div style="margin-bottom: 0.75rem;">
-              <span class="event-avail-badge">🟢 ${freeSeats} / ${totalSeats} Seats Available</span>
+
+          <div class="bms-card-showtimes-row">
+            <span class="bms-showtime-label">Showtimes:</span>
+            <div class="bms-showtime-pills">
+              ${showsList.map(s => `
+                <a href="index.html${suffix ? suffix + '&' : '?'}event=${ev.event_id}&time=${encodeURIComponent(s)}" class="bms-showtime-pill">
+                  ${s}
+                </a>
+              `).join('')}
             </div>
-            <div class="event-card-footer">
+          </div>
+
+          <div class="bms-card-footer">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <span class="event-avail-badge">≡ƒƒó ${freeSeats} / ${totalSeats} Seats</span>
               <span class="event-price-tag">${priceFmt}</span>
-              <a href="index.html${suffix ? suffix + '&' : '?'}event=${ev.event_id}" class="btn btn-primary btn-sm">
-                🎟️ Select Seats
-              </a>
             </div>
+            <a href="index.html${suffix ? suffix + '&' : '?'}event=${ev.event_id}" class="btn btn-primary btn-sm">
+              ≡ƒÄƒ∩╕Å Select Seats &rarr;
+            </a>
           </div>
         `;
         grid.appendChild(card);
@@ -1776,6 +1897,16 @@
     if (ridEl) ridEl.textContent = tkt.reservation_id;
     if (codeEl) codeEl.textContent = tkt.verification_code || ('TKT-' + rid.substring(0, 10).toUpperCase());
 
+    const movie = MOVIE_CATALOG[eId];
+    if (movie) {
+      const evNameEl = document.getElementById('tkt-event-name');
+      const evVenueEl = document.getElementById('tkt-venue');
+      const evDateEl = document.getElementById('tkt-date');
+      if (evNameEl) evNameEl.textContent = movie.name;
+      if (evVenueEl) evVenueEl.innerHTML = `${movie.theater} &bull; ${movie.venue}`;
+      if (evDateEl) evDateEl.innerHTML = `${movie.date} &bull; ${movie.startTime}`;
+    }
+
     const authUser = getStoredAuthUser();
     if (holderEl) holderEl.textContent = authUser ? authUser.username : ('Guest (' + currentUserId.substring(0, 6) + ')');
 
@@ -1791,7 +1922,7 @@
         btnVerifyServer.textContent = 'Verifying...';
         const vRes = await apiFetch(`${API_BASE}/events/${eId}/tickets/${rid}/verify`);
         btnVerifyServer.disabled = false;
-        btnVerifyServer.textContent = '🛡️ Check Server Verification';
+        btnVerifyServer.textContent = '≡ƒ¢í∩╕Å Check Server Verification';
 
         if (serverVerifyBox) {
           serverVerifyBox.style.display = 'block';

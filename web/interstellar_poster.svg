@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 450" width="100%" height="100%">
+  <defs>
+    <!-- Deep Space Black/Blue -->
+    <radialGradient id="spaceCosmos" cx="50%" cy="40%" r="75%">
+      <stop offset="0%" stop-color="#1e1b4b"/>
+      <stop offset="40%" stop-color="#0f172a"/>
+      <stop offset="85%" stop-color="#020617"/>
+      <stop offset="100%" stop-color="#000000"/>
+    </radialGradient>
+
+    <!-- Gargantua Accretion Disk Glow -->
+    <radialGradient id="gargantuaRing" cx="50%" cy="45%" r="55%">
+      <stop offset="0%" stop-color="#fef08a" stop-opacity="0.95"/>
+      <stop offset="35%" stop-color="#f59e0b" stop-opacity="0.7"/>
+      <stop offset="65%" stop-color="#ea580c" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#431407" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Space Background -->
+  <rect width="300" height="450" fill="url(#spaceCosmos)" rx="14"/>
+
+  <!-- Stars -->
+  <g fill="#ffffff" opacity="0.7">
+    <circle cx="40" cy="50" r="1"/>
+    <circle cx="260" cy="70" r="1.2"/>
+    <circle cx="80" cy="280" r="0.8"/>
+    <circle cx="230" cy="310" r="1"/>
+    <circle cx="50" cy="190" r="1.5"/>
+    <circle cx="270" cy="220" r="0.9"/>
+  </g>
+
+  <!-- Gargantua Black Hole Glow Ring -->
+  <ellipse cx="150" cy="180" rx="125" ry="50" fill="url(#gargantuaRing)"/>
+  
+  <!-- Gravitational Lensing Upper Arc -->
+  <path d="M 35 180 Q 150 70 265 180 Q 150 115 35 180 Z" fill="#fef08a" opacity="0.8"/>
+  <!-- Gravitational Lensing Lower Arc -->
+  <path d="M 35 180 Q 150 250 265 180 Q 150 220 35 180 Z" fill="#ea580c" opacity="0.6"/>
+
+  <!-- Event Horizon Black Void -->
+  <circle cx="150" cy="180" r="42" fill="#000000" stroke="#fef08a" stroke-width="1.5"/>
+
+  <!-- Endurance Spacecraft Ring Silhouette -->
+  <g transform="translate(150, 180) rotate(-25)">
+    <circle cx="0" cy="0" r="18" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-dasharray="4,2"/>
+    <circle cx="0" cy="-18" r="2.2" fill="#38bdf8"/>
+    <circle cx="18" cy="0" r="2.2" fill="#38bdf8"/>
+    <circle cx="0" cy="18" r="2.2" fill="#38bdf8"/>
+    <circle cx="-18" cy="0" r="2.2" fill="#38bdf8"/>
+  </g>
+
+  <!-- Top Director Credits -->
+  <text x="150" y="32" font-family="'Cinzel', 'Georgia', serif" font-size="8" font-weight="800" fill="#93c5fd" text-anchor="middle" letter-spacing="4">
+    A FILM BY CHRISTOPHER NOLAN
+  </text>
+
+  <!-- Bottom Dark Vignette -->
+  <rect x="0" y="290" width="300" height="160" fill="linear-gradient(180deg, transparent 0%, #000000 65%)"/>
+
+  <!-- INTERSTELLAR Title -->
+  <text x="150" y="365" font-family="'Cinzel', 'Times New Roman', serif" font-size="28" font-weight="900" fill="#f8fafc" text-anchor="middle" letter-spacing="5" filter="drop-shadow(0 2px 6px rgba(0,0,0,0.95))">
+    INTERSTELLAR
+  </text>
+
+  <text x="150" y="405" font-family="system-ui, sans-serif" font-size="8.5" font-weight="800" fill="#38bdf8" text-anchor="middle" letter-spacing="3">
+    MANKIND'S NEXT STEP WILL BE ITS GREATEST
+  </text>
+  <text x="150" y="425" font-family="system-ui, sans-serif" font-size="7.5" font-weight="600" fill="#64748b" text-anchor="middle" letter-spacing="2">
+    10TH ANNIVERSARY &bull; IMAX 70MM
+  </text>
+</svg>
