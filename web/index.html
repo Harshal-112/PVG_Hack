@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -266,6 +266,93 @@
       </div>
     </div>
   </div>
+
+  <!-- Real Ecosystem Checkout & Payment Modal -->
+  <div id="modal-checkout-payment" class="modal-overlay" style="display: none;">
+    <div class="modal-content" style="max-width: 540px; padding: 1.75rem;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 0.6rem;">
+          <span style="font-size: 1.4rem;">🎟️</span>
+          <div>
+            <h2 class="modal-title" style="margin: 0; font-size: 1.25rem;">CineReserve Checkout</h2>
+            <div style="font-size: 0.72rem; color: #94a3b8; font-weight: 700; letter-spacing: 0.04em;">OFFICIAL BOOKING & PAYMENT GATEWAY</div>
+          </div>
+        </div>
+        <button type="button" class="alert-close" id="btn-close-checkout-modal">&times;</button>
+      </div>
+
+      <!-- Live Hold Timer Alert -->
+      <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 8px; padding: 0.65rem 1rem; margin-top: 1rem;">
+        <span style="font-size: 0.85rem; color: #fbbf24; font-weight: 700;">⏱️ Seat(s) Held: Complete payment before hold expires!</span>
+        <span id="checkout-modal-timer" style="font-family: monospace; font-size: 0.95rem; font-weight: 800; color: #f59e0b;">02:00</span>
+      </div>
+
+      <!-- Movie & Showtime Snapshot -->
+      <div style="display: flex; gap: 1rem; background: #11141d; border: 1px solid #1e2433; border-radius: 12px; padding: 1rem; margin-top: 1rem; align-items: center;">
+        <img id="checkout-movie-poster" src="spiderman_poster.svg" alt="Movie Poster" style="width: 65px; height: 92px; border-radius: 8px; object-fit: cover; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.1);">
+        <div style="flex: 1; min-width: 0;">
+          <h3 id="checkout-movie-title" style="margin: 0 0 0.3rem 0; font-size: 1.15rem; color: #fff; font-weight: 800;">Spider-Man: No Way Home</h3>
+          <div id="checkout-movie-meta" style="font-size: 0.82rem; color: #94a3b8;">Cinema 3 &bull; Dolby Atmos &bull; 11:15 AM</div>
+          <div style="margin-top: 0.5rem; display: flex; flex-wrap: wrap; gap: 0.35rem;" id="checkout-selected-seats-chips">
+            <!-- Injected chips -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Pricing Summary Breakdown -->
+      <div style="background: #11141d; border: 1px solid #1e2433; border-radius: 12px; padding: 1rem; margin-top: 1rem;">
+        <div style="font-size: 0.8rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.65rem;">Price Summary</div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.88rem; color: #cbd5e1; margin-bottom: 0.4rem;">
+          <span id="checkout-seats-desc">Tickets</span>
+          <span id="checkout-tickets-subtotal">$50.00</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.88rem; color: #cbd5e1; margin-bottom: 0.4rem;">
+          <span>Convenience Fee & GST (10%)</span>
+          <span id="checkout-fee">$5.00</span>
+        </div>
+        <div style="height: 1px; background: rgba(255, 255, 255, 0.08); margin: 0.65rem 0;"></div>
+        <div style="display: flex; justify-content: space-between; align-items: baseline;">
+          <span style="font-weight: 800; color: #fff; font-size: 1.05rem;">Total Amount Payable</span>
+          <span id="checkout-total-payable" style="font-size: 1.35rem; font-weight: 900; color: #10b981;">$55.00</span>
+        </div>
+      </div>
+
+      <!-- Payment Method Selection -->
+      <div style="margin-top: 1.25rem;">
+        <div style="font-size: 0.82rem; font-weight: 800; color: #cbd5e1; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.65rem;">Choose Payment Method</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+          <label id="payment-mode-sandbox-label" style="display: flex; align-items: center; gap: 0.6rem; background: rgba(16, 185, 129, 0.08); border: 1.5px solid #10b981; border-radius: 10px; padding: 0.75rem 1rem; cursor: pointer; transition: all 0.15s ease;">
+            <input type="radio" name="payment_mode" value="sandbox" checked style="accent-color: #10b981;">
+            <div>
+              <div style="font-size: 0.88rem; font-weight: 800; color: #fff;">⚡ Instant 1-Click Pay</div>
+              <div style="font-size: 0.72rem; color: #34d399;">UPI / Card / NetBanking</div>
+            </div>
+          </label>
+          <label id="payment-mode-razorpay-label" style="display: flex; align-items: center; gap: 0.6rem; background: #11141d; border: 1.5px solid #1e2433; border-radius: 10px; padding: 0.75rem 1rem; cursor: pointer; transition: all 0.15s ease;">
+            <input type="radio" name="payment_mode" value="razorpay" style="accent-color: #f59e0b;">
+            <div>
+              <div style="font-size: 0.88rem; font-weight: 800; color: #fff;">💳 Razorpay Gateway</div>
+              <div style="font-size: 0.72rem; color: #94a3b8;">Official Checkout SDK</div>
+            </div>
+          </label>
+        </div>
+        <div id="checkout-razorpay-note" style="display: none; font-size: 0.75rem; color: #f59e0b; margin-top: 0.5rem; background: rgba(245, 158, 11, 0.08); padding: 0.4rem 0.6rem; border-radius: 6px;">
+          Note: If placeholder test keys are configured, Razorpay SDK may prompt in test simulation mode.
+        </div>
+      </div>
+
+      <!-- Payment Action Buttons -->
+      <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+        <button type="button" class="btn btn-secondary" id="btn-cancel-checkout" style="flex: 1; padding: 0.75rem; font-weight: 700;">Cancel</button>
+        <button type="button" class="btn btn-primary" id="btn-confirm-payment" style="flex: 2; padding: 0.85rem; font-size: 1rem; font-weight: 800; background: linear-gradient(135deg, #f97316, #ea580c); border: none; border-radius: 10px; color: #fff; cursor: pointer;">
+          Pay & Confirm Booking &rarr;
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Razorpay Official Checkout SDK -->
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
   <!-- Conditional Mock Loader (?mock=1) -->
   <script>

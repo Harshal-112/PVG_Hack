@@ -1,4 +1,4 @@
-﻿// FlashSeat Web UI - Seat Grid, Live Dashboard & Security Hub
+// FlashSeat Web UI - Seat Grid, Live Dashboard & Security Hub
 // Owned by [P5]. Built with vanilla JavaScript, zero dependencies.
 
 (function () {
@@ -8,6 +8,7 @@
   const isMockMode = urlParams.get('mock') === '1';
   const EVENT_ID = urlParams.get('event') || urlParams.get('event_id') || 'evt1';
   const API_BASE = window.__API_BASE__ || localStorage.getItem('flashseat_api_base') || '/api/v1';
+  const TOTAL_SEATS = 200;
 
   // BookMyShow Movie & Event Catalog
   const MOVIE_CATALOG = {
@@ -1074,36 +1075,232 @@
       }
     }
 
-    // Proceed to Booking (Confirm all active holds)
-    if (btnProceedBooking) {
-      btnProceedBooking.addEventListener('click', async () => {
-        const heldList = Object.values(activeReservations);
-        if (heldList.length === 0) return;
+    // =========================================================================
+    // TASK B: Real Ecosystem Checkout & Payment Flow
+    // =========================================================================
+    const checkoutModal = document.getElementById('modal-checkout-payment');
+    const btnCloseCheckout = document.getElementById('btn-close-checkout-modal');
+    const btnCancelCheckout = document.getElementById('btn-cancel-checkout');
+    const btnConfirmPayment = document.getElementById('btn-confirm-payment');
+    const paymentModeSandboxLabel = document.getElementById('payment-mode-sandbox-label');
+    const paymentModeRazorpayLabel = document.getElementById('payment-mode-razorpay-label');
+    const checkoutRazorpayNote = document.getElementById('checkout-razorpay-note');
+    const checkoutModalTimer = document.getElementById('checkout-modal-timer');
 
-        btnProceedBooking.disabled = true;
-        btnProceedBooking.textContent = 'Processing Booking...';
+    function closeCheckoutModal() {
+      if (checkoutModal) checkoutModal.style.display = 'none';
+    }
+
+    if (btnCloseCheckout) btnCloseCheckout.addEventListener('click', closeCheckoutModal);
+    if (btnCancelCheckout) btnCancelCheckout.addEventListener('click', closeCheckoutModal);
+
+    // Toggle Payment Method radios visual styling
+    const paymentRadioGroup = document.querySelectorAll('input[name="payment_mode"]');
+    paymentRadioGroup.forEach(radio => {
+      radio.addEventListener('change', () => {
+        if (radio.value === 'sandbox') {
+          if (paymentModeSandboxLabel) {
+            paymentModeSandboxLabel.style.borderColor = '#10b981';
+            paymentModeSandboxLabel.style.background = 'rgba(16, 185, 129, 0.08)';
+          }
+          if (paymentModeRazorpayLabel) {
+            paymentModeRazorpayLabel.style.borderColor = '#1e2433';
+            paymentModeRazorpayLabel.style.background = '#11141d';
+          }
+          if (checkoutRazorpayNote) checkoutRazorpayNote.style.display = 'none';
+        } else {
+          if (paymentModeRazorpayLabel) {
+            paymentModeRazorpayLabel.style.borderColor = '#f59e0b';
+            paymentModeRazorpayLabel.style.background = 'rgba(245, 158, 11, 0.08)';
+          }
+          if (paymentModeSandboxLabel) {
+            paymentModeSandboxLabel.style.borderColor = '#1e2433';
+            paymentModeSandboxLabel.style.background = '#11141d';
+          }
+          if (checkoutRazorpayNote) checkoutRazorpayNote.style.display = 'block';
+        }
+      });
+    });
+
+    if (btnProceedBooking) {
+      btnProceedBooking.addEventListener('click', () => {
+        const heldList = Object.values(activeReservations);
+        if (heldList.length === 0) {
+          showAlert('info', 'No Seats Selected', 'Please select at least one available seat to book.');
+          return;
+        }
+
+        const movie = MOVIE_CATALOG[currentEventId] || {
+          name: 'Cinema Screening',
+          poster: 'spiderman_poster.svg',
+          price: 50.00,
+          theater: 'Cinema Audi',
+          venue: 'Grand Megaplex',
+          date: 'January 31, 2026'
+        };
+
+        // Populate Checkout Modal fields
+        const posterEl = document.getElementById('checkout-movie-poster');
+        const titleEl = document.getElementById('checkout-movie-title');
+        const metaEl = document.getElementById('checkout-movie-meta');
+        const chipsEl = document.getElementById('checkout-selected-seats-chips');
+        const seatsDescEl = document.getElementById('checkout-seats-desc');
+        const subtotalEl = document.getElementById('checkout-tickets-subtotal');
+        const feeEl = document.getElementById('checkout-fee');
+        const totalEl = document.getElementById('checkout-total-payable');
+
+        if (posterEl) posterEl.src = movie.poster;
+        if (titleEl) titleEl.textContent = movie.name;
+        if (metaEl) metaEl.innerHTML = `${movie.theater} &bull; ${currentShowtime} &bull; ${movie.date}`;
+
+        if (chipsEl) {
+          chipsEl.innerHTML = heldList.map(h => `<span class="seat-pill-chip">💺 ${h.seat_code}</span>`).join('');
+        }
+
+        const seatCount = heldList.length;
+        const pricePerSeat = movie.price || 50.00;
+        const subtotal = seatCount * pricePerSeat;
+        const fee = +(subtotal * 0.10).toFixed(2);
+        const totalPayable = +(subtotal + fee).toFixed(2);
+
+        if (seatsDescEl) seatsDescEl.textContent = `Tickets (${seatCount} Seat${seatCount > 1 ? 's' : ''} × $${pricePerSeat.toFixed(2)})`;
+        if (subtotalEl) subtotalEl.textContent = `$${subtotal.toFixed(2)}`;
+        if (feeEl) feeEl.textContent = `$${fee.toFixed(2)}`;
+        if (totalEl) totalEl.textContent = `$${totalPayable.toFixed(2)}`;
+
+        // Sync hold countdown
+        if (checkoutModalTimer) {
+          const firstHold = heldList[0];
+          const remainingSec = Math.max(0, Math.floor(((firstHold.expires_at_ms || (Date.now() + 120000)) - Date.now()) / 1000));
+          const mins = Math.floor(remainingSec / 60);
+          const secs = remainingSec % 60;
+          checkoutModalTimer.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+
+        if (checkoutModal) checkoutModal.style.display = 'flex';
+      });
+    }
+
+    // Confirm Payment & Complete Ticket Generation
+    if (btnConfirmPayment) {
+      btnConfirmPayment.addEventListener('click', async () => {
+        const heldList = Object.values(activeReservations);
+        if (heldList.length === 0) {
+          closeCheckoutModal();
+          return;
+        }
+
+        const selectedRadio = document.querySelector('input[name="payment_mode"]:checked');
+        const mode = selectedRadio ? selectedRadio.value : 'sandbox';
+
+        btnConfirmPayment.disabled = true;
+        btnConfirmPayment.textContent = 'Processing Payment Gateway...';
 
         let confirmedCount = 0;
         let lastRid = null;
         let lastSeatCode = null;
 
         for (const h of heldList) {
-          const res = await apiFetch(`${API_BASE}/events/${currentEventId}/reservations/${h.reservation_id}/confirm`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: currentUserId })
-          });
+          try {
+            // 1. Create order on backend
+            const orderRes = await apiFetch(`${API_BASE}/payments/order`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                event_id: currentEventId,
+                reservation_id: h.reservation_id,
+                user_id: currentUserId
+              })
+            });
 
-          if (res.ok && res.status === 200) {
-            recordUserBooking(h.seat_id, h.reservation_id);
-            confirmedCount++;
-            lastRid = h.reservation_id;
-            lastSeatCode = h.seat_code;
+            if (orderRes.ok && orderRes.data) {
+              const orderData = orderRes.data;
+              const isPlaceholderKey = !orderData.key_id || orderData.key_id.startsWith('rzp_test_placeholder');
+
+              // If user selected official Razorpay AND key is valid (not placeholder)
+              if (mode === 'razorpay' && !isPlaceholderKey && typeof Razorpay !== 'undefined') {
+                await new Promise((resolve) => {
+                  const rzp = new Razorpay({
+                    key: orderData.key_id,
+                    amount: orderData.amount,
+                    currency: orderData.currency || 'INR',
+                    name: 'FlashSeat CineReserve',
+                    description: `Seat ${h.seat_code} - ${MOVIE_CATALOG[currentEventId]?.name || currentEventId}`,
+                    order_id: orderData.razorpay_order_id,
+                    handler: async function (rzpCallback) {
+                      const vRes = await apiFetch(`${API_BASE}/payments/verify`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          event_id: currentEventId,
+                          reservation_id: h.reservation_id,
+                          user_id: currentUserId,
+                          razorpay_order_id: rzpCallback.razorpay_order_id,
+                          razorpay_payment_id: rzpCallback.razorpay_payment_id,
+                          razorpay_signature: rzpCallback.razorpay_signature
+                        })
+                      });
+                      if (vRes.ok && vRes.status === 200) {
+                        recordUserBooking(h.seat_id, h.reservation_id);
+                        confirmedCount++;
+                        lastRid = h.reservation_id;
+                        lastSeatCode = h.seat_code;
+                      }
+                      resolve();
+                    },
+                    modal: {
+                      ondismiss: () => resolve()
+                    }
+                  });
+                  rzp.open();
+                });
+              } else {
+                // Instant 1-Click Sandbox Pay (Works 100% reliably in local test mode)
+                const mockPayId = 'pay_sandbox_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6);
+                const mockSig = 'sig_test_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6);
+
+                const vRes = await apiFetch(`${API_BASE}/payments/verify`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    event_id: currentEventId,
+                    reservation_id: h.reservation_id,
+                    user_id: currentUserId,
+                    razorpay_order_id: orderData.razorpay_order_id,
+                    razorpay_payment_id: mockPayId,
+                    razorpay_signature: mockSig
+                  })
+                });
+
+                if (vRes.ok && vRes.status === 200) {
+                  recordUserBooking(h.seat_id, h.reservation_id);
+                  confirmedCount++;
+                  lastRid = h.reservation_id;
+                  lastSeatCode = h.seat_code;
+                }
+              }
+            } else {
+              // Direct reservation confirm fallback
+              const cRes = await apiFetch(`${API_BASE}/events/${currentEventId}/reservations/${h.reservation_id}/confirm`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: currentUserId })
+              });
+              if (cRes.ok && cRes.status === 200) {
+                recordUserBooking(h.seat_id, h.reservation_id);
+                confirmedCount++;
+                lastRid = h.reservation_id;
+                lastSeatCode = h.seat_code;
+              }
+            }
+          } catch (err) {
+            console.error('Payment processing error:', err);
           }
         }
 
-        btnProceedBooking.disabled = false;
-        btnProceedBooking.textContent = 'Proceed to Booking ΓåÆ';
+        btnConfirmPayment.disabled = false;
+        btnConfirmPayment.textContent = 'Pay & Confirm Booking →';
+        closeCheckoutModal();
 
         if (confirmedCount > 0) {
           const seatNames = heldList.map(h => h.seat_code).join(', ');
@@ -1113,15 +1310,16 @@
           updateCheckoutBar();
           applyCurrentStatesToRendered();
           fetchSeats();
+          updateUserTicketsBadge();
 
           const ticketUrl = `ticket.html${isMockMode ? '?mock=1&' : '?'}event_id=${currentEventId}&rid=${lastRid}&seat=${lastSeatCode}`;
-          showAlert('success', 'Booking Confirmed!', `Successfully confirmed ${confirmedCount} seat(s) [${seatNames}]! <a href="${ticketUrl}" class="btn btn-primary btn-sm" style="margin-left: 0.5rem; text-decoration: none;">≡ƒÄƒ∩╕Å View Digital Pass</a>`);
+          showAlert('success', '🎉 Payment Verified & Booking Confirmed!', `Successfully booked ${confirmedCount} ticket(s) [${seatNames}]. Generating digital pass...`);
 
           setTimeout(() => {
             window.location.href = ticketUrl;
           }, 1200);
         } else {
-          showAlert('error', 'Booking Failed', 'Unable to confirm selected reservations. They may have expired.');
+          showAlert('error', 'Payment / Booking Incomplete', 'Could not verify payment or confirmation with backend. Holds may have expired.');
           fetchSeats();
         }
       });
