@@ -2848,4 +2848,28 @@ footer.app-footer {
   border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
+/* Indian Razorpay & UPI Payment Gateway Extensions */
+@keyframes pulse-green {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 12px rgba(16, 185, 129, 0);
+  }
+}
+
+.gateway-tab-btn:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.04) !important;
+  color: #fff !important;
+}
+
+.upi-chip-btn:hover {
+  background: #1e293b !important;
+  color: #38bdf8 !important;
+  border-color: #38bdf8 !important;
+}
+
+
 

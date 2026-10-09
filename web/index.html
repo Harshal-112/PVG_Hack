@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CineReserve ΓÇö Select Seats | FlashSeat</title>
+  <title>CineReserve — Select Seats | FlashSeat</title>
   <link rel="stylesheet" href="style.css?v=2.5">
 </head>
 <body data-page="grid" class="cinereserve-body">
@@ -84,7 +84,7 @@
         <!-- BookMyShow Quick Movie Switcher & Showtime Bar -->
         <div class="bms-movie-switch-bar">
           <div class="bms-switch-left">
-            <label for="event-select-dropdown" class="bms-switch-label">≡ƒÄ¼ Now Showing:</label>
+            <label for="event-select-dropdown" class="bms-switch-label">🎬 Now Showing:</label>
             <select id="event-select-dropdown" class="bms-event-select" aria-label="Select Movie Event">
               <option value="evt1">Spider-Man: No Way Home (IMAX 2D)</option>
               <option value="evt2">Dune: Part Two (IMAX 70mm)</option>
@@ -115,34 +115,34 @@
               <span class="movie-tag-pill">Action</span>
               <span class="movie-tag-pill">Sci-Fi</span>
               <span class="movie-tag-pill">Adventure</span>
-              <span class="movie-meta-item">ΓÅ▒∩╕Å 148 min</span>
+              <span class="movie-meta-item">⏱️ 148 min</span>
               <span class="movie-rating-badge">UA 16+</span>
             </div>
             <div class="movie-card-divider"></div>
             <div class="movie-meta-grid">
               <div class="movie-meta-box">
-                <div class="movie-meta-icon date">≡ƒôà</div>
+                <div class="movie-meta-icon date">📅</div>
                 <div>
                   <div class="movie-meta-lbl">DATE</div>
                   <div class="movie-meta-val" id="movie-date-display">January 31, 2026</div>
                 </div>
               </div>
               <div class="movie-meta-box">
-                <div class="movie-meta-icon time">≡ƒòÆ</div>
+                <div class="movie-meta-icon time">🕒</div>
                 <div>
                   <div class="movie-meta-lbl">START TIME</div>
                   <div class="movie-meta-val" id="movie-start-display">11:15 AM</div>
                 </div>
               </div>
               <div class="movie-meta-box">
-                <div class="movie-meta-icon time">≡ƒòÆ</div>
+                <div class="movie-meta-icon time">🕒</div>
                 <div>
                   <div class="movie-meta-lbl">END TIME</div>
                   <div class="movie-meta-val" id="movie-end-display">1:45 PM</div>
                 </div>
               </div>
               <div class="movie-meta-box">
-                <div class="movie-meta-icon theater">≡ƒÅ¢∩╕Å</div>
+                <div class="movie-meta-icon theater">🏛️</div>
                 <div>
                   <div class="movie-meta-lbl">THEATER</div>
                   <div class="movie-meta-val" id="movie-venue-display">Cinema 3 &bull; Dolby Atmos</div>
@@ -157,16 +157,16 @@
           <div class="seats-card-header-row">
             <h2 class="cinema-card-header">Select Your Seats</h2>
             <div class="tier-tabs-bar" id="tier-tabs-bar">
-              <button type="button" class="tier-tab-btn active" data-tier="1">RECLINER: Rows AΓÇôE ($50)</button>
-              <button type="button" class="tier-tab-btn" data-tier="2">PRIME: Rows FΓÇôJ ($35)</button>
-              <button type="button" class="tier-tab-btn" data-tier="3">CLASSIC: Rows KΓÇôO ($20)</button>
+              <button type="button" class="tier-tab-btn active" data-tier="1">RECLINER: Rows A–E (₹450)</button>
+              <button type="button" class="tier-tab-btn" data-tier="2">PRIME: Rows F–J (₹300)</button>
+              <button type="button" class="tier-tab-btn" data-tier="3">CLASSIC: Rows K–O (₹180)</button>
               <button type="button" class="tier-tab-btn" data-tier="all">Full Arena (200 Seats)</button>
             </div>
           </div>
 
           <!-- BookMyShow Screen Direction Indicator -->
           <div class="bms-screen-cue">
-            <span>All eyes this way please! ≡ƒæü∩╕Å</span>
+            <span>All eyes this way please! 👁️</span>
           </div>
 
           <!-- SCREEN Arc Indicator with glowing top curve -->
@@ -205,20 +205,20 @@
       <div id="cinema-checkout-bar" class="cinema-checkout-bar">
         <div class="checkout-left-summary">
           <div class="checkout-price-row">
-            <span class="checkout-price-val" id="checkout-total-price">$ 20.00</span>
-            <span class="checkout-seats-count" id="checkout-seats-label">for 2 seats</span>
+            <span class="checkout-price-val" id="checkout-total-price">₹ 0.00</span>
+            <span class="checkout-seats-count" id="checkout-seats-label">for 0 seats</span>
           </div>
           <div class="checkout-pills-row" id="checkout-pills-row">
-            <span class="seat-pill-chip">≡ƒ¬æ D4</span>
-            <span class="seat-pill-chip">≡ƒ¬æ D5</span>
-            <span class="rate-badge-chip">≡ƒÅ╖∩╕Å $50.00 each</span>
-            <span class="hold-countdown-chip" id="checkout-hold-timer">ΓÅ▒∩╕Å 30s</span>
+            <span class="seat-pill-chip">💺 D4</span>
+            <span class="seat-pill-chip">💺 D5</span>
+            <span class="rate-badge-chip">🏷️ ₹450 each</span>
+            <span class="hold-countdown-chip" id="checkout-hold-timer">⏱️ 30s</span>
           </div>
         </div>
 
         <div class="checkout-actions-row">
           <button type="button" class="btn btn-secondary btn-sm" id="btn-release-hold" style="display: none; padding: 0.65rem 1.15rem; font-weight: 700;">
-            Γ£ò Release
+            ✕ Release
           </button>
           <button type="button" class="btn-proceed-booking" id="btn-proceed-booking">
             Proceed to Booking &rarr;
@@ -232,7 +232,7 @@
   <div id="modal-my-bookings" class="modal-overlay" style="display: none;">
     <div class="modal-content">
       <div class="modal-header">
-        <h2 class="modal-title">≡ƒÄƒ∩╕Å My Confirmed Tickets</h2>
+        <h2 class="modal-title">🎟️ My Confirmed Tickets</h2>
         <button type="button" class="alert-close" id="btn-close-bookings-modal">&times;</button>
       </div>
       <div id="bookings-modal-body">
@@ -248,16 +248,16 @@
   <div id="modal-waiting-room" class="modal-overlay" style="display: none;">
     <div class="modal-content" style="max-width: 480px; text-align: center;">
       <div class="modal-header" style="justify-content: center;">
-        <h2 class="modal-title">ΓÜí High-Demand Waiting Room</h2>
+        <h2 class="modal-title">⚡ High-Demand Waiting Room</h2>
       </div>
       <div style="margin: 1.5rem 0;">
-        <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">ΓÅ│</div>
+        <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">⏳</div>
         <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
           This screening is experiencing extreme traffic. You are in line to access the reservation grid.
         </p>
         <div class="waiting-room-queue-card">
           <div style="font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase;">Your Current Position</div>
-          <div style="font-size: 3rem; font-weight: 800; color: #38bdf8;" id="wr-queue-position">ΓÇö</div>
+          <div style="font-size: 3rem; font-weight: 800; color: #38bdf8;" id="wr-queue-position">—</div>
           <div style="font-size: 0.9rem; color: var(--text-muted); margin-top: 0.5rem;" id="wr-est-wait">Estimated wait: calculating...</div>
         </div>
       </div>
@@ -267,87 +267,314 @@
     </div>
   </div>
 
-  <!-- Real Ecosystem Checkout & Payment Modal -->
+    <!-- Real Ecosystem Razorpay & UPI Checkout Gateway Modal -->
   <div id="modal-checkout-payment" class="modal-overlay" style="display: none;">
-    <div class="modal-content" style="max-width: 540px; padding: 1.75rem;">
-      <div class="modal-header">
-        <div style="display: flex; align-items: center; gap: 0.6rem;">
-          <span style="font-size: 1.4rem;">🎟️</span>
+    <div class="modal-content gateway-modal-container" style="max-width: 620px; padding: 0; overflow: hidden; border-radius: 16px; background: #0c101a; border: 1px solid #1e293b; box-shadow: 0 25px 60px rgba(0,0,0,0.85);">
+      
+      <!-- Razorpay Gateway Top Header -->
+      <div style="background: linear-gradient(135deg, #0b1f3a 0%, #081426 100%); padding: 1.15rem 1.5rem; border-bottom: 1px solid #1e2c45; display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 0.85rem;">
+          <div style="width: 38px; height: 38px; border-radius: 10px; background: #0c2340; border: 1px solid #1d4ed8; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
+            ⚡
+          </div>
           <div>
-            <h2 class="modal-title" style="margin: 0; font-size: 1.25rem;">CineReserve Checkout</h2>
-            <div style="font-size: 0.72rem; color: #94a3b8; font-weight: 700; letter-spacing: 0.04em;">OFFICIAL BOOKING & PAYMENT GATEWAY</div>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <span style="font-weight: 800; color: #fff; font-size: 1.05rem; letter-spacing: -0.01em;">CineReserve</span>
+              <span style="background: rgba(37, 99, 235, 0.25); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4); font-size: 0.65rem; font-weight: 800; padding: 0.15rem 0.45rem; border-radius: 4px; text-transform: uppercase;">Razorpay Secure</span>
+            </div>
+            <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 0.1rem;" id="gateway-movie-meta-header">Spider-Man: No Way Home &bull; Cinema 3</div>
           </div>
         </div>
-        <button type="button" class="alert-close" id="btn-close-checkout-modal">&times;</button>
+        
+        <div style="text-align: right; display: flex; align-items: center; gap: 1rem;">
+          <div>
+            <div style="font-size: 0.72rem; color: #94a3b8; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">Amount Payable</div>
+            <div id="checkout-total-payable" style="font-size: 1.35rem; font-weight: 900; color: #10b981;">₹495.00</div>
+          </div>
+          <button type="button" class="alert-close" id="btn-close-checkout-modal" style="font-size: 1.5rem; color: #94a3b8; background: transparent; border: none; cursor: pointer; padding: 0.25rem;">&times;</button>
+        </div>
       </div>
 
-      <!-- Live Hold Timer Alert -->
-      <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 8px; padding: 0.65rem 1rem; margin-top: 1rem;">
-        <span style="font-size: 0.85rem; color: #fbbf24; font-weight: 700;">⏱️ Seat(s) Held: Complete payment before hold expires!</span>
-        <span id="checkout-modal-timer" style="font-family: monospace; font-size: 0.95rem; font-weight: 800; color: #f59e0b;">02:00</span>
+      <!-- Live Hold Timer Banner -->
+      <div style="background: rgba(245, 158, 11, 0.08); border-bottom: 1px solid rgba(245, 158, 11, 0.2); padding: 0.55rem 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 0.8rem; color: #fbbf24; font-weight: 700;">⏱️ Seats Locked in Booking Engine</span>
+        <div style="display: flex; align-items: center; gap: 0.4rem;">
+          <span style="font-size: 0.75rem; color: #94a3b8;">Expires in:</span>
+          <span id="checkout-modal-timer" style="font-family: monospace; font-size: 0.92rem; font-weight: 900; color: #f59e0b;">02:00</span>
+        </div>
       </div>
 
-      <!-- Movie & Showtime Snapshot -->
-      <div style="display: flex; gap: 1rem; background: #11141d; border: 1px solid #1e2433; border-radius: 12px; padding: 1rem; margin-top: 1rem; align-items: center;">
-        <img id="checkout-movie-poster" src="spiderman_poster.svg" alt="Movie Poster" style="width: 65px; height: 92px; border-radius: 8px; object-fit: cover; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.1);">
-        <div style="flex: 1; min-width: 0;">
-          <h3 id="checkout-movie-title" style="margin: 0 0 0.3rem 0; font-size: 1.15rem; color: #fff; font-weight: 800;">Spider-Man: No Way Home</h3>
-          <div id="checkout-movie-meta" style="font-size: 0.82rem; color: #94a3b8;">Cinema 3 &bull; Dolby Atmos &bull; 11:15 AM</div>
-          <div style="margin-top: 0.5rem; display: flex; flex-wrap: wrap; gap: 0.35rem;" id="checkout-selected-seats-chips">
-            <!-- Injected chips -->
+      <!-- Main Gateway Body (Two Column Layout) -->
+      <div id="gateway-main-body" style="display: grid; grid-template-columns: 200px 1fr; min-height: 380px;">
+        
+        <!-- Left Navigation: Payment Modes Sidebar -->
+        <div style="background: #090c14; border-right: 1px solid #1e2433; padding: 1rem 0.5rem; display: flex; flex-direction: column; gap: 0.35rem;">
+          <div style="font-size: 0.7rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.06em; padding: 0.35rem 0.75rem;">PAYMENT OPTIONS</div>
+          
+          <button type="button" class="gateway-tab-btn active" data-tab="upi" style="display: flex; align-items: center; gap: 0.65rem; padding: 0.75rem 0.85rem; border-radius: 8px; border: 1px solid #10b981; background: rgba(16, 185, 129, 0.12); color: #fff; font-size: 0.88rem; font-weight: 700; cursor: pointer; text-align: left; width: 100%;">
+            <span>📱</span>
+            <div>
+              <div>UPI / QR</div>
+              <div style="font-size: 0.7rem; color: #34d399; font-weight: 500;">GPay, PhonePe, Paytm</div>
+            </div>
+          </button>
+
+          <button type="button" class="gateway-tab-btn" data-tab="card" style="display: flex; align-items: center; gap: 0.65rem; padding: 0.75rem 0.85rem; border-radius: 8px; border: 1px solid transparent; background: transparent; color: #94a3b8; font-size: 0.88rem; font-weight: 700; cursor: pointer; text-align: left; width: 100%;">
+            <span>💳</span>
+            <div>
+              <div>Cards</div>
+              <div style="font-size: 0.7rem; color: #64748b; font-weight: 500;">Visa, Mastercard, RuPay</div>
+            </div>
+          </button>
+
+          <button type="button" class="gateway-tab-btn" data-tab="netbanking" style="display: flex; align-items: center; gap: 0.65rem; padding: 0.75rem 0.85rem; border-radius: 8px; border: 1px solid transparent; background: transparent; color: #94a3b8; font-size: 0.88rem; font-weight: 700; cursor: pointer; text-align: left; width: 100%;">
+            <span>🏛️</span>
+            <div>
+              <div>NetBanking</div>
+              <div style="font-size: 0.7rem; color: #64748b; font-weight: 500;">All Indian Banks</div>
+            </div>
+          </button>
+
+          <button type="button" class="gateway-tab-btn" data-tab="sandbox" style="display: flex; align-items: center; gap: 0.65rem; padding: 0.75rem 0.85rem; border-radius: 8px; border: 1px solid transparent; background: transparent; color: #94a3b8; font-size: 0.88rem; font-weight: 700; cursor: pointer; text-align: left; width: 100%;">
+            <span>⚡</span>
+            <div>
+              <div>1-Click Fast Pay</div>
+              <div style="font-size: 0.7rem; color: #64748b; font-weight: 500;">Instant Test Mode</div>
+            </div>
+          </button>
+
+          <!-- Order Summary Collapsible -->
+          <div style="margin-top: auto; padding: 0.85rem; background: #0f131d; border-radius: 8px; border: 1px solid #1e2433;">
+            <div style="font-size: 0.72rem; color: #94a3b8; font-weight: 700; margin-bottom: 0.35rem;">BOOKING SUMMARY</div>
+            <div id="gateway-summary-seats" style="font-size: 0.82rem; color: #fff; font-weight: 800;">1 Seat</div>
+            <div id="gateway-summary-subtotal" style="font-size: 0.75rem; color: #64748b;">Tickets: ₹450.00</div>
+            <div style="font-size: 0.75rem; color: #64748b;">GST + Fee: ₹45.00</div>
+          </div>
+        </div>
+
+        <!-- Right Content: Payment Method Details -->
+        <div style="padding: 1.5rem; background: #0c101a; display: flex; flex-direction: column;">
+          
+          <!-- TAB 1: UPI / QR Code -->
+          <div id="gateway-tab-content-upi" class="gateway-tab-pane">
+            <div style="margin-bottom: 1rem;">
+              <h4 style="margin: 0; font-size: 1.05rem; color: #fff; font-weight: 800;">Pay via UPI</h4>
+              <p style="margin: 0.2rem 0 0; font-size: 0.8rem; color: #94a3b8;">Scan the QR code or enter your UPI ID</p>
+            </div>
+
+            <!-- Authentic UPI QR Code Box -->
+            <div style="background: #111522; border: 1px solid #1e2538; border-radius: 12px; padding: 1.25rem; text-align: center; margin-bottom: 1.25rem;">
+              <div style="display: inline-block; background: #fff; padding: 0.75rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
+                <!-- Crisp SVG QR Code simulation with UPI center icon -->
+                <svg width="130" height="130" viewBox="0 0 130 130">
+                  <rect width="130" height="130" fill="#ffffff"/>
+                  <!-- Position Markers -->
+                  <rect x="10" y="10" width="30" height="30" fill="#000000"/>
+                  <rect x="15" y="15" width="20" height="20" fill="#ffffff"/>
+                  <rect x="20" y="20" width="10" height="10" fill="#000000"/>
+
+                  <rect x="90" y="10" width="30" height="30" fill="#000000"/>
+                  <rect x="95" y="15" width="20" height="20" fill="#ffffff"/>
+                  <rect x="100" y="20" width="10" height="10" fill="#000000"/>
+
+                  <rect x="10" y="90" width="30" height="30" fill="#000000"/>
+                  <rect x="15" y="95" width="20" height="20" fill="#ffffff"/>
+                  <rect x="20" y="100" width="10" height="10" fill="#000000"/>
+
+                  <!-- Data Dots -->
+                  <rect x="50" y="15" width="6" height="6" fill="#000"/>
+                  <rect x="65" y="15" width="6" height="6" fill="#000"/>
+                  <rect x="50" y="30" width="6" height="6" fill="#000"/>
+                  <rect x="70" y="30" width="6" height="6" fill="#000"/>
+                  <rect x="15" y="50" width="6" height="6" fill="#000"/>
+                  <rect x="30" y="55" width="6" height="6" fill="#000"/>
+                  <rect x="50" y="50" width="6" height="6" fill="#000"/>
+                  <rect x="90" y="50" width="6" height="6" fill="#000"/>
+                  <rect x="105" y="55" width="6" height="6" fill="#000"/>
+                  <rect x="50" y="70" width="6" height="6" fill="#000"/>
+                  <rect x="70" y="70" width="6" height="6" fill="#000"/>
+                  <rect x="90" y="70" width="6" height="6" fill="#000"/>
+                  <rect x="55" y="90" width="6" height="6" fill="#000"/>
+                  <rect x="75" y="90" width="6" height="6" fill="#000"/>
+                  <rect x="50" y="105" width="6" height="6" fill="#000"/>
+                  <rect x="70" y="105" width="6" height="6" fill="#000"/>
+                  <rect x="90" y="105" width="6" height="6" fill="#000"/>
+                  <rect x="105" y="95" width="6" height="6" fill="#000"/>
+
+                  <!-- Center UPI Badge -->
+                  <rect x="47" y="47" width="36" height="36" rx="6" fill="#10b981"/>
+                  <text x="65" y="69" font-family="system-ui, sans-serif" font-size="12" font-weight="900" fill="#ffffff" text-anchor="middle">UPI</text>
+                </svg>
+              </div>
+              <div style="font-size: 0.78rem; color: #cbd5e1; margin-top: 0.5rem; font-weight: 700;">Scan with GPay, PhonePe, Paytm, or any UPI App</div>
+              <div style="font-size: 0.7rem; color: #10b981; margin-top: 0.2rem;">🟢 Dynamic QR active &bull; Click 'Approve UPI Payment' below</div>
+            </div>
+
+            <!-- Or Enter UPI ID -->
+            <div>
+              <label for="upi-vpa-input" style="font-size: 0.8rem; font-weight: 700; color: #cbd5e1; display: block; margin-bottom: 0.4rem;">Or Enter UPI ID / Mobile Number:</label>
+              <div style="display: flex; gap: 0.5rem;">
+                <input type="text" id="upi-vpa-input" value="user@okhdfcbank" placeholder="e.g. 9876543210@paytm" style="flex: 1; padding: 0.65rem 0.85rem; border-radius: 8px; background: #090c14; border: 1.5px solid #2d3748; color: #fff; font-size: 0.9rem; font-weight: 600;">
+              </div>
+              <!-- Quick App Chips -->
+              <div style="display: flex; gap: 0.4rem; margin-top: 0.5rem; flex-wrap: wrap;">
+                <button type="button" class="upi-chip-btn" data-handle="@okhdfcbank" style="padding: 0.2rem 0.5rem; background: #131722; border: 1px solid #1e2433; border-radius: 4px; font-size: 0.72rem; color: #94a3b8; cursor: pointer;">@okhdfcbank</button>
+                <button type="button" class="upi-chip-btn" data-handle="@ybl" style="padding: 0.2rem 0.5rem; background: #131722; border: 1px solid #1e2433; border-radius: 4px; font-size: 0.72rem; color: #94a3b8; cursor: pointer;">@ybl</button>
+                <button type="button" class="upi-chip-btn" data-handle="@paytm" style="padding: 0.2rem 0.5rem; background: #131722; border: 1px solid #1e2433; border-radius: 4px; font-size: 0.72rem; color: #94a3b8; cursor: pointer;">@paytm</button>
+                <button type="button" class="upi-chip-btn" data-handle="@okaxis" style="padding: 0.2rem 0.5rem; background: #131722; border: 1px solid #1e2433; border-radius: 4px; font-size: 0.72rem; color: #94a3b8; cursor: pointer;">@okaxis</button>
+              </div>
+            </div>
+
+            <!-- UPI Action Button -->
+            <div style="margin-top: auto; padding-top: 1.25rem;">
+              <button type="button" id="btn-pay-upi" style="width: 100%; padding: 0.85rem; border-radius: 8px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border: none; color: #fff; font-size: 1rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);">
+                <span>Approve UPI Payment &rarr;</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- TAB 2: Cards (Credit/Debit) -->
+          <div id="gateway-tab-content-card" class="gateway-tab-pane" style="display: none;">
+            <div style="margin-bottom: 1rem;">
+              <h4 style="margin: 0; font-size: 1.05rem; color: #fff; font-weight: 800;">Card Payment</h4>
+              <p style="margin: 0.2rem 0 0; font-size: 0.8rem; color: #94a3b8;">Enter your credit or debit card details</p>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 0.85rem;">
+              <div>
+                <label style="font-size: 0.78rem; font-weight: 700; color: #94a3b8; display: block; margin-bottom: 0.35rem;">CARD NUMBER</label>
+                <div style="position: relative;">
+                  <input type="text" id="card-num-input" value="4532 8920 1849 9201" maxlength="19" style="width: 100%; padding: 0.65rem 0.85rem; border-radius: 8px; background: #090c14; border: 1.5px solid #2d3748; color: #fff; font-size: 0.95rem; font-family: monospace; box-sizing: border-box;">
+                  <span style="position: absolute; right: 10px; top: 8px; font-size: 0.8rem; color: #60a5fa; font-weight: 800;">VISA / RuPay</span>
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                <div>
+                  <label style="font-size: 0.78rem; font-weight: 700; color: #94a3b8; display: block; margin-bottom: 0.35rem;">EXPIRY</label>
+                  <input type="text" id="card-exp-input" value="12/28" maxlength="5" style="width: 100%; padding: 0.65rem 0.85rem; border-radius: 8px; background: #090c14; border: 1.5px solid #2d3748; color: #fff; font-size: 0.95rem; font-family: monospace; box-sizing: border-box;">
+                </div>
+                <div>
+                  <label style="font-size: 0.78rem; font-weight: 700; color: #94a3b8; display: block; margin-bottom: 0.35rem;">CVV</label>
+                  <input type="password" id="card-cvv-input" value="892" maxlength="4" style="width: 100%; padding: 0.65rem 0.85rem; border-radius: 8px; background: #090c14; border: 1.5px solid #2d3748; color: #fff; font-size: 0.95rem; font-family: monospace; box-sizing: border-box;">
+                </div>
+              </div>
+
+              <div>
+                <label style="font-size: 0.78rem; font-weight: 700; color: #94a3b8; display: block; margin-bottom: 0.35rem;">NAME ON CARD</label>
+                <input type="text" id="card-name-input" value="Alex Mercer" style="width: 100%; padding: 0.65rem 0.85rem; border-radius: 8px; background: #090c14; border: 1.5px solid #2d3748; color: #fff; font-size: 0.9rem; font-weight: 600; box-sizing: border-box;">
+              </div>
+            </div>
+
+            <div style="margin-top: auto; padding-top: 1.25rem;">
+              <button type="button" id="btn-pay-card" style="width: 100%; padding: 0.85rem; border-radius: 8px; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); border: none; color: #fff; font-size: 1rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);">
+                <span>Pay via Card &rarr;</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- TAB 3: NetBanking -->
+          <div id="gateway-tab-content-netbanking" class="gateway-tab-pane" style="display: none;">
+            <div style="margin-bottom: 1rem;">
+              <h4 style="margin: 0; font-size: 1.05rem; color: #fff; font-weight: 800;">Indian NetBanking</h4>
+              <p style="margin: 0.2rem 0 0; font-size: 0.8rem; color: #94a3b8;">Select your bank to proceed with netbanking</p>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; margin-bottom: 1rem;">
+              <label style="display: flex; align-items: center; gap: 0.6rem; padding: 0.65rem; background: #111522; border: 1.5px solid #10b981; border-radius: 8px; cursor: pointer;">
+                <input type="radio" name="nb_bank" value="HDFC" checked style="accent-color: #10b981;">
+                <span style="font-size: 0.82rem; font-weight: 700; color: #fff;">HDFC Bank</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: 0.6rem; padding: 0.65rem; background: #111522; border: 1.5px solid #1e2433; border-radius: 8px; cursor: pointer;">
+                <input type="radio" name="nb_bank" value="SBI" style="accent-color: #10b981;">
+                <span style="font-size: 0.82rem; font-weight: 700; color: #fff;">State Bank of India</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: 0.6rem; padding: 0.65rem; background: #111522; border: 1.5px solid #1e2433; border-radius: 8px; cursor: pointer;">
+                <input type="radio" name="nb_bank" value="ICICI" style="accent-color: #10b981;">
+                <span style="font-size: 0.82rem; font-weight: 700; color: #fff;">ICICI Bank</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: 0.6rem; padding: 0.65rem; background: #111522; border: 1.5px solid #1e2433; border-radius: 8px; cursor: pointer;">
+                <input type="radio" name="nb_bank" value="AXIS" style="accent-color: #10b981;">
+                <span style="font-size: 0.82rem; font-weight: 700; color: #fff;">Axis Bank</span>
+              </label>
+            </div>
+
+            <div style="margin-top: auto; padding-top: 1.25rem;">
+              <button type="button" id="btn-pay-nb" style="width: 100%; padding: 0.85rem; border-radius: 8px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border: none; color: #fff; font-size: 1rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                <span>Pay via NetBanking &rarr;</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- TAB 4: 1-Click Fast Sandbox -->
+          <div id="gateway-tab-content-sandbox" class="gateway-tab-pane" style="display: none;">
+            <div style="margin-bottom: 1rem;">
+              <h4 style="margin: 0; font-size: 1.05rem; color: #fff; font-weight: 800;">⚡ Instant 1-Click Sandbox</h4>
+              <p style="margin: 0.2rem 0 0; font-size: 0.8rem; color: #94a3b8;">Simulates gateway verification & HMAC signatures instantly</p>
+            </div>
+
+            <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 10px; padding: 1rem; margin-bottom: 1.25rem;">
+              <div style="font-size: 0.85rem; color: #34d399; font-weight: 700; margin-bottom: 0.35rem;">✓ Direct Test Mode Authorization</div>
+              <div style="font-size: 0.78rem; color: #cbd5e1; line-height: 1.4;">
+                This mode creates the Razorpay payment order on the backend, signs the HMAC-SHA256 signature, validates payment capture, and confirms your seats.
+              </div>
+            </div>
+
+            <div style="margin-top: auto; padding-top: 1.25rem;">
+              <button type="button" id="btn-pay-sandbox" style="width: 100%; padding: 0.85rem; border-radius: 8px; background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); border: none; color: #fff; font-size: 1rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; box-shadow: 0 4px 14px rgba(249, 115, 22, 0.4);">
+                <span>Instant 1-Click Pay &rarr;</span>
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- State 2: Simulated UPI / Bank OTP Waiting Screen -->
+      <div id="gateway-processing-view" style="display: none; padding: 3rem 2rem; text-align: center;">
+        <div style="width: 64px; height: 64px; border-radius: 50%; background: rgba(16, 185, 129, 0.15); border: 2px solid #10b981; display: flex; align-items: center; justify-content: center; font-size: 2rem; margin: 0 auto 1.25rem; animation: pulse-green 1.5s infinite;">
+          📱
+        </div>
+        <h3 id="gateway-proc-title" style="margin: 0 0 0.5rem 0; font-size: 1.35rem; color: #fff; font-weight: 800;">Approve Request on UPI App</h3>
+        <p id="gateway-proc-desc" style="color: #94a3b8; font-size: 0.88rem; max-width: 420px; margin: 0 auto 1.5rem; line-height: 1.5;">
+          Open Google Pay / PhonePe on your phone and approve payment of <strong style="color: #10b981;" id="gateway-proc-amount">₹495.00</strong>.
+        </p>
+        <div style="font-family: monospace; font-size: 1.15rem; font-weight: 800; color: #f59e0b; margin-bottom: 1.5rem;" id="gateway-proc-timer">04:58</div>
+        <div style="display: flex; gap: 0.75rem; justify-content: center;">
+          <button type="button" id="btn-proc-auto-approve" style="padding: 0.75rem 1.5rem; background: #10b981; color: #fff; border: none; border-radius: 8px; font-weight: 800; cursor: pointer;">
+            ✓ Confirm Payment Now
+          </button>
+          <button type="button" id="btn-proc-cancel" style="padding: 0.75rem 1.25rem; background: transparent; color: #94a3b8; border: 1px solid #334155; border-radius: 8px; font-weight: 700; cursor: pointer;">
+            Cancel
+          </button>
+        </div>
+      </div>
+
+      <!-- State 3: Payment Success Celebration Screen -->
+      <div id="gateway-success-view" style="display: none; padding: 3rem 2rem; text-align: center;">
+        <div style="width: 72px; height: 72px; border-radius: 50%; background: rgba(16, 185, 129, 0.2); border: 2.5px solid #10b981; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; margin: 0 auto 1.25rem; box-shadow: 0 0 25px rgba(16, 185, 129, 0.5);">
+          ✓
+        </div>
+        <h3 style="margin: 0 0 0.5rem 0; font-size: 1.5rem; color: #fff; font-weight: 800;">Payment Successful!</h3>
+        <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 1.5rem;">
+          Your seats are confirmed. Generating your digital cinema boarding pass...
+        </p>
+        <div style="background: #111522; border: 1px solid #1e2538; border-radius: 10px; padding: 1rem; max-width: 360px; margin: 0 auto 1.5rem; text-align: left;">
+          <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 0.4rem;">
+            <span style="color: #64748b;">Amount Paid:</span>
+            <strong style="color: #10b981;" id="success-amount">₹495.00</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 0.4rem;">
+            <span style="color: #64748b;">Payment ID:</span>
+            <span style="color: #fff; font-family: monospace;" id="success-pay-id">pay_xxxx</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 0.8rem;">
+            <span style="color: #64748b;">Booking Ref:</span>
+            <span style="color: #f59e0b; font-weight: 700; font-family: monospace;" id="success-book-ref">BMS-84920</span>
           </div>
         </div>
       </div>
 
-      <!-- Pricing Summary Breakdown -->
-      <div style="background: #11141d; border: 1px solid #1e2433; border-radius: 12px; padding: 1rem; margin-top: 1rem;">
-        <div style="font-size: 0.8rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.65rem;">Price Summary</div>
-        <div style="display: flex; justify-content: space-between; font-size: 0.88rem; color: #cbd5e1; margin-bottom: 0.4rem;">
-          <span id="checkout-seats-desc">Tickets</span>
-          <span id="checkout-tickets-subtotal">$50.00</span>
-        </div>
-        <div style="display: flex; justify-content: space-between; font-size: 0.88rem; color: #cbd5e1; margin-bottom: 0.4rem;">
-          <span>Convenience Fee & GST (10%)</span>
-          <span id="checkout-fee">$5.00</span>
-        </div>
-        <div style="height: 1px; background: rgba(255, 255, 255, 0.08); margin: 0.65rem 0;"></div>
-        <div style="display: flex; justify-content: space-between; align-items: baseline;">
-          <span style="font-weight: 800; color: #fff; font-size: 1.05rem;">Total Amount Payable</span>
-          <span id="checkout-total-payable" style="font-size: 1.35rem; font-weight: 900; color: #10b981;">$55.00</span>
-        </div>
-      </div>
-
-      <!-- Payment Method Selection -->
-      <div style="margin-top: 1.25rem;">
-        <div style="font-size: 0.82rem; font-weight: 800; color: #cbd5e1; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.65rem;">Choose Payment Method</div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
-          <label id="payment-mode-sandbox-label" style="display: flex; align-items: center; gap: 0.6rem; background: rgba(16, 185, 129, 0.08); border: 1.5px solid #10b981; border-radius: 10px; padding: 0.75rem 1rem; cursor: pointer; transition: all 0.15s ease;">
-            <input type="radio" name="payment_mode" value="sandbox" checked style="accent-color: #10b981;">
-            <div>
-              <div style="font-size: 0.88rem; font-weight: 800; color: #fff;">⚡ Instant 1-Click Pay</div>
-              <div style="font-size: 0.72rem; color: #34d399;">UPI / Card / NetBanking</div>
-            </div>
-          </label>
-          <label id="payment-mode-razorpay-label" style="display: flex; align-items: center; gap: 0.6rem; background: #11141d; border: 1.5px solid #1e2433; border-radius: 10px; padding: 0.75rem 1rem; cursor: pointer; transition: all 0.15s ease;">
-            <input type="radio" name="payment_mode" value="razorpay" style="accent-color: #f59e0b;">
-            <div>
-              <div style="font-size: 0.88rem; font-weight: 800; color: #fff;">💳 Razorpay Gateway</div>
-              <div style="font-size: 0.72rem; color: #94a3b8;">Official Checkout SDK</div>
-            </div>
-          </label>
-        </div>
-        <div id="checkout-razorpay-note" style="display: none; font-size: 0.75rem; color: #f59e0b; margin-top: 0.5rem; background: rgba(245, 158, 11, 0.08); padding: 0.4rem 0.6rem; border-radius: 6px;">
-          Note: If placeholder test keys are configured, Razorpay SDK may prompt in test simulation mode.
-        </div>
-      </div>
-
-      <!-- Payment Action Buttons -->
-      <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
-        <button type="button" class="btn btn-secondary" id="btn-cancel-checkout" style="flex: 1; padding: 0.75rem; font-weight: 700;">Cancel</button>
-        <button type="button" class="btn btn-primary" id="btn-confirm-payment" style="flex: 2; padding: 0.85rem; font-size: 1rem; font-weight: 800; background: linear-gradient(135deg, #f97316, #ea580c); border: none; border-radius: 10px; color: #fff; cursor: pointer;">
-          Pay & Confirm Booking &rarr;
-        </button>
-      </div>
     </div>
   </div>
 

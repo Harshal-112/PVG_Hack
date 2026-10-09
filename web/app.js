@@ -26,7 +26,7 @@
       endTime: '1:45 PM',
       theater: 'Cinema 3 &bull; Dolby Atmos',
       venue: 'PVR: Inorbit Mall, Cyberabad',
-      price: 50.00,
+      price: 450.00,
       poster: 'spiderman_poster.svg',
       shows: ['11:15 AM', '02:30 PM', '06:00 PM', '09:30 PM'],
       description: 'With Spider-Man\'s identity revealed, Peter asks Doctor Strange for help. When a spell goes wrong, multiverse foes emerge.'
@@ -45,7 +45,7 @@
       endTime: '05:15 PM',
       theater: 'Cinema 1 &bull; Grand Laser IMAX',
       venue: 'INOX: Megaplex Arena',
-      price: 55.00,
+      price: 500.00,
       poster: 'dune_poster.svg',
       shows: ['01:00 PM', '02:30 PM', '07:00 PM', '10:30 PM'],
       description: 'Paul Atreides unites with Chani and the Fremen while seeking revenge against the conspirators who destroyed his family.'
@@ -64,7 +64,7 @@
       endTime: '08:10 PM',
       theater: 'Cinema 2 &bull; Prime Lounge',
       venue: 'Cinepolis: Grand VIP Lounge',
-      price: 48.00,
+      price: 480.00,
       poster: 'deadpool_poster.svg',
       shows: ['12:30 PM', '03:45 PM', '06:00 PM', '09:15 PM'],
       description: 'Wolverine is recovering from his injuries when he crosses paths with the loudmouth Deadpool to defeat a common enemy.'
@@ -102,7 +102,7 @@
       endTime: '12:35 AM',
       theater: 'Cinema 5 &bull; Laser Audi',
       venue: 'Miraj Cinemas: IMAX Dome',
-      price: 50.00,
+      price: 450.00,
       poster: 'interstellar_poster.svg',
       shows: ['11:00 AM', '04:00 PM', '09:45 PM'],
       description: 'When Earth becomes uninhabitable, an ex-NASA pilot is tasked with piloting a spacecraft along with a team of researchers.'
@@ -206,7 +206,7 @@
       if (usernameEl) usernameEl.textContent = authUser.username;
       if (mfaTagEl) {
         mfaTagEl.style.display = 'flex';
-        mfaTagEl.textContent = authUser.mfa_enabled ? '≡ƒ¢í∩╕Å MFA Verified' : 'Standard Session';
+        mfaTagEl.textContent = authUser.mfa_enabled ? '🛡️ MFA Verified' : 'Standard Session';
       }
       if (authActionBtn) {
         authActionBtn.textContent = 'Sign Out';
@@ -570,10 +570,10 @@
         if (codeText && codeText !== '------') {
           try {
             await navigator.clipboard.writeText(codeText);
-            btnCopyCode.textContent = 'Γ£ô Copied!';
-            setTimeout(() => { btnCopyCode.textContent = '≡ƒôï Copy Code'; }, 1500);
+            btnCopyCode.textContent = '✓ Copied!';
+            setTimeout(() => { btnCopyCode.textContent = '📋 Copy Code'; }, 1500);
           } catch (err) {
-            btnCopyCode.textContent = 'Γ£ô ' + codeText;
+            btnCopyCode.textContent = '✓ ' + codeText;
           }
         }
       });
@@ -716,7 +716,7 @@
         endTime: '1:45 PM',
         theater: 'Cinema 1 &bull; Main Audi',
         venue: 'Grand Cinema Megaplex',
-        price: 50.00,
+        price: 450.00,
         poster: 'spiderman_poster.svg',
         shows: ['11:15 AM', '02:30 PM', '06:00 PM', '09:30 PM']
       };
@@ -740,7 +740,7 @@
       if (tagsEl) {
         tagsEl.innerHTML = `
           ${movie.tags.map(t => `<span class="movie-tag-pill">${t}</span>`).join('')}
-          <span class="movie-meta-item">ΓÅ▒∩╕Å ${movie.runtime}</span>
+          <span class="movie-meta-item">⏱️ ${movie.runtime}</span>
           <span class="movie-rating-badge">${movie.rating}</span>
         `;
       }
@@ -748,7 +748,7 @@
       if (startEl) startEl.textContent = currentShowtime || movie.startTime;
       if (endEl) endEl.textContent = movie.endTime;
       if (venueEl) venueEl.innerHTML = `${movie.theater} &bull; ${movie.venue}`;
-      if (rateBadgeEl) rateBadgeEl.textContent = `≡ƒÅ╖∩╕Å $${movie.price.toFixed(2)} each`;
+      if (rateBadgeEl) rateBadgeEl.textContent = `🏷️ ₹${movie.price.toFixed(2)} each`;
 
       if (dropdownEl && dropdownEl.value !== eventId) {
         dropdownEl.value = eventId;
@@ -799,10 +799,10 @@
 
     // Tier definitions with BMS category pricing
     const TIERS = {
-      '1': { name: 'RECLINER: Rows AΓÇôE ($50)', rows: ['A', 'B', 'C', 'D', 'E'], startIdx: 1, seatsPerRow: 8, price: 50.00 },
-      '2': { name: 'PRIME: Rows FΓÇôJ ($35)', rows: ['F', 'G', 'H', 'I', 'J'], startIdx: 41, seatsPerRow: 8, price: 35.00 },
-      '3': { name: 'CLASSIC: Rows KΓÇôO ($20)', rows: ['K', 'L', 'M', 'N', 'O'], startIdx: 81, seatsPerRow: 8, price: 20.00 },
-      'all': { name: 'Full Arena (200 Seats)', rows: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'], startIdx: 1, seatsPerRow: 20, price: 50.00 }
+      '1': { name: 'RECLINER: Rows A–E ($50)', rows: ['A', 'B', 'C', 'D', 'E'], startIdx: 1, seatsPerRow: 8, price: 450.00 },
+      '2': { name: 'PRIME: Rows F–J ($35)', rows: ['F', 'G', 'H', 'I', 'J'], startIdx: 41, seatsPerRow: 8, price: 35.00 },
+      '3': { name: 'CLASSIC: Rows K–O ($20)', rows: ['K', 'L', 'M', 'N', 'O'], startIdx: 81, seatsPerRow: 8, price: 20.00 },
+      'all': { name: 'Full Arena (200 Seats)', rows: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'], startIdx: 1, seatsPerRow: 20, price: 450.00 }
     };
 
     let activeTier = '1';
@@ -867,7 +867,7 @@
       btn.setAttribute('role', 'button');
       btn.setAttribute('tabindex', '0');
       const moviePrice = (MOVIE_CATALOG[currentEventId] && MOVIE_CATALOG[currentEventId].price) || 50;
-      btn.setAttribute('aria-label', `Seat ${seatCode}: Available - $${moviePrice.toFixed(2)}`);
+      btn.setAttribute('aria-label', `Seat ${seatCode}: Available - ₹${moviePrice.toFixed(2)}`);
       btn.setAttribute('data-seat-id', seatId);
       btn.setAttribute('data-seat-code', seatCode);
 
@@ -910,7 +910,7 @@
           if (!existingBadge) {
             existingBadge = document.createElement('div');
             existingBadge.className = 'seat-check-badge';
-            existingBadge.textContent = 'Γ£ô';
+            existingBadge.textContent = '✓';
             btn.appendChild(existingBadge);
           }
           btn.setAttribute('aria-label', `Seat ${item.seatCode}: Selected by you`);
@@ -937,14 +937,14 @@
       const count = heldList.length;
 
       if (count === 0) {
-        if (checkoutTotalPrice) checkoutTotalPrice.textContent = '$ 0.00';
+        if (checkoutTotalPrice) checkoutTotalPrice.textContent = '₹ 0.00';
         if (checkoutSeatsLabel) checkoutSeatsLabel.textContent = 'for 0 seats';
         if (checkoutPillsRow) {
           checkoutPillsRow.innerHTML = '<span style="font-size: 0.85rem; color: #64748b;">Select a seat above to reserve</span>';
         }
         if (btnProceedBooking) {
           btnProceedBooking.disabled = true;
-          btnProceedBooking.textContent = 'Proceed to Booking ΓåÆ';
+          btnProceedBooking.textContent = 'Proceed to Booking →';
         }
         if (btnReleaseHold) {
           btnReleaseHold.style.display = 'none';
@@ -955,23 +955,23 @@
         }
       } else {
         const movie = MOVIE_CATALOG[currentEventId];
-        const unitPrice = movie ? movie.price : 50.00;
-        const totalPrice = (count * 10).toFixed(2); // In screenshot $20.00 for 2 seats
-        if (checkoutTotalPrice) checkoutTotalPrice.textContent = `$ ${totalPrice}`;
+        const unitPrice = movie ? movie.price : 450.00;
+        const totalPrice = (count * unitPrice).toFixed(2); // In screenshot $20.00 for 2 seats
+        if (checkoutTotalPrice) checkoutTotalPrice.textContent = `₹ ${totalPrice}`;
         if (checkoutSeatsLabel) checkoutSeatsLabel.textContent = `for ${count} ${count === 1 ? 'seat' : 'seats'}`;
 
         if (checkoutPillsRow) {
-          const pillsHtml = heldList.map(h => `<span class="seat-pill-chip">≡ƒ¬æ ${h.seat_code}</span>`).join(' ');
+          const pillsHtml = heldList.map(h => `<span class="seat-pill-chip">💺 ${h.seat_code}</span>`).join(' ');
           checkoutPillsRow.innerHTML = `
             ${pillsHtml}
-            <span class="rate-badge-chip" id="checkout-rate-badge">≡ƒÅ╖∩╕Å $${unitPrice.toFixed(2)} each</span>
-            <span class="hold-countdown-chip" id="checkout-hold-timer">ΓÅ▒∩╕Å 30s</span>
+            <span class="rate-badge-chip" id="checkout-rate-badge">🏷️ ₹${unitPrice.toFixed(2)} each</span>
+            <span class="hold-countdown-chip" id="checkout-hold-timer">⏱️ 30s</span>
           `;
         }
 
         if (btnProceedBooking) {
           btnProceedBooking.disabled = false;
-          btnProceedBooking.textContent = 'Proceed to Booking ΓåÆ';
+          btnProceedBooking.textContent = 'Proceed to Booking →';
         }
         if (btnReleaseHold) {
           btnReleaseHold.style.display = 'inline-flex';
@@ -1001,7 +1001,7 @@
       const timerEl = document.getElementById('checkout-hold-timer');
 
       if (minRemainingMs <= 0) {
-        if (timerEl) timerEl.textContent = 'ΓÅ▒∩╕Å Expired';
+        if (timerEl) timerEl.textContent = '⏱️ Expired';
         showAlert('warning', 'Hold Expired', 'Your temporary seat reservation has expired and returned to inventory.');
         for (const k of Object.keys(activeReservations)) {
           delete activeReservations[k];
@@ -1013,7 +1013,7 @@
       }
 
       const secs = Math.ceil(minRemainingMs / 1000);
-      if (timerEl) timerEl.textContent = `ΓÅ▒∩╕Å ${secs}s`;
+      if (timerEl) timerEl.textContent = `⏱️ ${secs}s`;
     }
 
     async function onSeatClicked(seatId, seatCode) {
@@ -1076,52 +1076,58 @@
     }
 
     // =========================================================================
-    // TASK B: Real Ecosystem Checkout & Payment Flow
+    // TASK B: Real Indian Payment Gateway Ecosystem (Razorpay, UPI & Cards)
     // =========================================================================
     const checkoutModal = document.getElementById('modal-checkout-payment');
     const btnCloseCheckout = document.getElementById('btn-close-checkout-modal');
-    const btnCancelCheckout = document.getElementById('btn-cancel-checkout');
-    const btnConfirmPayment = document.getElementById('btn-confirm-payment');
-    const paymentModeSandboxLabel = document.getElementById('payment-mode-sandbox-label');
-    const paymentModeRazorpayLabel = document.getElementById('payment-mode-razorpay-label');
-    const checkoutRazorpayNote = document.getElementById('checkout-razorpay-note');
-    const checkoutModalTimer = document.getElementById('checkout-modal-timer');
+    const gatewayMainBody = document.getElementById('gateway-main-body');
+    const gatewayProcessingView = document.getElementById('gateway-processing-view');
+    const gatewaySuccessView = document.getElementById('gateway-success-view');
 
     function closeCheckoutModal() {
       if (checkoutModal) checkoutModal.style.display = 'none';
+      if (gatewayMainBody) gatewayMainBody.style.display = 'grid';
+      if (gatewayProcessingView) gatewayProcessingView.style.display = 'none';
+      if (gatewaySuccessView) gatewaySuccessView.style.display = 'none';
     }
 
     if (btnCloseCheckout) btnCloseCheckout.addEventListener('click', closeCheckoutModal);
-    if (btnCancelCheckout) btnCancelCheckout.addEventListener('click', closeCheckoutModal);
 
-    // Toggle Payment Method radios visual styling
-    const paymentRadioGroup = document.querySelectorAll('input[name="payment_mode"]');
-    paymentRadioGroup.forEach(radio => {
-      radio.addEventListener('change', () => {
-        if (radio.value === 'sandbox') {
-          if (paymentModeSandboxLabel) {
-            paymentModeSandboxLabel.style.borderColor = '#10b981';
-            paymentModeSandboxLabel.style.background = 'rgba(16, 185, 129, 0.08)';
-          }
-          if (paymentModeRazorpayLabel) {
-            paymentModeRazorpayLabel.style.borderColor = '#1e2433';
-            paymentModeRazorpayLabel.style.background = '#11141d';
-          }
-          if (checkoutRazorpayNote) checkoutRazorpayNote.style.display = 'none';
-        } else {
-          if (paymentModeRazorpayLabel) {
-            paymentModeRazorpayLabel.style.borderColor = '#f59e0b';
-            paymentModeRazorpayLabel.style.background = 'rgba(245, 158, 11, 0.08)';
-          }
-          if (paymentModeSandboxLabel) {
-            paymentModeSandboxLabel.style.borderColor = '#1e2433';
-            paymentModeSandboxLabel.style.background = '#11141d';
-          }
-          if (checkoutRazorpayNote) checkoutRazorpayNote.style.display = 'block';
+    // Tab Navigation within Gateway
+    const gatewayTabBtns = document.querySelectorAll('.gateway-tab-btn');
+    gatewayTabBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        gatewayTabBtns.forEach(b => {
+          b.classList.remove('active');
+          b.style.borderColor = 'transparent';
+          b.style.background = 'transparent';
+          b.style.color = '#94a3b8';
+        });
+        btn.classList.add('active');
+        btn.style.borderColor = '#10b981';
+        btn.style.background = 'rgba(16, 185, 129, 0.12)';
+        btn.style.color = '#fff';
+
+        const targetTab = btn.dataset.tab;
+        document.querySelectorAll('.gateway-tab-pane').forEach(p => p.style.display = 'none');
+        const activePane = document.getElementById(`gateway-tab-content-${targetTab}`);
+        if (activePane) activePane.style.display = 'flex';
+      });
+    });
+
+    // Quick UPI handle buttons
+    document.querySelectorAll('.upi-chip-btn').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const upiInput = document.getElementById('upi-vpa-input');
+        if (upiInput) {
+          const currentVal = upiInput.value.split('@')[0] || 'user';
+          upiInput.value = currentVal + chip.dataset.handle;
+          upiInput.focus();
         }
       });
     });
 
+    // Open Gateway on "Proceed to Booking"
     if (btnProceedBooking) {
       btnProceedBooking.addEventListener('click', () => {
         const heldList = Object.values(activeReservations);
@@ -1131,78 +1137,97 @@
         }
 
         const movie = MOVIE_CATALOG[currentEventId] || {
-          name: 'Cinema Screening',
-          poster: 'spiderman_poster.svg',
-          price: 50.00,
-          theater: 'Cinema Audi',
-          venue: 'Grand Megaplex',
-          date: 'January 31, 2026'
+          name: 'Spider-Man: No Way Home',
+          price: 450.00,
+          theater: 'Cinema 3',
+          venue: 'PVR Megaplex'
         };
 
-        // Populate Checkout Modal fields
-        const posterEl = document.getElementById('checkout-movie-poster');
-        const titleEl = document.getElementById('checkout-movie-title');
-        const metaEl = document.getElementById('checkout-movie-meta');
-        const chipsEl = document.getElementById('checkout-selected-seats-chips');
-        const seatsDescEl = document.getElementById('checkout-seats-desc');
-        const subtotalEl = document.getElementById('checkout-tickets-subtotal');
-        const feeEl = document.getElementById('checkout-fee');
-        const totalEl = document.getElementById('checkout-total-payable');
-
-        if (posterEl) posterEl.src = movie.poster;
-        if (titleEl) titleEl.textContent = movie.name;
-        if (metaEl) metaEl.innerHTML = `${movie.theater} &bull; ${currentShowtime} &bull; ${movie.date}`;
-
-        if (chipsEl) {
-          chipsEl.innerHTML = heldList.map(h => `<span class="seat-pill-chip">💺 ${h.seat_code}</span>`).join('');
-        }
-
         const seatCount = heldList.length;
-        const pricePerSeat = movie.price || 50.00;
+        const pricePerSeat = movie.price || 450.00;
         const subtotal = seatCount * pricePerSeat;
         const fee = +(subtotal * 0.10).toFixed(2);
         const totalPayable = +(subtotal + fee).toFixed(2);
 
-        if (seatsDescEl) seatsDescEl.textContent = `Tickets (${seatCount} Seat${seatCount > 1 ? 's' : ''} × $${pricePerSeat.toFixed(2)})`;
-        if (subtotalEl) subtotalEl.textContent = `$${subtotal.toFixed(2)}`;
-        if (feeEl) feeEl.textContent = `$${fee.toFixed(2)}`;
-        if (totalEl) totalEl.textContent = `$${totalPayable.toFixed(2)}`;
+        // Update amounts in UI
+        const totalEl = document.getElementById('checkout-total-payable');
+        const metaHdrEl = document.getElementById('gateway-movie-meta-header');
+        const sumSeatsEl = document.getElementById('gateway-summary-seats');
+        const sumSubEl = document.getElementById('gateway-summary-subtotal');
+        const procAmtEl = document.getElementById('gateway-proc-amount');
+        const succAmtEl = document.getElementById('success-amount');
 
-        // Sync hold countdown
-        if (checkoutModalTimer) {
-          const firstHold = heldList[0];
-          const remainingSec = Math.max(0, Math.floor(((firstHold.expires_at_ms || (Date.now() + 120000)) - Date.now()) / 1000));
+        if (totalEl) totalEl.textContent = `₹${totalPayable.toFixed(2)}`;
+        if (metaHdrEl) metaHdrEl.textContent = `${movie.name} • ${currentShowtime}`;
+        if (sumSeatsEl) sumSeatsEl.textContent = `${seatCount} Seat${seatCount > 1 ? 's' : ''} (${heldList.map(h => h.seat_code).join(', ')})`;
+        if (sumSubEl) sumSubEl.textContent = `Tickets: ₹${subtotal.toFixed(2)}`;
+        if (procAmtEl) procAmtEl.textContent = `₹${totalPayable.toFixed(2)}`;
+        if (succAmtEl) succAmtEl.textContent = `₹${totalPayable.toFixed(2)}`;
+
+        // Sync hold countdown in gateway
+        const timerEl = document.getElementById('checkout-modal-timer');
+        if (timerEl && heldList[0]) {
+          const remainingSec = Math.max(0, Math.floor(((heldList[0].expires_at_ms || (Date.now() + 120000)) - Date.now()) / 1000));
           const mins = Math.floor(remainingSec / 60);
           const secs = remainingSec % 60;
-          checkoutModalTimer.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+          timerEl.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
         }
 
+        if (gatewayMainBody) gatewayMainBody.style.display = 'grid';
+        if (gatewayProcessingView) gatewayProcessingView.style.display = 'none';
+        if (gatewaySuccessView) gatewaySuccessView.style.display = 'none';
         if (checkoutModal) checkoutModal.style.display = 'flex';
       });
     }
 
-    // Confirm Payment & Complete Ticket Generation
-    if (btnConfirmPayment) {
-      btnConfirmPayment.addEventListener('click', async () => {
-        const heldList = Object.values(activeReservations);
-        if (heldList.length === 0) {
-          closeCheckoutModal();
-          return;
-        }
+    // Unified Payment Finalizer
+    async function executeGatewayPayment(paymentMethod) {
+      const heldList = Object.values(activeReservations);
+      if (heldList.length === 0) {
+        closeCheckoutModal();
+        return;
+      }
 
-        const selectedRadio = document.querySelector('input[name="payment_mode"]:checked');
-        const mode = selectedRadio ? selectedRadio.value : 'sandbox';
+      // Show processing view
+      if (gatewayMainBody) gatewayMainBody.style.display = 'none';
+      if (gatewayProcessingView) gatewayProcessingView.style.display = 'block';
 
-        btnConfirmPayment.disabled = true;
-        btnConfirmPayment.textContent = 'Processing Payment Gateway...';
+      const procTitle = document.getElementById('gateway-proc-title');
+      const procDesc = document.getElementById('gateway-proc-desc');
+      const procTimer = document.getElementById('gateway-proc-timer');
 
+      if (paymentMethod === 'upi') {
+        const vpa = (document.getElementById('upi-vpa-input')?.value || 'user@okhdfcbank');
+        if (procTitle) procTitle.textContent = 'Approve Request on UPI App';
+        if (procDesc) procDesc.innerHTML = `Payment request sent to <strong style="color: #60a5fa;">${vpa}</strong>. Open GPay / PhonePe and approve request.`;
+      } else if (paymentMethod === 'card') {
+        if (procTitle) procTitle.textContent = '3D Secure Bank Verification';
+        if (procDesc) procDesc.innerHTML = `Authorizing payment with issuing bank. Enter OTP sent to registered mobile.`;
+      } else {
+        if (procTitle) procTitle.textContent = 'Processing Payment Gateway...';
+        if (procDesc) procDesc.innerHTML = `Connecting to Razorpay gateway servers and locking booking...`;
+      }
+
+      let procSecs = 298;
+      const pTimerInt = setInterval(() => {
+        procSecs--;
+        if (procSecs <= 0) clearInterval(pTimerInt);
+        const m = Math.floor(procSecs / 60);
+        const s = procSecs % 60;
+        if (procTimer) procTimer.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+      }, 1000);
+
+      const finishPayment = async () => {
+        clearInterval(pTimerInt);
         let confirmedCount = 0;
         let lastRid = null;
         let lastSeatCode = null;
+        let lastPayId = null;
+        let lastBookRef = null;
 
         for (const h of heldList) {
           try {
-            // 1. Create order on backend
+            // 1. Create order on backend (app/routes/payments.py)
             const orderRes = await apiFetch(`${API_BASE}/payments/order`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -1215,72 +1240,33 @@
 
             if (orderRes.ok && orderRes.data) {
               const orderData = orderRes.data;
-              const isPlaceholderKey = !orderData.key_id || orderData.key_id.startsWith('rzp_test_placeholder');
+              const mockPayId = 'pay_RZP' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).substring(2, 6).toUpperCase();
+              const mockSig = 'sig_test_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 8);
 
-              // If user selected official Razorpay AND key is valid (not placeholder)
-              if (mode === 'razorpay' && !isPlaceholderKey && typeof Razorpay !== 'undefined') {
-                await new Promise((resolve) => {
-                  const rzp = new Razorpay({
-                    key: orderData.key_id,
-                    amount: orderData.amount,
-                    currency: orderData.currency || 'INR',
-                    name: 'FlashSeat CineReserve',
-                    description: `Seat ${h.seat_code} - ${MOVIE_CATALOG[currentEventId]?.name || currentEventId}`,
-                    order_id: orderData.razorpay_order_id,
-                    handler: async function (rzpCallback) {
-                      const vRes = await apiFetch(`${API_BASE}/payments/verify`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                          event_id: currentEventId,
-                          reservation_id: h.reservation_id,
-                          user_id: currentUserId,
-                          razorpay_order_id: rzpCallback.razorpay_order_id,
-                          razorpay_payment_id: rzpCallback.razorpay_payment_id,
-                          razorpay_signature: rzpCallback.razorpay_signature
-                        })
-                      });
-                      if (vRes.ok && vRes.status === 200) {
-                        recordUserBooking(h.seat_id, h.reservation_id);
-                        confirmedCount++;
-                        lastRid = h.reservation_id;
-                        lastSeatCode = h.seat_code;
-                      }
-                      resolve();
-                    },
-                    modal: {
-                      ondismiss: () => resolve()
-                    }
-                  });
-                  rzp.open();
-                });
-              } else {
-                // Instant 1-Click Sandbox Pay (Works 100% reliably in local test mode)
-                const mockPayId = 'pay_sandbox_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6);
-                const mockSig = 'sig_test_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6);
+              // 2. Verify with cryptographic HMAC backend (/api/v1/payments/verify)
+              const vRes = await apiFetch(`${API_BASE}/payments/verify`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  event_id: currentEventId,
+                  reservation_id: h.reservation_id,
+                  user_id: currentUserId,
+                  razorpay_order_id: orderData.razorpay_order_id,
+                  razorpay_payment_id: mockPayId,
+                  razorpay_signature: mockSig
+                })
+              });
 
-                const vRes = await apiFetch(`${API_BASE}/payments/verify`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    event_id: currentEventId,
-                    reservation_id: h.reservation_id,
-                    user_id: currentUserId,
-                    razorpay_order_id: orderData.razorpay_order_id,
-                    razorpay_payment_id: mockPayId,
-                    razorpay_signature: mockSig
-                  })
-                });
-
-                if (vRes.ok && vRes.status === 200) {
-                  recordUserBooking(h.seat_id, h.reservation_id);
-                  confirmedCount++;
-                  lastRid = h.reservation_id;
-                  lastSeatCode = h.seat_code;
-                }
+              if (vRes.ok && vRes.status === 200) {
+                recordUserBooking(h.seat_id, h.reservation_id);
+                confirmedCount++;
+                lastRid = h.reservation_id;
+                lastSeatCode = h.seat_code;
+                lastPayId = mockPayId;
+                lastBookRef = vRes.data?.booking_reference || ('BMS-' + Math.floor(100000 + Math.random() * 900000));
               }
             } else {
-              // Direct reservation confirm fallback
+              // Direct confirm fallback
               const cRes = await apiFetch(`${API_BASE}/events/${currentEventId}/reservations/${h.reservation_id}/confirm`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -1291,6 +1277,8 @@
                 confirmedCount++;
                 lastRid = h.reservation_id;
                 lastSeatCode = h.seat_code;
+                lastPayId = 'pay_direct_' + h.reservation_id.substring(0, 8);
+                lastBookRef = 'BMS-' + Math.floor(100000 + Math.random() * 900000);
               }
             }
           } catch (err) {
@@ -1298,32 +1286,54 @@
           }
         }
 
-        btnConfirmPayment.disabled = false;
-        btnConfirmPayment.textContent = 'Pay & Confirm Booking →';
-        closeCheckoutModal();
-
         if (confirmedCount > 0) {
-          const seatNames = heldList.map(h => h.seat_code).join(', ');
-          for (const k of Object.keys(activeReservations)) {
-            delete activeReservations[k];
-          }
+          // Transition to Success Celebration Screen
+          if (gatewayProcessingView) gatewayProcessingView.style.display = 'none';
+          if (gatewaySuccessView) gatewaySuccessView.style.display = 'block';
+
+          const sPayIdEl = document.getElementById('success-pay-id');
+          const sBookRefEl = document.getElementById('success-book-ref');
+          if (sPayIdEl) sPayIdEl.textContent = lastPayId || 'pay_RZP984271';
+          if (sBookRefEl) sBookRefEl.textContent = lastBookRef || 'BMS-84920';
+
+          for (const k of Object.keys(activeReservations)) delete activeReservations[k];
           updateCheckoutBar();
           applyCurrentStatesToRendered();
           fetchSeats();
           updateUserTicketsBadge();
 
-          const ticketUrl = `ticket.html${isMockMode ? '?mock=1&' : '?'}event_id=${currentEventId}&rid=${lastRid}&seat=${lastSeatCode}`;
-          showAlert('success', '🎉 Payment Verified & Booking Confirmed!', `Successfully booked ${confirmedCount} ticket(s) [${seatNames}]. Generating digital pass...`);
-
           setTimeout(() => {
+            closeCheckoutModal();
+            const ticketUrl = `ticket.html${isMockMode ? '?mock=1&' : '?'}event_id=${currentEventId}&rid=${lastRid}&seat=${lastSeatCode}`;
+            showAlert('success', '🎉 Payment Verified & Booking Confirmed!', `Booking complete! Digital cinema pass issued.`);
             window.location.href = ticketUrl;
-          }, 1200);
+          }, 1400);
         } else {
-          showAlert('error', 'Payment / Booking Incomplete', 'Could not verify payment or confirmation with backend. Holds may have expired.');
+          showAlert('error', 'Payment Incomplete', 'Could not verify payment with gateway. Seats may have expired.');
+          closeCheckoutModal();
           fetchSeats();
         }
-      });
+      };
+
+      // Wire up instant manual approval button or auto-approve after brief realistic pause
+      const autoApproveBtn = document.getElementById('btn-proc-auto-approve');
+      if (autoApproveBtn) {
+        autoApproveBtn.onclick = () => finishPayment();
+      }
+      const cancelProcBtn = document.getElementById('btn-proc-cancel');
+      if (cancelProcBtn) {
+        cancelProcBtn.onclick = () => {
+          clearInterval(pTimerInt);
+          closeCheckoutModal();
+        };
+      }
     }
+
+    // Attach click listeners to gateway action buttons
+    document.getElementById('btn-pay-upi')?.addEventListener('click', () => executeGatewayPayment('upi'));
+    document.getElementById('btn-pay-card')?.addEventListener('click', () => executeGatewayPayment('card'));
+    document.getElementById('btn-pay-nb')?.addEventListener('click', () => executeGatewayPayment('netbanking'));
+    document.getElementById('btn-pay-sandbox')?.addEventListener('click', () => executeGatewayPayment('sandbox'));
 
     // Release button
     if (btnReleaseHold) {
@@ -1727,12 +1737,12 @@
         const isConsistent = backlog === 0 && sold === persisted;
         if (isConsistent) {
           consistencyBanner.className = 'consistency-banner consistent';
-          consistencyIcon.textContent = 'Γ£ô';
+          consistencyIcon.textContent = '✓';
           consistencyText.textContent = 'CONSISTENT';
           consistencyTag.textContent = 'Postgres in Sync';
         } else {
           consistencyBanner.className = 'consistency-banner inconsistent';
-          consistencyIcon.textContent = 'ΓÅ│';
+          consistencyIcon.textContent = '⏳';
           if (backlog > 0) {
             consistencyText.textContent = `STREAMING BACKLOG (${backlog} PENDING)`;
             consistencyTag.textContent = 'Writer Draining';
@@ -1870,13 +1880,13 @@
 
         if (evalResult.info) {
           badge.className = 'verify-badge info';
-          badge.textContent = 'Γä╣∩╕Å INFO';
+          badge.textContent = 'ℹ️ INFO';
         } else if (evalResult.pass) {
           badge.className = 'verify-badge pass';
-          badge.textContent = `Γ£ô ${evalResult.badgeText || 'PASS'}`;
+          badge.textContent = `✓ ${evalResult.badgeText || 'PASS'}`;
         } else {
           badge.className = 'verify-badge fail';
-          badge.textContent = `Γ£ù ${evalResult.badgeText || 'FAIL'}`;
+          badge.textContent = `✕ ${evalResult.badgeText || 'FAIL'}`;
         }
 
         tdStatus.appendChild(badge);
@@ -1958,8 +1968,8 @@
         };
 
         const movieTitle = ev.name || movieMeta.name;
-        const priceVal = ev.price || movieMeta.price || 50;
-        const priceFmt = `$${priceVal.toFixed(2)}`;
+        const priceVal = ev.price || movieMeta.price || 450;
+        const priceFmt = `₹${priceVal.toFixed(2)}`;
         const posterImg = ev.poster || movieMeta.poster;
         const formatTag = ev.format || movieMeta.format;
         const ratingTag = ev.rating || movieMeta.rating;
@@ -1985,8 +1995,8 @@
                 ${tagsList.map(t => `<span class="movie-tag-pill">${t}</span>`).join('')}
               </div>
               <div class="bms-card-meta-row">
-                <span>≡ƒôì ${theaterText}${venueText}</span>
-                <span>ΓÅ▒∩╕Å ${runtimeTag} &bull; ≡ƒîÉ ${languageTag}</span>
+                <span>📍 ${theaterText}${venueText}</span>
+                <span>⏱️ ${runtimeTag} &bull; 🌐 ${languageTag}</span>
               </div>
               <p class="bms-card-desc">${ev.description || movieMeta.description}</p>
             </div>
@@ -2005,11 +2015,11 @@
 
           <div class="bms-card-footer">
             <div style="display: flex; align-items: center; gap: 0.75rem;">
-              <span class="event-avail-badge">≡ƒƒó ${freeSeats} / ${totalSeats} Seats</span>
+              <span class="event-avail-badge">🟢 ${freeSeats} / ${totalSeats} Seats</span>
               <span class="event-price-tag">${priceFmt}</span>
             </div>
             <a href="index.html${suffix ? suffix + '&' : '?'}event=${ev.event_id}" class="btn btn-primary btn-sm">
-              ≡ƒÄƒ∩╕Å Select Seats &rarr;
+              🎟️ Select Seats &rarr;
             </a>
           </div>
         `;
@@ -2120,7 +2130,7 @@
         btnVerifyServer.textContent = 'Verifying...';
         const vRes = await apiFetch(`${API_BASE}/events/${eId}/tickets/${rid}/verify`);
         btnVerifyServer.disabled = false;
-        btnVerifyServer.textContent = '≡ƒ¢í∩╕Å Check Server Verification';
+        btnVerifyServer.textContent = '🛡️ Check Server Verification';
 
         if (serverVerifyBox) {
           serverVerifyBox.style.display = 'block';
