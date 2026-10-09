@@ -799,9 +799,9 @@
 
     // Tier definitions with BMS category pricing
     const TIERS = {
-      '1': { name: 'RECLINER: Rows A–E ($50)', rows: ['A', 'B', 'C', 'D', 'E'], startIdx: 1, seatsPerRow: 8, price: 450.00 },
-      '2': { name: 'PRIME: Rows F–J ($35)', rows: ['F', 'G', 'H', 'I', 'J'], startIdx: 41, seatsPerRow: 8, price: 35.00 },
-      '3': { name: 'CLASSIC: Rows K–O ($20)', rows: ['K', 'L', 'M', 'N', 'O'], startIdx: 81, seatsPerRow: 8, price: 20.00 },
+      '1': { name: 'RECLINER: Rows A–E (₹450)', rows: ['A', 'B', 'C', 'D', 'E'], startIdx: 1, seatsPerRow: 8, price: 450.00 },
+      '2': { name: 'PRIME: Rows F–J (₹300)', rows: ['F', 'G', 'H', 'I', 'J'], startIdx: 41, seatsPerRow: 8, price: 300.00 },
+      '3': { name: 'CLASSIC: Rows K–O (₹180)', rows: ['K', 'L', 'M', 'N', 'O'], startIdx: 81, seatsPerRow: 8, price: 180.00 },
       'all': { name: 'Full Arena (200 Seats)', rows: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'], startIdx: 1, seatsPerRow: 20, price: 450.00 }
     };
 
@@ -956,7 +956,7 @@
       } else {
         const movie = MOVIE_CATALOG[currentEventId];
         const unitPrice = movie ? movie.price : 450.00;
-        const totalPrice = (count * unitPrice).toFixed(2); // In screenshot $20.00 for 2 seats
+        const totalPrice = (count * unitPrice).toFixed(2); // e.g. ₹900.00 for 2 seats
         if (checkoutTotalPrice) checkoutTotalPrice.textContent = `₹ ${totalPrice}`;
         if (checkoutSeatsLabel) checkoutSeatsLabel.textContent = `for ${count} ${count === 1 ? 'seat' : 'seats'}`;
 

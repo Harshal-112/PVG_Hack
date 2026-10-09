@@ -53,6 +53,10 @@ async def lifespan(app: FastAPI):
             await mem_inventory.seed_event("evt3", [f"S{i:03d}" for i in range(1, 51)])
             app.state.inventory = mem_inventory
 
+        from app.services.waiting_room import waiting_room_service
+        if hasattr(app.state.inventory, "redis"):
+            waiting_room_service.set_redis(app.state.inventory.redis)
+
     yield
 
     # Teardown on shutdown

@@ -435,12 +435,30 @@ class WaitingRoomService:
 
     async def get_stats(self, event_id: str) -> dict:
         """Operational statistics for virtual waiting room dashboard & telemetry."""
+        if not settings.WAITING_ROOM_ENABLED:
+            return {
+                "event_id": event_id,
+                "enabled": False,
+                "waiting_count": 0,
+                "admitted_count": 0,
+                "max_admitted": settings.WAITING_ROOM_MAX_ADMITTED,
+                "admission_rate_per_sec": settings.WAITING_ROOM_ADMISSION_RATE,
+                "max_queue_size": settings.WAITING_ROOM_MAX_QUEUE_SIZE,
+                "token_ttl_sec": settings.WAITING_ROOM_TOKEN_TTL_SEC,
+                "poll_interval_ms": settings.WAITING_ROOM_POLL_INTERVAL_MS,
+                "admissions_total": self._local_metrics.get("admissions_total", 0),
+                "expired_total": self._local_metrics.get("expired_total", 0),
+                "rejected_total": self._local_metrics.get("rejected_total", 0),
+                "left_total": self._local_metrics.get("left_total", 0),
+                "avg_wait_seconds": 0,
+                "queue_status": "DISABLED",
+            }
+
         queue_key = f"fr:{event_id}:wr:queue"
         admitted_hash = f"fr:{event_id}:wr:admitted"
 
         # Refresh state
-        if settings.WAITING_ROOM_ENABLED:
-            await self._process_admissions(event_id)
+        await self._process_admissions(event_id)
 
         waiting_count = 0
         try:
