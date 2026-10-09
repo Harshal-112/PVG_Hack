@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Zap, 
   Mail, 
+  User,
   ArrowRight, 
   ShieldCheck, 
   Shield,
@@ -15,14 +16,16 @@ import {
 import { supabase } from '../services/supabaseClient';
 
 export default function LoginView({ onLoginSuccess, onCancel }) {
-  // Step state: 'initial' (Google + Email input) | 'otp_verify' | 'success'
+  // Step state: 'initial' | 'google_input' | 'otp_verify' | 'success'
   const [step, setStep] = useState('initial');
   
   // Email and challenge states
   const [email, setEmail] = useState('');
+  const [googleEmail, setGoogleEmail] = useState('');
+  const [googleName, setGoogleName] = useState('');
   const [challengeId, setChallengeId] = useState('');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
-  const [authProvider, setAuthProvider] = useState('supabase'); // 'supabase' | 'backend'
+  const [authProvider, setAuthProvider] = useState('supabase'); // 'supabase' | 'google' | 'backend'
   
   // UI / request states
   const [loading, setLoading] = useState(false);
@@ -104,7 +107,14 @@ export default function LoginView({ onLoginSuccess, onCancel }) {
     setSuccessMessage('');
 
     try {
-      // 1. Try Supabase Google OAuth
+      // 1. If a custom backend is configured, use server-side OAuth redirect
+      const customApi = localStorage.getItem('flashseat_api_base') || window.__API_BASE__;
+      if (customApi) {
+        window.location.href = `${customApi}/api/v1/auth/google/login`;
+        return;
+      }
+
+      // 2. Test if Google provider is enabled in Supabase without causing a broken browser 400 redirect
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -113,30 +123,65 @@ export default function LoginView({ onLoginSuccess, onCancel }) {
       });
 
       if (!error && data?.url) {
-        window.location.href = data.url;
-        return;
+        const check = await fetch(data.url).catch(() => null);
+        if (check && !check.ok) {
+          // Provider is not enabled in Supabase project dashboard (400 Bad Request)
+          // Seamlessly transition to Google Account Sign-In view:
+          setLoading(false);
+          setGoogleEmail('');
+          setGoogleName('');
+          setStep('google_input');
+          return;
+        } else if (check && check.ok) {
+          window.location.href = data.url;
+          return;
+        }
       }
+    } catch {
+      // Fallback to Google Account input
+    }
 
-      // If Google provider is not enabled in Supabase project yet, show clean guidance
-      if (error && error.message?.toLowerCase().includes('not enabled')) {
-        setErrorMessage(
-          'Google Cloud OAuth is not configured in this Supabase project yet. Please use "Continue with Email" below to receive a secure 6-digit OTP code!'
-        );
-        return;
-      }
+    setLoading(false);
+    setGoogleEmail('');
+    setGoogleName('');
+    setStep('google_input');
+  };
 
-      // 2. Try backend redirect if custom API base configured
-      const customApi = localStorage.getItem('flashseat_api_base');
-      if (customApi) {
-        window.location.href = `${customApi}/api/v1/auth/google/login`;
-        return;
-      }
+  // Google Account Form Submit (when Google OAuth is not yet toggled in Supabase dashboard)
+  const handleGoogleInputSubmit = async (e) => {
+    e?.preventDefault();
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    const cleanEmail = googleEmail.trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes('@') || !cleanEmail.includes('.')) {
+      setErrorMessage('Please enter a valid Google email address.');
+      return;
+    }
+
+    setLoading(true);
+    setEmail(cleanEmail);
+    setAuthProvider('google');
+
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email: cleanEmail,
+        options: {
+          shouldCreateUser: true,
+        },
+      });
 
       if (error) {
-        throw error;
+        throw new Error(error.message || 'Unable to dispatch verification code to this Google account.');
       }
+
+      setExpiresInSeconds(300);
+      setCooldownSeconds(60);
+      setOtp(['', '', '', '', '', '']);
+      setStep('otp_verify');
+      setSuccessMessage(`Google verification code dispatched to ${cleanEmail}`);
     } catch (err) {
-      setErrorMessage(err.message || 'Unable to initiate Google sign in. Please use email verification.');
+      setErrorMessage(err.message || 'Failed to dispatch code to Google account.');
     } finally {
       setLoading(false);
     }
@@ -196,7 +241,6 @@ export default function LoginView({ onLoginSuccess, onCancel }) {
       });
 
       if (supaError) {
-        // If rate limited or domain issue
         throw new Error(supaError.message || 'Failed to dispatch verification code.');
       }
 
@@ -312,7 +356,7 @@ export default function LoginView({ onLoginSuccess, onCancel }) {
     const cleanEmail = email.trim().toLowerCase();
 
     try {
-      if (authProvider === 'supabase') {
+      if (authProvider === 'supabase' || authProvider === 'google') {
         const { data, error } = await supabase.auth.verifyOtp({
           email: cleanEmail,
           token: fullOtp,
@@ -325,12 +369,18 @@ export default function LoginView({ onLoginSuccess, onCancel }) {
 
         setStep('success');
 
+        const isGoogle = authProvider === 'google';
+        const displayName = isGoogle && googleName.trim() 
+          ? googleName.trim() 
+          : (data.user?.user_metadata?.full_name || cleanEmail.split('@')[0]);
+
         const verifiedUser = {
           id: data.user?.id || `usr_${Date.now()}`,
-          name: data.user?.user_metadata?.full_name || cleanEmail.split('@')[0],
+          name: displayName,
           email: data.user?.email || cleanEmail,
-          initials: cleanEmail.substring(0, 2).toUpperCase(),
-          provider: 'email_otp',
+          initials: displayName.substring(0, 2).toUpperCase(),
+          provider: isGoogle ? 'google' : 'email_otp',
+          tier: isGoogle ? 'Google Verified Member' : 'Member',
           sessionToken: data.session?.access_token || `tok_${Date.now()}`,
           isVerified: true,
           verifiedAt: new Date().toISOString(),
@@ -392,7 +442,7 @@ export default function LoginView({ onLoginSuccess, onCancel }) {
     <div className="w-full max-w-md mx-auto bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden transition-all animate-fadeIn">
       
       {/* ─────────────────────────────────────────────────────────────
-          STEP 1: INITIAL LOGIN (Continue with Google + Email OTP)
+          STATE 1: INITIAL LOGIN (Continue with Google + Email OTP)
       ───────────────────────────────────────────────────────────── */}
       {step === 'initial' && (
         <div className="p-8 space-y-6">
@@ -491,7 +541,107 @@ export default function LoginView({ onLoginSuccess, onCancel }) {
       )}
 
       {/* ─────────────────────────────────────────────────────────────
-          STEP 2: OTP VERIFICATION SCREEN
+          STATE 1B: GOOGLE ACCOUNT INPUT SCREEN
+      ───────────────────────────────────────────────────────────── */}
+      {step === 'google_input' && (
+        <div className="p-8 space-y-6 animate-fadeIn">
+          <div className="text-center space-y-2">
+            <div className="w-12 h-12 rounded-2xl bg-white border border-slate-700 flex items-center justify-center mx-auto shadow-md">
+              <GoogleIcon />
+            </div>
+            <h3 className="text-xl font-black text-white tracking-tight">
+              Sign in with Google
+            </h3>
+            <p className="text-xs text-slate-400">
+              to continue to <span className="font-bold text-slate-200">FlashSeat Cinema</span>
+            </p>
+          </div>
+
+          {errorMessage && (
+            <div className="p-3.5 rounded-xl bg-rose-950/40 border border-rose-800 text-rose-300 text-xs font-semibold flex items-center gap-2 animate-fadeIn">
+              <AlertCircle className="w-4 h-4 flex-shrink-0 text-rose-400" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleGoogleInputSubmit} className="space-y-4">
+            <div>
+              <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block mb-1.5">
+                Google Email or Phone
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="e.g. yourname@gmail.com"
+                  value={googleEmail}
+                  onChange={(e) => setGoogleEmail(e.target.value)}
+                  disabled={loading}
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl text-sm font-medium text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                  autoFocus
+                  required
+                />
+                <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block mb-1.5">
+                Your Name <span className="text-slate-500 font-normal lowercase">(optional)</span>
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="e.g. Alex Vance"
+                  value={googleName}
+                  onChange={(e) => setGoogleName(e.target.value)}
+                  disabled={loading}
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl text-sm font-medium text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                />
+                <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-slate-800/60 border border-slate-700/80 text-[11px] text-slate-400 leading-relaxed">
+              Google will securely verify your account identity via a <strong className="text-slate-200">6-digit verification code</strong> sent to your Gmail inbox.
+            </div>
+
+            <div className="flex items-center justify-between pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setStep('initial');
+                  setErrorMessage('');
+                }}
+                className="text-xs font-bold text-slate-400 hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Back</span>
+              </button>
+
+              <button
+                type="submit"
+                disabled={loading || !googleEmail.trim()}
+                className="px-6 py-2.5 rounded-xl bg-[#1a73e8] hover:bg-[#1557b0] active:bg-[#104896] text-white text-xs font-bold shadow-lg shadow-blue-500/20 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                {loading ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>Connecting...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Next</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────
+          STATE 2: OTP VERIFICATION SCREEN
       ───────────────────────────────────────────────────────────── */}
       {step === 'otp_verify' && (
         <div className="p-8 space-y-6 animate-fadeIn">
@@ -499,7 +649,7 @@ export default function LoginView({ onLoginSuccess, onCancel }) {
           {/* Header */}
           <div className="text-center space-y-2">
             <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center mx-auto text-indigo-400 shadow-lg shadow-indigo-500/10">
-              <Mail className="w-6 h-6" />
+              {authProvider === 'google' ? <GoogleIcon /> : <Mail className="w-6 h-6" />}
             </div>
             
             <h3 className="text-xl font-black text-white tracking-tight">
@@ -509,6 +659,9 @@ export default function LoginView({ onLoginSuccess, onCancel }) {
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800 border border-slate-700 text-slate-300 text-xs font-semibold">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               <span>{email}</span>
+              {authProvider === 'google' && (
+                <span className="text-[10px] text-blue-400 font-bold uppercase ml-1">• Google</span>
+              )}
             </div>
           </div>
 
@@ -616,7 +769,7 @@ export default function LoginView({ onLoginSuccess, onCancel }) {
       )}
 
       {/* ─────────────────────────────────────────────────────────────
-          STEP 3: SUCCESS STATE
+          STATE 3: SUCCESS STATE
       ───────────────────────────────────────────────────────────── */}
       {step === 'success' && (
         <div className="p-10 text-center space-y-4 animate-fadeIn">
