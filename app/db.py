@@ -298,3 +298,162 @@ async def is_webhook_event_processed(event_id: str) -> bool:
         val = await conn.fetchval("SELECT 1 FROM webhook_events WHERE event_id = $1", event_id)
         return bool(val)
 
+
+# =============================================================================
+# Auth DB Operations (Users, Identities, OTP Challenges, Sessions)
+# =============================================================================
+_mem_users: dict[str, dict] = {}
+_mem_identities: dict[tuple[str, str], str] = {}
+_mem_otp_challenges: dict[str, dict] = {}
+_mem_sessions: dict[str, dict] = {}
+
+
+async def db_create_or_get_user(
+    email: str,
+    provider: str,
+    provider_user_id: str,
+    display_name: str | None = None,
+    avatar_url: str | None = None,
+) -> dict:
+    """Create or retrieve a user and link external identity."""
+    clean_email = email.strip().lower()
+    identity_key = (provider, provider_user_id)
+
+    if _pool is None:
+        user_id = _mem_identities.get(identity_key)
+        if user_id and user_id in _mem_users:
+            return _mem_users[user_id]
+        
+        # Check by email
+        existing = next((u for u in _mem_users.values() if u["email"] == clean_email), None)
+        if existing:
+            _mem_identities[identity_key] = existing["id"]
+            return existing
+
+        import uuid
+        from datetime import datetime, timezone
+        user_id = f"usr_{uuid.uuid4().hex[:16]}"
+        now = datetime.now(timezone.utc)
+        user = {
+            "id": user_id,
+            "email": clean_email,
+            "display_name": display_name or clean_email.split("@")[0].title(),
+            "avatar_url": avatar_url,
+            "is_verified": True,
+            "created_at": now,
+            "last_login_at": now,
+        }
+        _mem_users[user_id] = user
+        _mem_identities[identity_key] = user_id
+        return user
+
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        async with conn.transaction():
+            # Check identity first
+            row = await conn.fetchrow(
+                """
+                SELECT u.* FROM users u
+                JOIN user_identities ui ON u.id = ui.user_id
+                WHERE ui.provider = $1 AND ui.provider_user_id = $2
+                """,
+                provider,
+                provider_user_id,
+            )
+            if row:
+                await conn.execute("UPDATE users SET last_login_at = now() WHERE id = $1", row["id"])
+                return dict(row)
+
+            # Check if user exists with this email
+            user_row = await conn.fetchrow("SELECT * FROM users WHERE email = $1", clean_email)
+            if not user_row:
+                import uuid
+                user_id = f"usr_{uuid.uuid4().hex[:16]}"
+                user_row = await conn.fetchrow(
+                    """
+                    INSERT INTO users (id, email, display_name, avatar_url, is_verified)
+                    VALUES ($1, $2, $3, $4, TRUE)
+                    RETURNING *
+                    """,
+                    user_id,
+                    clean_email,
+                    display_name or clean_email.split("@")[0].title(),
+                    avatar_url,
+                )
+            
+            # Link identity
+            await conn.execute(
+                """
+                INSERT INTO user_identities (user_id, provider, provider_user_id)
+                VALUES ($1, $2, $3)
+                ON CONFLICT (provider, provider_user_id) DO NOTHING
+                """,
+                user_row["id"],
+                provider,
+                provider_user_id,
+            )
+            return dict(user_row)
+
+
+async def db_create_otp_challenge(challenge_data: dict) -> None:
+    """Save an email OTP challenge."""
+    cid = challenge_data["id"]
+    if _pool is None:
+        _mem_otp_challenges[cid] = dict(challenge_data)
+        return
+
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        await conn.execute(
+            """
+            INSERT INTO email_otp_challenges (id, email, otp_hash, salt, attempts, max_attempts, expires_at, consumed)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            """,
+            challenge_data["id"],
+            challenge_data["email"],
+            challenge_data["otp_hash"],
+            challenge_data["salt"],
+            challenge_data.get("attempts", 0),
+            challenge_data.get("max_attempts", 5),
+            challenge_data["expires_at"],
+            challenge_data.get("consumed", False),
+        )
+
+
+async def db_get_otp_challenge(challenge_id: str) -> dict | None:
+    """Retrieve an email OTP challenge by id."""
+    if _pool is None:
+        return _mem_otp_challenges.get(challenge_id)
+
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow("SELECT * FROM email_otp_challenges WHERE id = $1", challenge_id)
+        return dict(row) if row else None
+
+
+async def db_update_otp_challenge(challenge_id: str, **updates) -> None:
+    """Update attempts or consumed status of an OTP challenge."""
+    if _pool is None:
+        ch = _mem_otp_challenges.get(challenge_id)
+        if ch:
+            ch.update(updates)
+        return
+
+    if not updates:
+        return
+
+    set_clauses = []
+    args = []
+    idx = 1
+    for k, v in updates.items():
+        set_clauses.append(f"{k} = ${idx}")
+        args.append(v)
+        idx += 1
+    args.append(challenge_id)
+
+    query = f"UPDATE email_otp_challenges SET {', '.join(set_clauses)} WHERE id = ${idx}"
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        await conn.execute(query, *args)
+
+

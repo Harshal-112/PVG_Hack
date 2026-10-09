@@ -293,248 +293,128 @@
   // AUTH HUB: Login, Register, MFA (web/login.html)
   // =========================================================================
   function initAuthPage() {
-    const tabLoginBtn = document.getElementById('tab-login-btn');
-    const tabRegisterBtn = document.getElementById('tab-register-btn');
-    const loginForm = document.getElementById('login-form');
-    const registerForm = document.getElementById('register-form');
-    const mfaScreen = document.getElementById('mfa-screen');
-    const authTabs = document.getElementById('auth-tabs');
-    const authTitle = document.getElementById('auth-title');
-    const authSubtitle = document.getElementById('auth-subtitle');
+    const btnGoogleLogin = document.getElementById('btn-google-login');
+    const emailOtpForm = document.getElementById('email-otp-form');
+    const inputEmail = document.getElementById('input-email');
+    const btnSendOtp = document.getElementById('btn-send-otp');
+    
+    const authInitialScreen = document.getElementById('auth-initial-screen');
+    const authOtpScreen = document.getElementById('auth-otp-screen');
+    const displayTargetEmail = document.getElementById('display-target-email');
+    const otpExpiryTimer = document.getElementById('otp-expiry-timer');
+    const btnVerifyOtp = document.getElementById('btn-verify-otp');
+    const btnResendOtp = document.getElementById('btn-resend-otp');
+    const resendCountdownSecs = document.getElementById('resend-countdown-secs');
+    const btnBackToEmail = document.getElementById('btn-back-to-email');
+    const otpInputs = Array.from(document.querySelectorAll('.otp-digit'));
 
-    if (!loginForm) return;
+    let activeChallengeId = '';
+    let targetEmail = '';
+    let expiryInterval = null;
+    let cooldownInterval = null;
 
-    // Tabs switching
-    tabLoginBtn.addEventListener('click', () => {
-      tabLoginBtn.classList.add('active');
-      tabRegisterBtn.classList.remove('active');
-      loginForm.style.display = 'flex';
-      registerForm.style.display = 'none';
-      mfaScreen.style.display = 'none';
-      authTabs.style.display = 'grid';
-      authTitle.textContent = 'FlashSeat Security Portal';
-      authSubtitle.textContent = 'High-concurrency ticket reservation engine';
-    });
-
-    tabRegisterBtn.addEventListener('click', () => {
-      tabRegisterBtn.classList.add('active');
-      tabLoginBtn.classList.remove('active');
-      loginForm.style.display = 'none';
-      registerForm.style.display = 'flex';
-      mfaScreen.style.display = 'none';
-      authTabs.style.display = 'grid';
-      authTitle.textContent = 'Create FlashSeat Account';
-      authSubtitle.textContent = 'Register to hold and confirm seats in real time';
-    });
-
-    let pendingLoginUser = null;
-    let mfaExpiryInterval = null;
-    let resendCooldownInterval = null;
-
-    function stopMfaTimers() {
-      if (mfaExpiryInterval) {
-        clearInterval(mfaExpiryInterval);
-        mfaExpiryInterval = null;
-      }
-      if (resendCooldownInterval) {
-        clearInterval(resendCooldownInterval);
-        resendCooldownInterval = null;
-      }
+    function stopTimers() {
+      if (expiryInterval) clearInterval(expiryInterval);
+      if (cooldownInterval) clearInterval(cooldownInterval);
+      expiryInterval = null;
+      cooldownInterval = null;
     }
 
-    function startMfaCountdown(expiresAtMs) {
-      stopMfaTimers();
-      const timerEl = document.getElementById('mfa-countdown-timer');
-      const btnVerify = document.getElementById('btn-verify-mfa');
-      const btnResend = document.getElementById('btn-resend-mfa');
-      const resendCountEl = document.getElementById('resend-countdown-secs');
+    function startOtpTimers(ttlSecs, cooldownSecs) {
+      stopTimers();
+      let remainingExpiry = ttlSecs || 300;
+      let remainingCooldown = cooldownSecs || 60;
 
-      btnVerify.disabled = false;
-      btnResend.disabled = true;
-
-      // 60-second expiration timer
-      const updateExpiry = () => {
-        const remainingMs = expiresAtMs - Date.now();
-        const secs = Math.max(0, Math.ceil(remainingMs / 1000));
-        if (timerEl) {
-          timerEl.textContent = `${secs}s`;
-          if (secs <= 10) {
-            timerEl.classList.add('expired');
-          } else {
-            timerEl.classList.remove('expired');
-          }
-        }
-        if (secs <= 0) {
-          if (timerEl) timerEl.textContent = 'Expired';
-          btnVerify.disabled = true;
-          btnResend.disabled = false;
-          if (resendCountEl) resendCountEl.textContent = '0';
-          clearInterval(mfaExpiryInterval);
-          mfaExpiryInterval = null;
-        }
+      const formatTime = (secs) => {
+        const m = Math.floor(secs / 60);
+        const s = secs % 60;
+        return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
       };
-      updateExpiry();
-      mfaExpiryInterval = setInterval(updateExpiry, 1000);
 
-      // 30-second resend button cooldown
-      let resendSecs = 30;
-      if (resendCountEl) resendCountEl.textContent = String(resendSecs);
-      resendCooldownInterval = setInterval(() => {
-        resendSecs -= 1;
-        if (resendCountEl) resendCountEl.textContent = String(Math.max(0, resendSecs));
-        if (resendSecs <= 0) {
-          btnResend.disabled = false;
-          clearInterval(resendCooldownInterval);
-          resendCooldownInterval = null;
+      if (otpExpiryTimer) otpExpiryTimer.textContent = formatTime(remainingExpiry);
+      if (btnVerifyOtp) btnVerifyOtp.disabled = false;
+
+      expiryInterval = setInterval(() => {
+        remainingExpiry -= 1;
+        if (otpExpiryTimer) otpExpiryTimer.textContent = formatTime(Math.max(0, remainingExpiry));
+        if (remainingExpiry <= 0) {
+          if (btnVerifyOtp) btnVerifyOtp.disabled = true;
+          clearInterval(expiryInterval);
+          showAlert('error', 'Code Expired', 'The verification code has expired. Please request a new code.');
+        }
+      }, 1000);
+
+      if (btnResendOtp) btnResendOtp.disabled = true;
+      if (resendCountdownSecs) {
+        resendCountdownSecs.style.display = 'inline';
+        resendCountdownSecs.textContent = `(${remainingCooldown}s)`;
+      }
+
+      cooldownInterval = setInterval(() => {
+        remainingCooldown -= 1;
+        if (resendCountdownSecs) {
+          resendCountdownSecs.textContent = `(${Math.max(0, remainingCooldown)}s)`;
+        }
+        if (remainingCooldown <= 0) {
+          if (btnResendOtp) btnResendOtp.disabled = false;
+          if (resendCountdownSecs) resendCountdownSecs.style.display = 'none';
+          clearInterval(cooldownInterval);
         }
       }, 1000);
     }
 
-    // 1. Strict Login Form Submit
-    loginForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const usernameInput = document.getElementById('login-username');
-      const passwordInput = document.getElementById('login-password');
-      const username = usernameInput.value.trim();
-      const password = passwordInput.value;
-
-      if (!username || username.length < 3) {
-        showAlert('error', 'Invalid Input', 'Please enter a valid username (min 3 characters).');
-        usernameInput.focus();
-        return;
-      }
-      if (!password) {
-        showAlert('error', 'Invalid Input', 'Please enter your password.');
-        passwordInput.focus();
-        return;
-      }
-
-      const btnSubmit = document.getElementById('btn-login-submit');
-      btnSubmit.disabled = true;
-      btnSubmit.textContent = 'Verifying...';
-
-      const res = await apiFetch(`${API_BASE}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
+    // 1. Continue with Google
+    if (btnGoogleLogin) {
+      btnGoogleLogin.addEventListener('click', () => {
+        window.location.href = `${API_BASE}/auth/google/login`;
       });
+    }
 
-      btnSubmit.disabled = false;
-      btnSubmit.textContent = 'Sign In';
+    // 2. Email OTP Send
+    if (emailOtpForm) {
+      emailOtpForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const emailVal = inputEmail.value.trim().toLowerCase();
+        if (!emailVal || !emailVal.includes('@')) {
+          showAlert('error', 'Invalid Email', 'Please enter a valid email address.');
+          inputEmail.focus();
+          return;
+        }
 
-      if (!res.ok) {
-        const errorMsg = (res.data && res.data.message) ? res.data.message : 'Invalid username or password.';
-        showAlert('error', 'Authentication Failed', errorMsg);
-        return;
-      }
+        btnSendOtp.disabled = true;
+        btnSendOtp.textContent = 'Sending Code...';
 
-      const data = res.data;
-      if (data.mfa_required) {
-        // Step 2: Show Authentic MFA Screen
-        pendingLoginUser = {
-          user_id: data.user_id,
-          username: data.username,
-          totp_secret: data.totp_secret,
-          expires_at_ms: data.expires_at_ms || (Date.now() + 60000)
-        };
+        const res = await apiFetch(`${API_BASE}/auth/email/send-otp`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: emailVal })
+        });
 
-        authTabs.style.display = 'none';
-        loginForm.style.display = 'none';
-        registerForm.style.display = 'none';
-        mfaScreen.style.display = 'flex';
-        authTitle.textContent = 'Two-Factor Authentication';
-        authSubtitle.textContent = 'Enter the 6-digit security code';
+        btnSendOtp.disabled = false;
+        btnSendOtp.textContent = 'Send Verification Code';
 
-        const targetUserEl = document.getElementById('mfa-target-username');
-        if (targetUserEl) targetUserEl.textContent = `@${data.username}`;
+        if (!res.ok) {
+          const msg = (res.data && res.data.message) ? res.data.message : 'Failed to send verification code.';
+          showAlert('error', 'Delivery Error', msg);
+          return;
+        }
 
-        const activeCodeEl = document.getElementById('mfa-active-code');
-        if (activeCodeEl) activeCodeEl.textContent = data.challenge_code || '------';
+        targetEmail = emailVal;
+        activeChallengeId = res.data.challenge_id;
+        if (displayTargetEmail) displayTargetEmail.textContent = emailVal;
 
-        const secretKeyEl = document.getElementById('mfa-secret-key-display');
-        if (secretKeyEl) secretKeyEl.textContent = data.totp_secret || 'TOTP-PROTECTED';
+        if (authInitialScreen) authInitialScreen.style.display = 'none';
+        if (authOtpScreen) authOtpScreen.style.display = 'block';
 
-        // Clear previous OTP inputs
         otpInputs.forEach(i => { i.value = ''; });
-        startMfaCountdown(pendingLoginUser.expires_at_ms);
-
         if (otpInputs[0]) otpInputs[0].focus();
-      } else {
-        // Direct authenticated session without MFA
-        const authRecord = {
-          user_id: data.user_id,
-          username: data.username,
-          token: data.token || ('tok-' + Date.now()),
-          mfa_verified: false,
-          logged_in: true,
-          auth_time: Date.now()
-        };
-        setStoredAuthUser(authRecord);
-        showAlert('success', 'Welcome Back!', `Signed in as @${data.username}. Redirecting...`);
-        setTimeout(() => {
-          const suffix = isMockMode ? '?mock=1' : '';
-          window.location.href = 'index.html' + suffix;
-        }, 800);
-      }
-    });
 
-    // 2. Strict Register Form Submit (Only Username, Password & MFA Toggle)
-    registerForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const usernameInput = document.getElementById('reg-username');
-      const passwordInput = document.getElementById('reg-password');
-      const confirmInput = document.getElementById('reg-confirm-password');
-
-      const username = usernameInput.value.trim();
-      const password = passwordInput.value;
-      const confirmPassword = confirmInput.value;
-      const enableMfa = document.getElementById('reg-enable-mfa').checked;
-
-      // Strict Validation
-      if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) {
-        showAlert('error', 'Validation Error', 'Username must be 3-20 characters long and contain only letters, numbers, or underscores.');
-        usernameInput.focus();
-        return;
-      }
-      if (password.length < 6) {
-        showAlert('error', 'Validation Error', 'Password must be at least 6 characters long.');
-        passwordInput.focus();
-        return;
-      }
-      if (password !== confirmPassword) {
-        showAlert('error', 'Validation Error', 'Passwords do not match. Please re-enter your password.');
-        confirmInput.focus();
-        return;
-      }
-
-      const btnReg = document.getElementById('btn-register-submit');
-      btnReg.disabled = true;
-      btnReg.textContent = 'Creating Account...';
-
-      const res = await apiFetch(`${API_BASE}/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password, mfa_enabled: enableMfa })
+        startOtpTimers(res.data.expires_in_seconds || 300, res.data.cooldown_seconds || 60);
+        showAlert('success', 'Code Sent!', `Verification code dispatched to ${emailVal}`);
       });
+    }
 
-      btnReg.disabled = false;
-      btnReg.textContent = 'Create Account';
-
-      if (!res.ok) {
-        const msg = (res.data && res.data.message) ? res.data.message : 'Registration failed.';
-        showAlert('error', 'Registration Error', msg);
-        return;
-      }
-
-      showAlert('success', 'Account Registered!', 'Your account has been created successfully. Please sign in.');
-      tabLoginBtn.click();
-      document.getElementById('login-username').value = username;
-      document.getElementById('login-password').value = '';
-      document.getElementById('login-password').focus();
-    });
-
-    // 3. MFA OTP Auto-Advance Input Behavior
-    const otpInputs = Array.from(document.querySelectorAll('.otp-digit'));
+    // 3. OTP Auto-Advance Input Behavior
     otpInputs.forEach((input, idx) => {
       input.addEventListener('input', (e) => {
         const val = e.target.value.replace(/[^0-9]/g, '');
@@ -562,114 +442,92 @@
       });
     });
 
-    // Copy Security Code button
-    const btnCopyCode = document.getElementById('btn-copy-mfa-code');
-    if (btnCopyCode) {
-      btnCopyCode.addEventListener('click', async () => {
-        const codeText = document.getElementById('mfa-active-code').textContent.trim();
-        if (codeText && codeText !== '------') {
-          try {
-            await navigator.clipboard.writeText(codeText);
-            btnCopyCode.textContent = '✓ Copied!';
-            setTimeout(() => { btnCopyCode.textContent = '📋 Copy Code'; }, 1500);
-          } catch (err) {
-            btnCopyCode.textContent = '✓ ' + codeText;
-          }
-        }
-      });
-    }
+    // 4. Resend OTP
+    if (btnResendOtp) {
+      btnResendOtp.addEventListener('click', async () => {
+        if (!targetEmail) return;
+        btnResendOtp.disabled = true;
 
-    // Resend MFA Code
-    const btnResendMfa = document.getElementById('btn-resend-mfa');
-    if (btnResendMfa) {
-      btnResendMfa.addEventListener('click', async () => {
-        if (!pendingLoginUser) return;
-        btnResendMfa.disabled = true;
-
-        const res = await apiFetch(`${API_BASE}/auth/resend-mfa`, {
+        const res = await apiFetch(`${API_BASE}/auth/email/send-otp`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user_id: pendingLoginUser.user_id })
+          body: JSON.stringify({ email: targetEmail })
         });
 
-        if (res.ok && res.data) {
-          const newCode = res.data.challenge_code;
-          const exp = res.data.expires_at_ms || (Date.now() + 60000);
-          pendingLoginUser.expires_at_ms = exp;
-
-          const activeCodeEl = document.getElementById('mfa-active-code');
-          if (activeCodeEl) activeCodeEl.textContent = newCode;
-
+        if (res.ok) {
+          activeChallengeId = res.data.challenge_id;
           otpInputs.forEach(i => { i.value = ''; });
-          startMfaCountdown(exp);
-          showAlert('info', 'New Code Generated', 'A new 6-digit security passkey has been issued.');
           if (otpInputs[0]) otpInputs[0].focus();
+          startOtpTimers(res.data.expires_in_seconds || 300, res.data.cooldown_seconds || 60);
+          showAlert('info', 'Code Resent', `A new verification code has been dispatched to ${targetEmail}`);
         } else {
-          showAlert('error', 'Error', 'Failed to resend code. Please try again.');
-          btnResendMfa.disabled = false;
+          const msg = (res.data && res.data.message) ? res.data.message : 'Failed to resend code.';
+          showAlert('error', 'Resend Error', msg);
+          btnResendOtp.disabled = false;
         }
       });
     }
 
-    // Cancel MFA -> Back to Login
-    const btnCancelMfa = document.getElementById('btn-cancel-mfa');
-    if (btnCancelMfa) {
-      btnCancelMfa.addEventListener('click', () => {
-        stopMfaTimers();
-        pendingLoginUser = null;
-        tabLoginBtn.click();
+    // 5. Back to Email Step
+    if (btnBackToEmail) {
+      btnBackToEmail.addEventListener('click', () => {
+        stopTimers();
+        if (authOtpScreen) authOtpScreen.style.display = 'none';
+        if (authInitialScreen) authInitialScreen.style.display = 'block';
       });
     }
 
-    // Verify MFA Submit
-    const btnVerifyMfa = document.getElementById('btn-verify-mfa');
-    if (btnVerifyMfa) {
-      btnVerifyMfa.addEventListener('click', async () => {
-        const otpCode = otpInputs.map(i => i.value).join('');
-        if (otpCode.length !== 6) {
-          showAlert('error', 'Incomplete Code', 'Please enter all 6 digits of your security code.');
+    // 6. Verify OTP Submit
+    if (btnVerifyOtp) {
+      btnVerifyOtp.addEventListener('click', async () => {
+        const enteredOtp = otpInputs.map(i => i.value).join('');
+        if (enteredOtp.length !== 6) {
+          showAlert('error', 'Incomplete Code', 'Please enter all 6 digits of your verification code.');
           return;
         }
 
-        btnVerifyMfa.disabled = true;
-        btnVerifyMfa.textContent = 'Verifying Code...';
+        btnVerifyOtp.disabled = true;
+        btnVerifyOtp.textContent = 'Verifying...';
 
-        const res = await apiFetch(`${API_BASE}/auth/verify-mfa`, {
+        const res = await apiFetch(`${API_BASE}/auth/email/verify-otp`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ otp: otpCode, user_id: pendingLoginUser.user_id })
+          body: JSON.stringify({
+            challenge_id: activeChallengeId,
+            email: targetEmail,
+            otp: enteredOtp
+          })
         });
 
-        btnVerifyMfa.disabled = false;
-        btnVerifyMfa.textContent = 'Verify & Sign In';
+        btnVerifyOtp.disabled = false;
+        btnVerifyOtp.textContent = 'Verify & Continue';
 
         if (!res.ok) {
-          const msg = (res.data && res.data.message) ? res.data.message : 'Invalid or expired security code.';
+          const msg = (res.data && res.data.message) ? res.data.message : 'Invalid or expired verification code.';
           showAlert('error', 'Verification Failed', msg);
-          otpInputs.forEach(i => { i.value = ''; });
-          if (otpInputs[0]) otpInputs[0].focus();
           return;
         }
 
-        stopMfaTimers();
+        stopTimers();
 
-        // Save authenticated session
+        const user = res.data.user || {};
         const authRecord = {
-          user_id: pendingLoginUser.user_id,
-          username: pendingLoginUser.username,
-          token: (res.data && res.data.token) ? res.data.token : ('tok-' + Date.now()),
+          user_id: user.id || ('usr_' + Date.now()),
+          username: user.display_name || targetEmail.split('@')[0],
+          email: targetEmail,
+          token: res.data.session_token || ('tok-' + Date.now()),
           mfa_verified: true,
           logged_in: true,
           auth_time: Date.now()
         };
 
         setStoredAuthUser(authRecord);
-        showAlert('success', 'MFA Verified!', `Authentication successful. Access granted for @${pendingLoginUser.username}.`);
+        showAlert('success', 'Verified!', `Authentication successful. Access granted for ${authRecord.username}.`);
 
         setTimeout(() => {
           const suffix = isMockMode ? '?mock=1' : '';
           window.location.href = 'index.html' + suffix;
-        }, 1000);
+        }, 800);
       });
     }
   }
