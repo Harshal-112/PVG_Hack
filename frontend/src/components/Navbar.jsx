@@ -15,7 +15,8 @@ import {
   LogOut,
   LogIn,
   Sparkles,
-  ChevronDown
+  ChevronDown,
+  ShieldCheck
 } from 'lucide-react';
 
 export default function Navbar({ 
@@ -165,8 +166,8 @@ export default function Navbar({
                       {currentUser.name}
                     </div>
                     <div className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 leading-tight mt-0.5 flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>
-                      <span>Verified</span>
+                      <ShieldCheck className="w-3 h-3 text-emerald-500 inline-block" />
+                      <span>{currentUser.mfaVerified ? '2-Step Verified' : 'Verified'}</span>
                     </div>
                   </div>
                   <ChevronDown className="hidden sm:block w-3.5 h-3.5 text-slate-400" />
@@ -181,6 +182,10 @@ export default function Navbar({
                       </div>
                       <div className="text-[10px] text-slate-400 dark:text-slate-500 truncate">
                         {currentUser.email}
+                      </div>
+                      <div className="mt-1.5 flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                        <ShieldCheck className="w-3 h-3 text-emerald-500" />
+                        <span>2-Step Verification Active</span>
                       </div>
                     </div>
 
