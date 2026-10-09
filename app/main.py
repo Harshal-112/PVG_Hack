@@ -16,7 +16,7 @@ from app.ratelimit import APIException
 from app.redis_client import close_redis, get_redis
 from app.services.inventory import InventoryService
 from app import db
-from app.routes import admin, baseline, events, payments, reservations, waiting_room
+from app.routes import admin, auth, baseline, events, payments, reservations, waiting_room
 from fastapi.middleware.cors import CORSMiddleware
 
 
@@ -142,6 +142,7 @@ app.include_router(admin.router, prefix="/api/v1")
 app.include_router(baseline.router, prefix="/api/v1")
 app.include_router(waiting_room.router, prefix="/api/v1")
 app.include_router(payments.router, prefix="/api/v1")
+app.include_router(auth.router, prefix="/api/v1")
 
 # Also mount at root for flexibility
 app.include_router(reservations.router)
@@ -149,6 +150,7 @@ app.include_router(events.router)
 app.include_router(admin.router)
 app.include_router(waiting_room.router)
 app.include_router(payments.router)
+app.include_router(auth.router)
 
 
 # Mount web/ at /ui and root

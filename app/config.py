@@ -35,7 +35,25 @@ class Settings:
     RAZORPAY_WEBHOOK_SECRET: str = os.getenv("RAZORPAY_WEBHOOK_SECRET", "mock_webhook_secret_987654321")
     RAZORPAY_API_BASE: str = os.getenv("RAZORPAY_API_BASE", "https://api.razorpay.com/v1")
     TICKET_PRICE_PAISE: int = int(os.getenv("TICKET_PRICE_PAISE", "50000"))  # 50,000 paise = 500 INR
-    CORS_ORIGINS: str = os.getenv("CORS_ORIGINS", "*")
+
+    # Authentication (Google OAuth + Email OTP)
+    GOOGLE_CLIENT_ID: str = os.getenv("GOOGLE_CLIENT_ID", "")
+    GOOGLE_CLIENT_SECRET: str = os.getenv("GOOGLE_CLIENT_SECRET", "")
+    GOOGLE_REDIRECT_URI: str = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8000/api/v1/auth/google/callback")
+    EMAIL_PROVIDER: str = os.getenv("EMAIL_PROVIDER", "smtp")
+    SMTP_HOST: str = os.getenv("SMTP_HOST", "")
+    SMTP_PORT: int = int(os.getenv("SMTP_PORT", "587"))
+    SMTP_USERNAME: str = os.getenv("SMTP_USERNAME", "")
+    SMTP_PASSWORD: str = os.getenv("SMTP_PASSWORD", "")
+    SMTP_USE_TLS: bool = os.getenv("SMTP_USE_TLS", "true").lower() in ("true", "1", "yes")
+    EMAIL_FROM: str = os.getenv("EMAIL_FROM", "FlashSeat <noreply@flashseat.com>")
+    OTP_TTL_SECONDS: int = int(os.getenv("OTP_TTL_SECONDS", "300"))
+    OTP_RESEND_COOLDOWN_SECONDS: int = int(os.getenv("OTP_RESEND_COOLDOWN_SECONDS", "60"))
+    OTP_MAX_ATTEMPTS: int = int(os.getenv("OTP_MAX_ATTEMPTS", "5"))
+    SESSION_SECRET: str = os.getenv("SESSION_SECRET", "flashseat_secure_session_secret_2026")
+    SESSION_TTL_SECONDS: int = int(os.getenv("SESSION_TTL_SECONDS", "604800"))
+    SESSION_COOKIE_NAME: str = os.getenv("SESSION_COOKIE_NAME", "flashseat_session")
+    SESSION_COOKIE_SECURE: bool = os.getenv("SESSION_COOKIE_SECURE", "false").lower() in ("true", "1", "yes")
 
 
 settings = Settings()

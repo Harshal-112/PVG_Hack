@@ -55,3 +55,48 @@ CREATE TABLE IF NOT EXISTS webhook_events (
   processed_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- ============================================================================
+-- Authentication & Identity Tables (Section 7)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS users (
+  id                  TEXT PRIMARY KEY, -- usr_<uuid>
+  email               TEXT UNIQUE NOT NULL,
+  display_name        TEXT,
+  avatar_url          TEXT,
+  is_verified         BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+  last_login_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS user_identities (
+  id                  BIGSERIAL PRIMARY KEY,
+  user_id             TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  provider            TEXT NOT NULL, -- 'google' | 'email_otp'
+  provider_user_id    TEXT NOT NULL, -- Google sub id or verified email
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (provider, provider_user_id)
+);
+
+CREATE TABLE IF NOT EXISTS email_otp_challenges (
+  id                  TEXT PRIMARY KEY, -- challenge_id (uuid)
+  email               TEXT NOT NULL,
+  otp_hash            TEXT NOT NULL,
+  salt                TEXT NOT NULL,
+  attempts            INT NOT NULL DEFAULT 0,
+  max_attempts        INT NOT NULL DEFAULT 5,
+  expires_at          TIMESTAMPTZ NOT NULL,
+  consumed            BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS user_sessions (
+  id                  TEXT PRIMARY KEY, -- session_token (crypto token)
+  user_id             TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  expires_at          TIMESTAMPTZ NOT NULL,
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_otp_email ON email_otp_challenges(email);
+CREATE INDEX IF NOT EXISTS idx_sessions_user ON user_sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+
