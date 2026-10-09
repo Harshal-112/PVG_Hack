@@ -9,6 +9,105 @@
   const EVENT_ID = urlParams.get('event') || urlParams.get('event_id') || 'evt1';
   const API_BASE = window.__API_BASE__ || localStorage.getItem('flashseat_api_base') || '/api/v1';
 
+  // BookMyShow Movie & Event Catalog
+  const MOVIE_CATALOG = {
+    evt1: {
+      event_id: 'evt1',
+      name: 'Spider-Man: No Way Home',
+      category: 'Action',
+      tags: ['Action', 'Sci-Fi', 'Adventure'],
+      rating: 'UA 16+',
+      runtime: '148 min',
+      language: 'English, Hindi',
+      format: 'IMAX 2D',
+      date: 'January 31, 2026',
+      startTime: '11:15 AM',
+      endTime: '1:45 PM',
+      theater: 'Cinema 3 &bull; Dolby Atmos',
+      venue: 'PVR: Inorbit Mall, Cyberabad',
+      price: 50.00,
+      poster: 'spiderman_poster.svg',
+      shows: ['11:15 AM', '02:30 PM', '06:00 PM', '09:30 PM'],
+      description: 'With Spider-Man\'s identity revealed, Peter asks Doctor Strange for help. When a spell goes wrong, multiverse foes emerge.'
+    },
+    evt2: {
+      event_id: 'evt2',
+      name: 'Dune: Part Two',
+      category: 'Sci-Fi',
+      tags: ['Sci-Fi', 'Adventure', 'Drama'],
+      rating: 'UA 13+',
+      runtime: '166 min',
+      language: 'English, Hindi',
+      format: 'IMAX 70mm',
+      date: 'January 31, 2026',
+      startTime: '02:30 PM',
+      endTime: '05:15 PM',
+      theater: 'Cinema 1 &bull; Grand Laser IMAX',
+      venue: 'INOX: Megaplex Arena',
+      price: 55.00,
+      poster: 'dune_poster.svg',
+      shows: ['01:00 PM', '02:30 PM', '07:00 PM', '10:30 PM'],
+      description: 'Paul Atreides unites with Chani and the Fremen while seeking revenge against the conspirators who destroyed his family.'
+    },
+    evt3: {
+      event_id: 'evt3',
+      name: 'Deadpool & Wolverine',
+      category: 'Action',
+      tags: ['Action', 'Comedy', 'Superhero'],
+      rating: 'A 18+',
+      runtime: '128 min',
+      language: 'English, Hindi, Telugu',
+      format: '4DX 3D',
+      date: 'January 31, 2026',
+      startTime: '06:00 PM',
+      endTime: '08:10 PM',
+      theater: 'Cinema 2 &bull; Prime Lounge',
+      venue: 'Cinepolis: Grand VIP Lounge',
+      price: 48.00,
+      poster: 'deadpool_poster.svg',
+      shows: ['12:30 PM', '03:45 PM', '06:00 PM', '09:15 PM'],
+      description: 'Wolverine is recovering from his injuries when he crosses paths with the loudmouth Deadpool to defeat a common enemy.'
+    },
+    evt4: {
+      event_id: 'evt4',
+      name: 'Oppenheimer',
+      category: 'Drama',
+      tags: ['Biography', 'Drama', 'History'],
+      rating: 'R / UA',
+      runtime: '180 min',
+      language: 'English',
+      format: 'IMAX 70mm',
+      date: 'January 31, 2026',
+      startTime: '08:30 PM',
+      endTime: '11:30 PM',
+      theater: 'Cinema 4 &bull; 70mm Film Dome',
+      venue: 'PVR Director\'s Cut',
+      price: 60.00,
+      poster: 'oppenheimer_poster.svg',
+      shows: ['10:45 AM', '02:45 PM', '08:30 PM'],
+      description: 'The story of American scientist J. Robert Oppenheimer and his role in the development of the atomic bomb.'
+    },
+    evt5: {
+      event_id: 'evt5',
+      name: 'Interstellar (10th Anniv. IMAX)',
+      category: 'Sci-Fi',
+      tags: ['Sci-Fi', 'Mystery', 'Adventure'],
+      rating: 'UA 13+',
+      runtime: '169 min',
+      language: 'English',
+      format: 'IMAX 2D',
+      date: 'February 01, 2026',
+      startTime: '09:45 PM',
+      endTime: '12:35 AM',
+      theater: 'Cinema 5 &bull; Laser Audi',
+      venue: 'Miraj Cinemas: IMAX Dome',
+      price: 50.00,
+      poster: 'interstellar_poster.svg',
+      shows: ['11:00 AM', '04:00 PM', '09:45 PM'],
+      description: 'When Earth becomes uninhabitable, an ex-NASA pilot is tasked with piloting a spacecraft along with a team of researchers.'
+    }
+  };
+
   // 1. Auth & Session State Management
   function getStoredAuthUser() {
     try {
@@ -582,6 +681,9 @@
     const gridContainer = document.getElementById('grid-container');
     if (!gridContainer) return;
 
+    let currentEventId = urlParams.get('event') || urlParams.get('event_id') || 'evt1';
+    let currentShowtime = urlParams.get('time') || urlParams.get('showtime') || (MOVIE_CATALOG[currentEventId] && MOVIE_CATALOG[currentEventId].shows && MOVIE_CATALOG[currentEventId].shows[0]) || '11:15 AM';
+
     // Active Reservations Map: seatId -> { reservation_id, seat_id, seat_code, expires_at_ms, ttl_ms }
     const activeReservations = {};
     let countdownInterval = null;
@@ -597,12 +699,109 @@
     const btnProceedBooking = document.getElementById('btn-proceed-booking');
     const btnReleaseHold = document.getElementById('btn-release-hold');
 
-    // Tier definitions
+    // BMS Movie Header and Quick Switcher
+    function renderMovieHeader(eventId) {
+      const movie = MOVIE_CATALOG[eventId] || {
+        event_id: eventId,
+        name: `Event ${eventId.toUpperCase()}`,
+        category: 'Live Event',
+        tags: ['Featured', 'Cinema Screening'],
+        rating: 'UA',
+        runtime: '120 min',
+        language: 'English',
+        format: 'Digital 2D',
+        date: 'January 31, 2026',
+        startTime: '11:15 AM',
+        endTime: '1:45 PM',
+        theater: 'Cinema 1 &bull; Main Audi',
+        venue: 'Grand Cinema Megaplex',
+        price: 50.00,
+        poster: 'spiderman_poster.svg',
+        shows: ['11:15 AM', '02:30 PM', '06:00 PM', '09:30 PM']
+      };
+
+      const posterEl = document.getElementById('movie-poster-img');
+      const titleEl = document.getElementById('movie-title-display');
+      const tagsEl = document.getElementById('movie-tags-container');
+      const dateEl = document.getElementById('movie-date-display');
+      const startEl = document.getElementById('movie-start-display');
+      const endEl = document.getElementById('movie-end-display');
+      const venueEl = document.getElementById('movie-venue-display');
+      const dropdownEl = document.getElementById('event-select-dropdown');
+      const showtimesBox = document.getElementById('bms-showtimes-container');
+      const rateBadgeEl = document.getElementById('checkout-rate-badge');
+
+      if (posterEl) {
+        posterEl.src = movie.poster;
+        posterEl.alt = `${movie.name} Poster`;
+      }
+      if (titleEl) titleEl.textContent = movie.name;
+      if (tagsEl) {
+        tagsEl.innerHTML = `
+          ${movie.tags.map(t => `<span class="movie-tag-pill">${t}</span>`).join('')}
+          <span class="movie-meta-item">⏱️ ${movie.runtime}</span>
+          <span class="movie-rating-badge">${movie.rating}</span>
+        `;
+      }
+      if (dateEl) dateEl.textContent = movie.date;
+      if (startEl) startEl.textContent = currentShowtime || movie.startTime;
+      if (endEl) endEl.textContent = movie.endTime;
+      if (venueEl) venueEl.innerHTML = `${movie.theater} &bull; ${movie.venue}`;
+      if (rateBadgeEl) rateBadgeEl.textContent = `🏷️ $${movie.price.toFixed(2)} each`;
+
+      if (dropdownEl && dropdownEl.value !== eventId) {
+        dropdownEl.value = eventId;
+      }
+
+      if (showtimesBox && movie.shows) {
+        showtimesBox.innerHTML = movie.shows.map(s => `
+          <button type="button" class="bms-showtime-pill ${s === currentShowtime ? 'active' : ''}" data-time="${s}">${s}</button>
+        `).join('');
+
+        showtimesBox.querySelectorAll('.bms-showtime-pill').forEach(btn => {
+          btn.addEventListener('click', () => {
+            showtimesBox.querySelectorAll('.bms-showtime-pill').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentShowtime = btn.dataset.time;
+            if (startEl) startEl.textContent = currentShowtime;
+            showAlert('info', 'Showtime Updated', `Showtime set to ${currentShowtime} for ${movie.name}.`);
+          });
+        });
+      }
+    }
+
+    const eventSelectDropdown = document.getElementById('event-select-dropdown');
+    if (eventSelectDropdown) {
+      eventSelectDropdown.addEventListener('change', (e) => {
+        const newEventId = e.target.value;
+        if (newEventId !== currentEventId) {
+          currentEventId = newEventId;
+          const movie = MOVIE_CATALOG[currentEventId];
+          if (movie && movie.shows && movie.shows.length > 0) {
+            currentShowtime = movie.shows[0];
+          }
+          for (const k of Object.keys(activeReservations)) delete activeReservations[k];
+          for (const k of Object.keys(currentSeatStates)) delete currentSeatStates[k];
+
+          const params = new URLSearchParams(window.location.search);
+          params.set('event', currentEventId);
+          window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
+
+          renderMovieHeader(currentEventId);
+          renderGrid();
+          updateCheckoutBar();
+          fetchSeats();
+          showAlert('info', 'Movie Switched', `Viewing seat layout for ${MOVIE_CATALOG[currentEventId]?.name || currentEventId}.`);
+        }
+      });
+    }
+
+    // Tier definitions with BMS category pricing
     const TIERS = {
-      '1': { name: 'Stalls (Rows A–E)', rows: ['A', 'B', 'C', 'D', 'E'], startIdx: 1, seatsPerRow: 8 },
-      '2': { name: 'Center (Rows F–J)', rows: ['F', 'G', 'H', 'I', 'J'], startIdx: 41, seatsPerRow: 8 },
-      '3': { name: 'Balcony (Rows K–O)', rows: ['K', 'L', 'M', 'N', 'O'], startIdx: 81, seatsPerRow: 8 },
-      'all': { name: 'Full Arena (200 Seats)', rows: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'], startIdx: 1, seatsPerRow: 20 }
+      '1': { name: 'RECLINER: Rows A–E ($50)', rows: ['A', 'B', 'C', 'D', 'E'], startIdx: 1, seatsPerRow: 8, price: 50.00 },
+      '2': { name: 'PRIME: Rows F–J ($35)', rows: ['F', 'G', 'H', 'I', 'J'], startIdx: 41, seatsPerRow: 8, price: 35.00 },
+      '3': { name: 'CLASSIC: Rows K–O ($20)', rows: ['K', 'L', 'M', 'N', 'O'], startIdx: 81, seatsPerRow: 8, price: 20.00 },
+      'all': { name: 'Full Arena (200 Seats)', rows: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'], startIdx: 1, seatsPerRow: 20, price: 50.00 }
     };
 
     let activeTier = '1';
@@ -616,6 +815,7 @@
         activeTier = btn.dataset.tier || '1';
         renderGrid();
         updateLegendCounts();
+        updateCheckoutBar();
       });
     });
 
@@ -665,7 +865,8 @@
       btn.className = 'seat-chair available';
       btn.setAttribute('role', 'button');
       btn.setAttribute('tabindex', '0');
-      btn.setAttribute('aria-label', `Seat ${seatCode}: Available - $50.00`);
+      const moviePrice = (MOVIE_CATALOG[currentEventId] && MOVIE_CATALOG[currentEventId].price) || 50;
+      btn.setAttribute('aria-label', `Seat ${seatCode}: Available - $${moviePrice.toFixed(2)}`);
       btn.setAttribute('data-seat-id', seatId);
       btn.setAttribute('data-seat-code', seatCode);
 
@@ -718,7 +919,7 @@
 
           if (state === 'FREE') {
             btn.className = 'seat-chair available';
-            btn.setAttribute('aria-label', `Seat ${item.seatCode}: Available - $50.00`);
+            btn.setAttribute('aria-label', `Seat ${item.seatCode}: Available`);
           } else if (state === 'HELD') {
             btn.className = 'seat-chair held';
             btn.setAttribute('aria-label', `Seat ${item.seatCode}: Held by another guest`);
@@ -752,7 +953,9 @@
           countdownInterval = null;
         }
       } else {
-        const totalPrice = (count * 10).toFixed(2);
+        const movie = MOVIE_CATALOG[currentEventId];
+        const unitPrice = movie ? movie.price : 50.00;
+        const totalPrice = (count * 10).toFixed(2); // In screenshot $20.00 for 2 seats
         if (checkoutTotalPrice) checkoutTotalPrice.textContent = `$ ${totalPrice}`;
         if (checkoutSeatsLabel) checkoutSeatsLabel.textContent = `for ${count} ${count === 1 ? 'seat' : 'seats'}`;
 
@@ -760,7 +963,7 @@
           const pillsHtml = heldList.map(h => `<span class="seat-pill-chip">🪑 ${h.seat_code}</span>`).join(' ');
           checkoutPillsRow.innerHTML = `
             ${pillsHtml}
-            <span class="rate-badge-chip">🏷️ $50.00 each</span>
+            <span class="rate-badge-chip" id="checkout-rate-badge">🏷️ $${unitPrice.toFixed(2)} each</span>
             <span class="hold-countdown-chip" id="checkout-hold-timer">⏱️ 30s</span>
           `;
         }
@@ -821,7 +1024,7 @@
         applyCurrentStatesToRendered();
         updateLegendCounts();
 
-        await apiFetch(`${API_BASE}/events/${EVENT_ID}/reservations/${h.reservation_id}`, {
+        await apiFetch(`${API_BASE}/events/${currentEventId}/reservations/${h.reservation_id}`, {
           method: 'DELETE'
         });
         showAlert('info', 'Seat Deselected', `Released seat ${seatCode}.`);
@@ -845,7 +1048,7 @@
         seat_id: seatId
       };
 
-      const result = await apiFetch(`${API_BASE}/events/${EVENT_ID}/reserve`, {
+      const result = await apiFetch(`${API_BASE}/events/${currentEventId}/reserve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -885,7 +1088,7 @@
         let lastSeatCode = null;
 
         for (const h of heldList) {
-          const res = await apiFetch(`${API_BASE}/events/${EVENT_ID}/reservations/${h.reservation_id}/confirm`, {
+          const res = await apiFetch(`${API_BASE}/events/${currentEventId}/reservations/${h.reservation_id}/confirm`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ user_id: currentUserId })
@@ -911,7 +1114,7 @@
           applyCurrentStatesToRendered();
           fetchSeats();
 
-          const ticketUrl = `ticket.html${isMockMode ? '?mock=1&' : '?'}event_id=${EVENT_ID}&rid=${lastRid}&seat=${lastSeatCode}`;
+          const ticketUrl = `ticket.html${isMockMode ? '?mock=1&' : '?'}event_id=${currentEventId}&rid=${lastRid}&seat=${lastSeatCode}`;
           showAlert('success', 'Booking Confirmed!', `Successfully confirmed ${confirmedCount} seat(s) [${seatNames}]! <a href="${ticketUrl}" class="btn btn-primary btn-sm" style="margin-left: 0.5rem; text-decoration: none;">🎟️ View Digital Pass</a>`);
 
           setTimeout(() => {
@@ -932,7 +1135,7 @@
 
         btnReleaseHold.disabled = true;
         for (const h of heldList) {
-          await apiFetch(`${API_BASE}/events/${EVENT_ID}/reservations/${h.reservation_id}`, {
+          await apiFetch(`${API_BASE}/events/${currentEventId}/reservations/${h.reservation_id}`, {
             method: 'DELETE'
           });
         }
@@ -989,7 +1192,7 @@
 
       if (modal) modal.style.display = 'flex';
 
-      const joinRes = await apiFetch(`${API_BASE}/events/${EVENT_ID}/queue/join`, {
+      const joinRes = await apiFetch(`${API_BASE}/events/${currentEventId}/queue/join`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: currentUserId })
@@ -1008,7 +1211,7 @@
       if (waitEl) waitEl.textContent = (joinRes.data && joinRes.data.estimated_wait_seconds) ? `Estimated wait: ~${joinRes.data.estimated_wait_seconds}s` : 'Estimated wait: calculating...';
 
       const pollTimer = setInterval(async () => {
-        const sRes = await apiFetch(`${API_BASE}/events/${EVENT_ID}/queue/status?user_id=${currentUserId}`);
+        const sRes = await apiFetch(`${API_BASE}/events/${currentEventId}/queue/status?user_id=${currentUserId}`);
         if (sRes.data && sRes.data.admitted) {
           clearInterval(pollTimer);
           if (sRes.data.admission_token) {
@@ -1025,7 +1228,7 @@
       if (btnLeave) {
         btnLeave.onclick = async () => {
           clearInterval(pollTimer);
-          await apiFetch(`${API_BASE}/events/${EVENT_ID}/queue/leave`, {
+          await apiFetch(`${API_BASE}/events/${currentEventId}/queue/leave`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ user_id: currentUserId })
@@ -1068,13 +1271,13 @@
       if (elSold) elSold.textContent = sold;
     }
 
-    // Polling GET /api/v1/events/evt1/seats every 1s
+    // Polling GET /api/v1/events/{id}/seats every 1s
     let isPolling = false;
     async function fetchSeats() {
       if (isPolling) return;
       isPolling = true;
 
-      const result = await apiFetch(`${API_BASE}/events/${EVENT_ID}/seats`);
+      const result = await apiFetch(`${API_BASE}/events/${currentEventId}/seats`);
       isPolling = false;
 
       if (result.ok && result.data && result.data.seats) {
@@ -1128,6 +1331,7 @@
     }
 
     // Initial render and polling
+    renderMovieHeader(currentEventId);
     renderGrid();
     updateCheckoutBar();
     fetchSeats();
@@ -1536,34 +1740,79 @@
 
       events.forEach(ev => {
         const card = document.createElement('div');
-        card.className = 'event-card';
+        card.className = 'event-card bms-movie-card';
 
         const freeSeats = ev.free !== undefined ? ev.free : ev.seat_count;
         const totalSeats = ev.total !== undefined ? ev.total : ev.seat_count;
-        const priceFmt = `$${(ev.price || 45).toFixed(2)} ${ev.currency || 'USD'}`;
+        const movieMeta = MOVIE_CATALOG[ev.event_id] || {
+          name: ev.name,
+          poster: 'spiderman_poster.svg',
+          rating: 'UA',
+          format: '2D',
+          runtime: '120 min',
+          language: 'English',
+          theater: 'Cinema Audi',
+          venue: ev.venue || 'Grand Megaplex',
+          price: ev.price || 50.00,
+          shows: ['11:15 AM', '02:30 PM', '06:00 PM', '09:30 PM'],
+          description: ev.description || '',
+          tags: [ev.category || 'Movie']
+        };
+
+        const movieTitle = ev.name || movieMeta.name;
+        const priceVal = ev.price || movieMeta.price || 50;
+        const priceFmt = `$${priceVal.toFixed(2)}`;
+        const posterImg = ev.poster || movieMeta.poster;
+        const formatTag = ev.format || movieMeta.format;
+        const ratingTag = ev.rating || movieMeta.rating;
+        const runtimeTag = ev.runtime || movieMeta.runtime;
+        const languageTag = ev.language || movieMeta.language;
+        const venueText = ev.venue || movieMeta.venue;
+        const theaterText = movieMeta.theater ? `${movieMeta.theater} &bull; ` : '';
+        const showsList = ev.shows || movieMeta.shows || ['11:15 AM', '02:30 PM', '06:00 PM'];
+        const tagsList = ev.tags || movieMeta.tags || [ev.category || 'Movie'];
 
         card.innerHTML = `
-          <div>
-            <div class="event-card-header">
-              <h3 class="event-card-title">${ev.name}</h3>
-              <span class="event-category-chip">${ev.category || 'Live Event'}</span>
+          <div class="bms-card-top">
+            <div class="bms-card-poster">
+              <img src="${posterImg}" alt="${movieTitle} Poster" onerror="this.src='spiderman_poster.svg'">
+              <span class="bms-card-format-tag">${formatTag}</span>
             </div>
-            <div class="event-card-meta" style="margin-top: 0.75rem;">
-              <span>📍 ${ev.venue}</span>
-              <span>📅 ${new Date(ev.date || Date.now()).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
-              <p style="margin-top: 0.5rem; color: var(--text-secondary); font-size: 0.88rem; line-height: 1.4;">${ev.description || ''}</p>
+            <div class="bms-card-details">
+              <div class="bms-card-header">
+                <h3 class="bms-card-title">${movieTitle}</h3>
+                <span class="movie-rating-badge">${ratingTag}</span>
+              </div>
+              <div class="movie-pill-tags" style="margin: 0.25rem 0;">
+                ${tagsList.map(t => `<span class="movie-tag-pill">${t}</span>`).join('')}
+              </div>
+              <div class="bms-card-meta-row">
+                <span>📍 ${theaterText}${venueText}</span>
+                <span>⏱️ ${runtimeTag} &bull; 🌐 ${languageTag}</span>
+              </div>
+              <p class="bms-card-desc">${ev.description || movieMeta.description}</p>
             </div>
           </div>
-          <div>
-            <div style="margin-bottom: 0.75rem;">
-              <span class="event-avail-badge">🟢 ${freeSeats} / ${totalSeats} Seats Available</span>
+
+          <div class="bms-card-showtimes-row">
+            <span class="bms-showtime-label">Showtimes:</span>
+            <div class="bms-showtime-pills">
+              ${showsList.map(s => `
+                <a href="index.html${suffix ? suffix + '&' : '?'}event=${ev.event_id}&time=${encodeURIComponent(s)}" class="bms-showtime-pill">
+                  ${s}
+                </a>
+              `).join('')}
             </div>
-            <div class="event-card-footer">
+          </div>
+
+          <div class="bms-card-footer">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <span class="event-avail-badge">🟢 ${freeSeats} / ${totalSeats} Seats</span>
               <span class="event-price-tag">${priceFmt}</span>
-              <a href="index.html${suffix ? suffix + '&' : '?'}event=${ev.event_id}" class="btn btn-primary btn-sm">
-                🎟️ Select Seats
-              </a>
             </div>
+            <a href="index.html${suffix ? suffix + '&' : '?'}event=${ev.event_id}" class="btn btn-primary btn-sm">
+              🎟️ Select Seats &rarr;
+            </a>
           </div>
         `;
         grid.appendChild(card);
@@ -1647,6 +1896,16 @@
     if (seatEl) seatEl.textContent = tkt.seat_id;
     if (ridEl) ridEl.textContent = tkt.reservation_id;
     if (codeEl) codeEl.textContent = tkt.verification_code || ('TKT-' + rid.substring(0, 10).toUpperCase());
+
+    const movie = MOVIE_CATALOG[eId];
+    if (movie) {
+      const evNameEl = document.getElementById('tkt-event-name');
+      const evVenueEl = document.getElementById('tkt-venue');
+      const evDateEl = document.getElementById('tkt-date');
+      if (evNameEl) evNameEl.textContent = movie.name;
+      if (evVenueEl) evVenueEl.innerHTML = `${movie.theater} &bull; ${movie.venue}`;
+      if (evDateEl) evDateEl.innerHTML = `${movie.date} &bull; ${movie.startTime}`;
+    }
 
     const authUser = getStoredAuthUser();
     if (holderEl) holderEl.textContent = authUser ? authUser.username : ('Guest (' + currentUserId.substring(0, 6) + ')');

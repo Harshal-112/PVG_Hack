@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CineReserve — Select Seats | FlashSeat</title>
-  <link rel="stylesheet" href="style.css?v=2.4">
+  <link rel="stylesheet" href="style.css?v=2.5">
 </head>
 <body data-page="grid" class="cinereserve-body">
 
@@ -81,19 +81,42 @@
       <div class="cinema-content-container">
         <h1 class="cinema-heading-title">Select Seats</h1>
 
+        <!-- BookMyShow Quick Movie Switcher & Showtime Bar -->
+        <div class="bms-movie-switch-bar">
+          <div class="bms-switch-left">
+            <label for="event-select-dropdown" class="bms-switch-label">🎬 Now Showing:</label>
+            <select id="event-select-dropdown" class="bms-event-select" aria-label="Select Movie Event">
+              <option value="evt1">Spider-Man: No Way Home (IMAX 2D)</option>
+              <option value="evt2">Dune: Part Two (IMAX 70mm)</option>
+              <option value="evt3">Deadpool & Wolverine (4DX 3D)</option>
+              <option value="evt4">Oppenheimer (IMAX 70mm)</option>
+              <option value="evt5">Interstellar (10th Anniv. IMAX)</option>
+            </select>
+          </div>
+          <div class="bms-switch-right">
+            <span class="bms-showtime-label">Showtimes:</span>
+            <div class="bms-showtime-pills" id="bms-showtimes-container">
+              <button type="button" class="bms-showtime-pill active" data-time="11:15 AM">11:15 AM</button>
+              <button type="button" class="bms-showtime-pill" data-time="02:30 PM">02:30 PM</button>
+              <button type="button" class="bms-showtime-pill" data-time="06:00 PM">06:00 PM</button>
+              <button type="button" class="bms-showtime-pill" data-time="09:30 PM">09:30 PM</button>
+            </div>
+          </div>
+        </div>
+
         <!-- 1. Movie Showcase Top Card (Exact Match to Reference Design) -->
         <section class="movie-showcase-card">
           <div class="movie-poster-thumb">
-            <img src="spiderman_poster.svg" alt="Spider Man: No Way Home Poster">
+            <img id="movie-poster-img" src="spiderman_poster.svg" alt="Spider-Man: No Way Home Poster">
           </div>
           <div class="movie-details-info">
-            <div class="movie-title-text" id="movie-title-display">Spider Man: No Way Home</div>
-            <div class="movie-pill-tags">
+            <div class="movie-title-text" id="movie-title-display">Spider-Man: No Way Home</div>
+            <div class="movie-pill-tags" id="movie-tags-container">
               <span class="movie-tag-pill">Action</span>
               <span class="movie-tag-pill">Sci-Fi</span>
               <span class="movie-tag-pill">Adventure</span>
-              <span class="movie-meta-item">⏱️ 118 min</span>
-              <span class="movie-rating-badge">G</span>
+              <span class="movie-meta-item">⏱️ 148 min</span>
+              <span class="movie-rating-badge">UA 16+</span>
             </div>
             <div class="movie-card-divider"></div>
             <div class="movie-meta-grid">
@@ -101,28 +124,28 @@
                 <div class="movie-meta-icon date">📅</div>
                 <div>
                   <div class="movie-meta-lbl">DATE</div>
-                  <div class="movie-meta-val">January 31, 2026</div>
+                  <div class="movie-meta-val" id="movie-date-display">January 31, 2026</div>
                 </div>
               </div>
               <div class="movie-meta-box">
                 <div class="movie-meta-icon time">🕒</div>
                 <div>
                   <div class="movie-meta-lbl">START TIME</div>
-                  <div class="movie-meta-val">11:15 AM</div>
+                  <div class="movie-meta-val" id="movie-start-display">11:15 AM</div>
                 </div>
               </div>
               <div class="movie-meta-box">
                 <div class="movie-meta-icon time">🕒</div>
                 <div>
                   <div class="movie-meta-lbl">END TIME</div>
-                  <div class="movie-meta-val">1:45 PM</div>
+                  <div class="movie-meta-val" id="movie-end-display">1:45 PM</div>
                 </div>
               </div>
               <div class="movie-meta-box">
                 <div class="movie-meta-icon theater">🏛️</div>
                 <div>
                   <div class="movie-meta-lbl">THEATER</div>
-                  <div class="movie-meta-val" id="movie-venue-display">Cinema 3</div>
+                  <div class="movie-meta-val" id="movie-venue-display">Cinema 3 &bull; Dolby Atmos</div>
                 </div>
               </div>
             </div>
@@ -134,11 +157,16 @@
           <div class="seats-card-header-row">
             <h2 class="cinema-card-header">Select Your Seats</h2>
             <div class="tier-tabs-bar" id="tier-tabs-bar">
-              <button type="button" class="tier-tab-btn active" data-tier="1">Stalls (Rows A–E)</button>
-              <button type="button" class="tier-tab-btn" data-tier="2">Center (Rows F–J)</button>
-              <button type="button" class="tier-tab-btn" data-tier="3">Balcony (Rows K–O)</button>
+              <button type="button" class="tier-tab-btn active" data-tier="1">RECLINER: Rows A–E ($50)</button>
+              <button type="button" class="tier-tab-btn" data-tier="2">PRIME: Rows F–J ($35)</button>
+              <button type="button" class="tier-tab-btn" data-tier="3">CLASSIC: Rows K–O ($20)</button>
               <button type="button" class="tier-tab-btn" data-tier="all">Full Arena (200 Seats)</button>
             </div>
+          </div>
+
+          <!-- BookMyShow Screen Direction Indicator -->
+          <div class="bms-screen-cue">
+            <span>All eyes this way please! 👁️</span>
           </div>
 
           <!-- SCREEN Arc Indicator with glowing top curve -->
@@ -242,9 +270,9 @@
   <!-- Conditional Mock Loader (?mock=1) -->
   <script>
     if (new URLSearchParams(window.location.search).get('mock') === '1') {
-      document.write('<script src="mock.js?v=2.4"><\/script>');
+      document.write('<script src="mock.js?v=2.5"><\/script>');
     }
   </script>
-  <script src="app.js?v=2.4"></script>
+  <script src="app.js?v=2.5"></script>
 </body>
 </html>
