@@ -1,6 +1,9 @@
-"""InventoryService interface and implementations. Owned by [P1]."""
+"""InventoryService implementation using redis.asyncio and Lua scripts. Owned by [P1]."""
 
 from dataclasses import dataclass
+import pathlib
+from typing import Optional
+import uuid
 
 
 @dataclass
@@ -30,38 +33,155 @@ class InventoryService:
         self.rl_capacity = rl_capacity
         self.rl_refill_per_sec = rl_refill_per_sec
 
+        lua_dir = pathlib.Path(__file__).parent.parent / "lua"
+        reserve_code = (lua_dir / "reserve.lua").read_text(encoding="utf-8")
+        confirm_code = (lua_dir / "confirm.lua").read_text(encoding="utf-8")
+        release_code = (lua_dir / "release.lua").read_text(encoding="utf-8")
+        token_bucket_code = (lua_dir / "token_bucket.lua").read_text(encoding="utf-8")
+        reap_code = (lua_dir / "reap.lua").read_text(encoding="utf-8")
+
+        self._reserve_script = self.redis.register_script(reserve_code)
+        self._confirm_script = self.redis.register_script(confirm_code)
+        self._release_script = self.redis.register_script(release_code)
+        self._tb_script = self.redis.register_script(token_bucket_code)
+        self._reap_script = self.redis.register_script(reap_code)
+
     async def seed_event(self, event_id: str, seat_ids: list[str]) -> None:
         """Wipes event keys, fills all+free."""
-        raise NotImplementedError
+        keys = [
+            f"fr:{event_id}:all",
+            f"fr:{event_id}:free",
+            f"fr:{event_id}:holds",
+            f"fr:{event_id}:owners",
+            f"fr:{event_id}:sold",
+            f"fr:{event_id}:rids",
+        ]
+        pipe = self.redis.pipeline()
+        pipe.delete(*keys)
+        if seat_ids:
+            pipe.sadd(f"fr:{event_id}:all", *seat_ids)
+            pipe.sadd(f"fr:{event_id}:free", *seat_ids)
+        await pipe.execute()
 
     async def reserve(self, event_id: str, user_id: str, seat_id: str | None = None) -> ReserveResult:
-        """Reserve a seat or any free seat."""
-        raise NotImplementedError
+        """Atomic reservation of a seat (or any seat if seat_id is None)."""
+        rid = uuid.uuid4().hex
+        seat_arg = seat_id if seat_id is not None else ""
+        keys = [
+            f"fr:{event_id}:free",
+            f"fr:{event_id}:holds",
+            f"fr:{event_id}:owners",
+            f"fr:{event_id}:sold",
+            f"fr:{event_id}:rids",
+        ]
+        res = await self._reserve_script(keys=keys, args=[rid, str(self.hold_ttl_ms), seat_arg])
+        code = res[0]
+        if code == "OK":
+            return ReserveResult(
+                code="OK",
+                seat_id=res[1],
+                reservation_id=rid,
+                expires_at_ms=int(res[2]),
+            )
+        return ReserveResult(code=code, seat_id=seat_id)
 
     async def confirm(self, event_id: str, reservation_id: str, user_id: str) -> ConfirmResult:
-        """Confirm a held seat."""
-        raise NotImplementedError
+        """Atomic confirmation of a held reservation."""
+        keys = [
+            f"fr:{event_id}:free",
+            f"fr:{event_id}:holds",
+            f"fr:{event_id}:owners",
+            f"fr:{event_id}:sold",
+            f"fr:{event_id}:rids",
+            "fr:bookings",
+        ]
+        res = await self._confirm_script(keys=keys, args=[reservation_id, user_id, event_id])
+        code = res[0]
+        seat = res[1] if len(res) > 1 else None
+        return ConfirmResult(code=code, seat_id=seat)
 
     async def release(self, event_id: str, reservation_id: str) -> ReleaseResult:
-        """Release a held seat."""
-        raise NotImplementedError
+        """Atomic release of a held reservation."""
+        keys = [
+            f"fr:{event_id}:free",
+            f"fr:{event_id}:holds",
+            f"fr:{event_id}:owners",
+            f"fr:{event_id}:sold",
+            f"fr:{event_id}:rids",
+        ]
+        res = await self._release_script(keys=keys, args=[reservation_id])
+        code = res[0]
+        seat = res[1] if len(res) > 1 else None
+        return ReleaseResult(code=code, seat_id=seat)
 
     async def stats(self, event_id: str) -> dict:
-        """Counts from SCARD/ZCARD/HLEN after a reap: {"event_id","total","free","held","sold","hold_ttl_ms"}"""
-        raise NotImplementedError
+        """Counts from SCARD/ZCARD/HLEN after a reap: {"event_id","total","free","held","sold","hold_ttl_ms"}."""
+        free_key = f"fr:{event_id}:free"
+        holds_key = f"fr:{event_id}:holds"
+        owners_key = f"fr:{event_id}:owners"
+        sold_key = f"fr:{event_id}:sold"
+        rids_key = f"fr:{event_id}:rids"
+        all_key = f"fr:{event_id}:all"
+
+        await self._reap_script(keys=[free_key, holds_key, owners_key, rids_key], args=[])
+
+        pipe = self.redis.pipeline()
+        pipe.scard(all_key)
+        pipe.scard(free_key)
+        pipe.zcard(holds_key)
+        pipe.hlen(sold_key)
+        total, free, held, sold = await pipe.execute()
+
+        return {
+            "event_id": event_id,
+            "total": int(total),
+            "free": int(free),
+            "held": int(held),
+            "sold": int(sold),
+            "hold_ttl_ms": self.hold_ttl_ms,
+        }
 
     async def seat_map(self, event_id: str) -> dict[str, str]:
-        """seat_id -> 'FREE' | 'HELD' | 'SOLD'"""
-        raise NotImplementedError
+        """seat_id -> 'FREE' | 'HELD' | 'SOLD'."""
+        free_key = f"fr:{event_id}:free"
+        holds_key = f"fr:{event_id}:holds"
+        owners_key = f"fr:{event_id}:owners"
+        sold_key = f"fr:{event_id}:sold"
+        rids_key = f"fr:{event_id}:rids"
+        all_key = f"fr:{event_id}:all"
+
+        await self._reap_script(keys=[free_key, holds_key, owners_key, rids_key], args=[])
+
+        pipe = self.redis.pipeline()
+        pipe.smembers(all_key)
+        pipe.zrange(holds_key, 0, -1)
+        pipe.hgetall(sold_key)
+        all_seats, held_seats, sold_dict = await pipe.execute()
+
+        held_set = set(held_seats)
+        result = {}
+        for seat in sorted(all_seats):
+            if seat in sold_dict:
+                result[seat] = "SOLD"
+            elif seat in held_set:
+                result[seat] = "HELD"
+            else:
+                result[seat] = "FREE"
+        return result
 
     async def sold_map(self, event_id: str) -> dict[str, str]:
-        """seat_id -> reservation_id (HGETALL sold)"""
-        raise NotImplementedError
+        """seat_id -> reservation_id (HGETALL sold)."""
+        sold_key = f"fr:{event_id}:sold"
+        return await self.redis.hgetall(sold_key)
 
     async def allow_request(self, client_key: str) -> tuple[bool, int]:
-        """(allowed, tokens_left) via token_bucket.lua"""
-        raise NotImplementedError
+        """(allowed, tokens_left) via token_bucket.lua."""
+        bucket_key = f"fr:rl:{client_key}"
+        res = await self._tb_script(keys=[bucket_key], args=[str(self.rl_capacity), str(self.rl_refill_per_sec), "1"])
+        allowed = bool(int(res[0]) == 1)
+        tokens_left = int(res[1])
+        return (allowed, tokens_left)
 
     async def stream_len(self) -> int:
         """Return the length of stream fr:bookings."""
-        raise NotImplementedError
+        return await self.redis.xlen("fr:bookings")

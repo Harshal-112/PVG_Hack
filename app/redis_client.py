@@ -7,13 +7,15 @@ from app.config import settings
 _redis_client: Optional[aioredis.Redis] = None
 
 
-def get_redis() -> aioredis.Redis:
+def get_redis(url: Optional[str] = None, max_connections: int = 2000) -> aioredis.Redis:
     """Get or create singleton Redis async client."""
     global _redis_client
+    target_url = url or settings.REDIS_URL
     if _redis_client is None:
         _redis_client = aioredis.from_url(
-            settings.REDIS_URL,
+            target_url,
             decode_responses=True,
+            max_connections=max_connections,
         )
     return _redis_client
 
