@@ -8,7 +8,7 @@ export const MOVIES = [
     duration: '2h 28m',
     rating: 4.9,
     reviewCount: '14.8k',
-    formats: ['IMAX 2D', '4DX', 'Dolby Atmos'],
+    formats: ['2D', '3D', 'IMAX 2D', '4DX', 'Dolby Atmos'],
     language: 'English',
     releaseType: 'now_showing',
     priceFrom: 250,
@@ -27,7 +27,7 @@ export const MOVIES = [
     duration: '2h 12m',
     rating: 4.7,
     reviewCount: '9.2k',
-    formats: ['2D', 'Dolby Cinema'],
+    formats: ['2D', '3D', 'Dolby Atmos'],
     language: 'English',
     releaseType: 'now_showing',
     priceFrom: 220,
@@ -45,7 +45,7 @@ export const MOVIES = [
     duration: '1h 58m',
     rating: 4.8,
     reviewCount: '18.1k',
-    formats: ['IMAX 2D', '4DX'],
+    formats: ['2D', 'IMAX 2D', '4DX', 'Dolby Atmos'],
     language: 'English',
     releaseType: 'now_showing',
     priceFrom: 280,
@@ -124,7 +124,7 @@ export const GENRES = [
   'Crime'
 ];
 
-export const FORMATS = ['All Formats', '2D', '3D', 'IMAX 2D', '4DX', 'Dolby Cinema'];
+export const FORMATS = ['All Formats', '2D', '3D', 'IMAX 2D', '4DX', 'Dolby Atmos'];
 
 export const CINEMAS = [
   {
@@ -135,11 +135,12 @@ export const CINEMAS = [
     amenities: ['Dolby Atmos', '4K Laser', 'Recliner Luxury', 'Café Lounge'],
     cancellation: true,
     showtimes: [
-      { id: 'st1', time: '10:30 AM', status: 'available', format: 'Dolby Atmos', screen: 'Screen 2' },
-      { id: 'st2', time: '01:45 PM', status: 'filling_fast', format: 'Dolby Atmos', screen: 'Screen 2' },
-      { id: 'st3', time: '05:15 PM', status: 'popular', format: 'Dolby Atmos', screen: 'Screen 2' },
-      { id: 'st4', time: '08:45 PM', status: 'available', format: 'Dolby Atmos', screen: 'Screen 2' },
-      { id: 'st5', time: '11:15 PM', status: 'almost_full', format: 'Dolby Atmos', screen: 'Screen 2' },
+      { id: 'st1', time: '10:00 AM', status: 'available', format: '2D', screen: 'Screen 1' },
+      { id: 'st2', time: '01:15 PM', status: 'filling_fast', format: '2D', screen: 'Screen 1' },
+      { id: 'st3', time: '03:45 PM', status: 'available', format: '3D', screen: 'Screen 2' },
+      { id: 'st4', time: '05:15 PM', status: 'popular', format: 'Dolby Atmos', screen: 'Screen 2' },
+      { id: 'st5', time: '08:45 PM', status: 'available', format: 'Dolby Atmos', screen: 'Screen 2' },
+      { id: 'st6', time: '11:15 PM', status: 'almost_full', format: '2D', screen: 'Screen 1' },
     ]
   },
   {
@@ -150,10 +151,11 @@ export const CINEMAS = [
     amenities: ['IMAX 1.43:1', 'Laser 3D', 'Stadium Seating'],
     cancellation: true,
     showtimes: [
-      { id: 'st6', time: '11:00 AM', status: 'available', format: 'IMAX 2D', screen: 'IMAX Hall 4' },
-      { id: 'st7', time: '02:30 PM', status: 'available', format: 'IMAX 2D', screen: 'IMAX Hall 4' },
-      { id: 'st8', time: '06:00 PM', status: 'filling_fast', format: 'IMAX 2D', screen: 'IMAX Hall 4' },
-      { id: 'st9', time: '09:30 PM', status: 'available', format: 'IMAX 2D', screen: 'IMAX Hall 4' },
+      { id: 'st7', time: '10:30 AM', status: 'available', format: '2D', screen: 'Arena Hall 2' },
+      { id: 'st8', time: '01:45 PM', status: 'available', format: '3D', screen: 'Laser 3D Hall' },
+      { id: 'st9', time: '05:00 PM', status: 'filling_fast', format: 'IMAX 2D', screen: 'IMAX Hall 4' },
+      { id: 'st10', time: '08:30 PM', status: 'available', format: 'IMAX 2D', screen: 'IMAX Hall 4' },
+      { id: 'st11', time: '10:45 PM', status: 'almost_full', format: '3D', screen: 'Laser 3D Hall' },
     ]
   },
   {
@@ -164,10 +166,11 @@ export const CINEMAS = [
     amenities: ['4DX Motion Seats', 'Environmental Effects', 'Dolby 7.1'],
     cancellation: false,
     showtimes: [
-      { id: 'st10', time: '12:15 PM', status: 'available', format: '4DX', screen: '4DX Pavilion' },
-      { id: 'st11', time: '03:45 PM', status: 'available', format: '4DX', screen: '4DX Pavilion' },
-      { id: 'st12', time: '07:15 PM', status: 'popular', format: '4DX', screen: '4DX Pavilion' },
-      { id: 'st13', time: '10:30 PM', status: 'available', format: '4DX', screen: '4DX Pavilion' },
+      { id: 'st12', time: '11:00 AM', status: 'available', format: '2D', screen: 'Screen 3' },
+      { id: 'st13', time: '02:15 PM', status: 'available', format: '3D', screen: 'Screen 3' },
+      { id: 'st14', time: '04:45 PM', status: 'popular', format: '4DX', screen: '4DX Pavilion' },
+      { id: 'st15', time: '07:30 PM', status: 'available', format: '4DX', screen: '4DX Pavilion' },
+      { id: 'st16', time: '10:15 PM', status: 'available', format: 'Dolby Atmos', screen: 'Screen 1' },
     ]
   }
 ];
