@@ -1163,6 +1163,8 @@
         if (sumSubEl) sumSubEl.textContent = `Tickets: ₹${subtotal.toFixed(2)}`;
         if (procAmtEl) procAmtEl.textContent = `₹${totalPayable.toFixed(2)}`;
         if (succAmtEl) succAmtEl.textContent = `₹${totalPayable.toFixed(2)}`;
+        const upiQrAmtEl = document.getElementById('upi-qr-amount-display');
+        if (upiQrAmtEl) upiQrAmtEl.textContent = `₹${totalPayable.toFixed(2)}`;
 
         // Sync hold countdown in gateway
         const timerEl = document.getElementById('checkout-modal-timer');
@@ -2102,6 +2104,23 @@
     const holderEl = document.getElementById('tkt-holder');
 
     if (seatEl) seatEl.textContent = tkt.seat_id;
+
+    // Generate Authoritative Scannable QR Code using QRCode library
+    const qrBox = document.getElementById('ticket-qr-box');
+    if (qrBox) {
+      qrBox.innerHTML = '';
+      const verifyUrl = `${window.location.origin}/ui/ticket.html?event_id=${eId}&rid=${rid}&seat=${tkt.seat_id || ''}`;
+      if (typeof QRCode !== 'undefined') {
+        new QRCode(qrBox, {
+          text: verifyUrl,
+          width: 130,
+          height: 130,
+          colorDark: '#000000',
+          colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.M
+        });
+      }
+    }
     if (ridEl) ridEl.textContent = tkt.reservation_id;
     if (codeEl) codeEl.textContent = tkt.verification_code || ('TKT-' + rid.substring(0, 10).toUpperCase());
 
