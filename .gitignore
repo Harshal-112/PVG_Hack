@@ -5,3 +5,4 @@ __pycache__/
 .env
 loadtest/results/*
 !loadtest/results/.gitkeep
+test_higher.png
