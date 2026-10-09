@@ -1456,6 +1456,8 @@ main.container {
   padding: 1.75rem;
   width: 100%;
   max-width: 580px;
+  max-height: 92vh;
+  overflow-y: auto;
   box-shadow: var(--shadow-main);
   display: flex;
   flex-direction: column;
