@@ -144,7 +144,7 @@ pytest tests/test_p2_routes.py tests/test_feature_routes.py tests/test_payments.
    - Modern React UI deployed on Vercel with real-time seat status updates.
    - Strict 2-minute countdown timer with automatic client & server inventory release.
    - Complete Razorpay payment gateway integration with timing-safe HMAC-SHA256 signature validation and automatic refunds for expired holds.
-   - Verifiable digital boarding passes with tamper-evident cryptographic QR verification codes.
+   - Verifiable digital boarding passes with tamper-evident cryptographic QR verification codes which can be checked at checking counters.
 
 ---
 
