@@ -2,12 +2,131 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>FlashSeat - Seat Grid</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FlashSeat — Seat Grid (evt1)</title>
   <link rel="stylesheet" href="style.css">
 </head>
-<body>
-  <h1>FlashSeat Seat Selection</h1>
-  <div id="grid-container"></div>
+<body data-page="grid">
+  <!-- Mock Mode Banner (shown dynamically if ?mock=1) -->
+  <div id="mock-banner" class="mock-banner" style="display: none;">
+    <div class="mock-banner-text">
+      <span>⚠️ <strong>MOCK MODE ACTIVE</strong> (?mock=1)</span>
+      <span>— Simulating FlashSeat backend API in-browser</span>
+    </div>
+    <span class="mode-badge mock">MOCK API</span>
+  </div>
+
+  <header class="app-header">
+    <div class="brand-section">
+      <div class="brand-title">⚡ FlashSeat</div>
+      <span class="brand-badge">Event: evt1</span>
+    </div>
+    <nav class="nav-links">
+      <a href="index.html" class="nav-link active" id="nav-grid">Seat Grid</a>
+      <a href="dashboard.html" class="nav-link" id="nav-dashboard">Live Dashboard</a>
+      <span id="api-mode-badge" class="mode-badge live">LIVE API</span>
+    </nav>
+  </header>
+
+  <main class="container">
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Seat Selection Grid</h1>
+        <p class="page-subtitle">Interactive 200-seat real-time reservation grid with sub-second TTL holds</p>
+      </div>
+      <div id="user-session-meta" style="font-size: 0.95rem; color: var(--text-muted); font-weight: 600;">
+        User ID: <span id="current-user-id" style="color: #60a5fa; font-family: monospace;"></span>
+      </div>
+    </div>
+
+    <!-- Alert / Message Container -->
+    <div id="alert-container" class="alert-container"></div>
+
+    <!-- Reservation Action Panel (shown on active reservation) -->
+    <section id="reservation-panel" class="reservation-panel" style="display: none;">
+      <div class="panel-header">
+        <h2 class="panel-title">Active Reservation</h2>
+        <span id="panel-status-badge" class="mode-badge" style="background: #1e3a8a; color: #93c5fd; border: 1px solid #3b82f6;">HELD</span>
+      </div>
+
+      <div class="reservation-details-grid">
+        <div class="detail-item">
+          <div class="detail-label">Seat ID</div>
+          <div class="detail-value" id="detail-seat-id">—</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Reservation ID (rid)</div>
+          <div class="detail-value" id="detail-rid" style="font-family: monospace; font-size: 0.95rem;">—</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">User ID</div>
+          <div class="detail-value" id="detail-user-id" style="font-family: monospace; font-size: 0.95rem;">—</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Hold Expiry Time</div>
+          <div class="detail-value" id="detail-expiry" style="font-size: 0.95rem;">—</div>
+        </div>
+      </div>
+
+      <div class="countdown-container">
+        <div class="countdown-label">Hold Countdown:</div>
+        <div id="countdown-timer" class="countdown-timer">--:--</div>
+      </div>
+
+      <div class="panel-actions">
+        <button id="btn-confirm" class="btn btn-success">
+          ✓ Confirm Reservation
+        </button>
+        <button id="btn-release" class="btn btn-danger">
+          ✕ Release Hold
+        </button>
+      </div>
+    </section>
+
+    <!-- Legend & Counts Bar -->
+    <div class="legend-bar">
+      <span class="legend-title">Legend & Live Status:</span>
+      <div class="legend-items">
+        <div class="legend-chip">
+          <span class="legend-dot free"></span>
+          <span>FREE (<span id="count-free">0</span>)</span>
+        </div>
+        <div class="legend-chip">
+          <span class="legend-dot held"></span>
+          <span>HELD (<span id="count-held">0</span>)</span>
+        </div>
+        <div class="legend-chip">
+          <span class="legend-dot sold"></span>
+          <span>SOLD (<span id="count-sold">0</span>)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 200 Seat Grid Container -->
+    <section class="seat-grid-card">
+      <div class="grid-header-meta">
+        <span>Click any <strong>FREE</strong> seat to reserve. Total capacity: 200 seats (S001 – S200).</span>
+        <span id="poll-indicator" style="display: flex; align-items: center; gap: 0.4rem;">
+          <span style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
+          Auto-refreshing 1s
+        </span>
+      </div>
+      <div id="grid-container" class="seat-grid">
+        <!-- 200 seat buttons injected here by app.js -->
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    FlashSeat High-Contention Reservation Engine — Problem 9 Hack-a-Night 2026. Plain HTML + Vanilla JS.
+  </footer>
+
+  <!-- Conditional Mock Loader (?mock=1) -->
+  <script>
+    if (new URLSearchParams(window.location.search).get('mock') === '1') {
+      document.write('<script src="mock.js"><\/script>');
+    }
+  </script>
   <script src="app.js"></script>
 </body>
 </html>
