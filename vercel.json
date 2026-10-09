@@ -8,6 +8,8 @@
     { "source": "/ui/:match*", "destination": "/web/:match*" },
     { "source": "/login", "destination": "/web/login.html" },
     { "source": "/dashboard", "destination": "/web/dashboard.html" },
+    { "source": "/events", "destination": "/web/events.html" },
+    { "source": "/ticket", "destination": "/web/ticket.html" },
     { "source": "/:match*", "destination": "/web/:match*" }
   ]
 }

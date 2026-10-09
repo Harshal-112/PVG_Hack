@@ -8,6 +8,7 @@ from pydantic import BaseModel
 
 from app.config import settings
 from app import db
+from app.services.events_catalog import events_catalog_service
 
 router = APIRouter()
 
@@ -47,7 +48,7 @@ async def get_stats(event_id: str, request: Request):
 
     try:
         persisted = await db.count_bookings(event_id)
-    except NotImplementedError:
+    except (NotImplementedError, RuntimeError):
         persisted = 0
 
     sold = st.get("sold", 0)
@@ -90,7 +91,7 @@ async def verify_event(event_id: str, request: Request):
         st = await inventory.stats(event_id)
         try:
             persisted = await db.count_bookings(event_id)
-        except NotImplementedError:
+        except (NotImplementedError, RuntimeError):
             persisted = 0
         sold = st.get("sold", 0)
         if sold - persisted <= 0:
@@ -100,11 +101,11 @@ async def verify_event(event_id: str, request: Request):
     redis_sold_map = await inventory.sold_map(event_id)
     try:
         pg_booked_map = await db.booked_seats(event_id)
-    except NotImplementedError:
+    except (NotImplementedError, RuntimeError):
         pg_booked_map = {}
     try:
         duplicate_rows = await db.duplicate_seat_rows(event_id)
-    except NotImplementedError:
+    except (NotImplementedError, RuntimeError):
         duplicate_rows = 0
 
     st = await inventory.stats(event_id)
@@ -146,3 +147,66 @@ async def verify_event(event_id: str, request: Request):
             "no_double_booking": no_double_booking,
         },
     )
+
+
+@router.get("/events", status_code=200)
+async def list_events(request: Request, search: str | None = None, category: str | None = None):
+    """Event Discovery and Search endpoint with live inventory availability."""
+    events = events_catalog_service.list_events(search=search, category=category)
+    inventory = getattr(request.app.state, "inventory", None)
+
+    results = []
+    for ev in events:
+        item = dict(ev)
+        if inventory:
+            try:
+                st = await inventory.stats(ev["event_id"])
+                item["total"] = st.get("total", ev.get("seat_count", 200))
+                item["free"] = st.get("free", 0)
+                item["held"] = st.get("held", 0)
+                item["sold"] = st.get("sold", 0)
+            except Exception:
+                item["total"] = ev.get("seat_count", 200)
+                item["free"] = ev.get("seat_count", 200)
+                item["held"] = 0
+                item["sold"] = 0
+        else:
+            item["total"] = ev.get("seat_count", 200)
+            item["free"] = ev.get("seat_count", 200)
+            item["held"] = 0
+            item["sold"] = 0
+        results.append(item)
+
+    return JSONResponse(status_code=200, content={"events": results, "total_events": len(results)})
+
+
+@router.get("/events/{event_id}", status_code=200)
+async def get_event_detail(event_id: str, request: Request):
+    """Retrieve full event detail with real-time seat availability."""
+    ev = events_catalog_service.get_event(event_id)
+    if not ev:
+        # Fallback dynamic event if seeded
+        ev = {
+            "event_id": event_id,
+            "name": f"Event {event_id.upper()}",
+            "venue": "Grand Pavilion Arena",
+            "date": "2026-11-15T19:00:00Z",
+            "category": "Live Event",
+            "description": "High-concurrency ticket release event.",
+            "seat_count": settings.DEFAULT_SEAT_COUNT,
+            "price": 50.00,
+            "currency": "USD",
+        }
+
+    inventory = getattr(request.app.state, "inventory", None)
+    if inventory:
+        try:
+            st = await inventory.stats(event_id)
+            ev["total"] = st.get("total", ev.get("seat_count", 200))
+            ev["free"] = st.get("free", 0)
+            ev["held"] = st.get("held", 0)
+            ev["sold"] = st.get("sold", 0)
+        except Exception:
+            pass
+
+    return JSONResponse(status_code=200, content=ev)

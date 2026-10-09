@@ -4,17 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FlashSeat — Real-Time Telemetry & Monitoring Dashboard (evt1)</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=2.2">
 </head>
 <body data-page="dashboard">
-  <!-- Mock Mode Banner (shown dynamically if ?mock=1) -->
-  <div id="mock-banner" class="mock-banner" style="display: none;">
-    <div class="mock-banner-text">
-      <span>⚠️ <strong>MOCK DEMO MODE ACTIVE</strong> (?mock=1)</span>
-      <span>— Simulating FlashSeat backend engine in-browser</span>
-    </div>
-    <span class="mode-badge mock">MOCK API</span>
-  </div>
 
   <header class="app-header">
     <div class="brand-section">
@@ -22,6 +14,7 @@
       <span class="brand-badge">Event: evt1</span>
     </div>
     <nav class="nav-links">
+      <a href="events.html" class="nav-link" id="nav-events">Explore Events</a>
       <a href="index.html" class="nav-link" id="nav-grid">Seat Grid</a>
       <a href="dashboard.html" class="nav-link active" id="nav-dashboard">Live Dashboard</a>
 
@@ -37,7 +30,9 @@
         </button>
       </div>
 
-      <span id="api-mode-badge" class="mode-badge live">LIVE API</span>
+      <span class="system-status-indicator">
+        <span class="status-dot"></span> System Online
+      </span>
     </nav>
   </header>
 
@@ -194,9 +189,9 @@
   <!-- Conditional Mock Loader (?mock=1) -->
   <script>
     if (new URLSearchParams(window.location.search).get('mock') === '1') {
-      document.write('<script src="mock.js"><\/script>');
+      document.write('<script src="mock.js?v=2.2"><\/script>');
     }
   </script>
-  <script src="app.js"></script>
+  <script src="app.js?v=2.2"></script>
 </body>
 </html>

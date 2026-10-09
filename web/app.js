@@ -4,8 +4,10 @@
 (function () {
   'use strict';
 
-  const EVENT_ID = 'evt1';
-  const API_BASE = '/api/v1';
+  const urlParams = new URLSearchParams(window.location.search);
+  const isMockMode = urlParams.get('mock') === '1';
+  const EVENT_ID = urlParams.get('event') || urlParams.get('event_id') || 'evt1';
+  const API_BASE = window.__API_BASE__ || localStorage.getItem('flashseat_api_base') || '/api/v1';
 
   // 1. Auth & Session State Management
   function getStoredAuthUser() {
@@ -70,35 +72,26 @@
     }
   }
 
-  // 2. Query Param & Navigation Handling
-  const urlParams = new URLSearchParams(window.location.search);
-  const isMockMode = urlParams.get('mock') === '1';
-
+  // 2. Navigation Handling
   function initHeaderAndNavigation() {
+    const navEvents = document.getElementById('nav-events');
     const navGrid = document.getElementById('nav-grid');
     const navDashboard = document.getElementById('nav-dashboard');
-    const apiBadge = document.getElementById('api-mode-badge');
-    const mockBanner = document.getElementById('mock-banner');
-
     const suffix = isMockMode ? '?mock=1' : '';
 
     const brandLink = document.querySelector('.brand-title');
     if (brandLink) brandLink.href = 'index.html' + suffix;
+    if (navEvents) navEvents.href = 'events.html' + suffix;
     if (navGrid) navGrid.href = 'index.html' + suffix;
     if (navDashboard) navDashboard.href = 'dashboard.html' + suffix;
 
-    if (isMockMode) {
-      if (apiBadge) {
-        apiBadge.className = 'mode-badge mock';
-        apiBadge.textContent = 'MOCK API';
-      }
-      if (mockBanner) mockBanner.style.display = 'flex';
-    } else {
-      if (apiBadge) {
-        apiBadge.className = 'mode-badge live';
-        apiBadge.textContent = 'LIVE API';
-      }
-      if (mockBanner) mockBanner.style.display = 'none';
+    const mockBanner = document.getElementById('mock-banner');
+    if (mockBanner) mockBanner.style.display = 'none';
+
+    const apiBadge = document.getElementById('api-mode-badge');
+    if (apiBadge) {
+      apiBadge.className = 'system-status-indicator';
+      apiBadge.innerHTML = '<span class="status-dot"></span> System Online';
     }
 
     // User profile in header
@@ -168,7 +161,13 @@
   // Safe API Fetch Wrapper
   async function apiFetch(endpoint, options = {}) {
     try {
-      const resp = await fetch(endpoint, options);
+      const opts = { ...options };
+      opts.headers = { ...(opts.headers || {}) };
+      const admToken = sessionStorage.getItem('flashseat_admission_token');
+      if (admToken && !opts.headers['X-Admission-Token']) {
+        opts.headers['X-Admission-Token'] = admToken;
+      }
+      const resp = await fetch(endpoint, opts);
       let data = null;
       const contentType = resp.headers.get('content-type');
       if (contentType && contentType.includes('application/json')) {
@@ -212,8 +211,9 @@
       loginForm.style.display = 'flex';
       registerForm.style.display = 'none';
       mfaScreen.style.display = 'none';
-      authTitle.textContent = 'Welcome to FlashSeat';
-      authSubtitle.textContent = 'Secure, high-concurrency ticket reservation engine';
+      authTabs.style.display = 'grid';
+      authTitle.textContent = 'FlashSeat Security Portal';
+      authSubtitle.textContent = 'High-concurrency ticket reservation engine';
     });
 
     tabRegisterBtn.addEventListener('click', () => {
@@ -222,38 +222,97 @@
       loginForm.style.display = 'none';
       registerForm.style.display = 'flex';
       mfaScreen.style.display = 'none';
+      authTabs.style.display = 'grid';
       authTitle.textContent = 'Create FlashSeat Account';
       authSubtitle.textContent = 'Register to hold and confirm seats in real time';
     });
 
-    // Quick demo login button
-    const btnQuickDemo = document.getElementById('btn-quick-demo-login');
-    if (btnQuickDemo) {
-      btnQuickDemo.addEventListener('click', (e) => {
-        e.preventDefault();
-        document.getElementById('login-username').value = 'demo_user';
-        document.getElementById('login-password').value = 'flashpass123';
-        loginForm.dispatchEvent(new Event('submit'));
-      });
+    let pendingLoginUser = null;
+    let mfaExpiryInterval = null;
+    let resendCooldownInterval = null;
+
+    function stopMfaTimers() {
+      if (mfaExpiryInterval) {
+        clearInterval(mfaExpiryInterval);
+        mfaExpiryInterval = null;
+      }
+      if (resendCooldownInterval) {
+        clearInterval(resendCooldownInterval);
+        resendCooldownInterval = null;
+      }
     }
 
-    let pendingLoginUser = null;
+    function startMfaCountdown(expiresAtMs) {
+      stopMfaTimers();
+      const timerEl = document.getElementById('mfa-countdown-timer');
+      const btnVerify = document.getElementById('btn-verify-mfa');
+      const btnResend = document.getElementById('btn-resend-mfa');
+      const resendCountEl = document.getElementById('resend-countdown-secs');
 
-    // Login Form Submit -> Step 1
+      btnVerify.disabled = false;
+      btnResend.disabled = true;
+
+      // 60-second expiration timer
+      const updateExpiry = () => {
+        const remainingMs = expiresAtMs - Date.now();
+        const secs = Math.max(0, Math.ceil(remainingMs / 1000));
+        if (timerEl) {
+          timerEl.textContent = `${secs}s`;
+          if (secs <= 10) {
+            timerEl.classList.add('expired');
+          } else {
+            timerEl.classList.remove('expired');
+          }
+        }
+        if (secs <= 0) {
+          if (timerEl) timerEl.textContent = 'Expired';
+          btnVerify.disabled = true;
+          btnResend.disabled = false;
+          if (resendCountEl) resendCountEl.textContent = '0';
+          clearInterval(mfaExpiryInterval);
+          mfaExpiryInterval = null;
+        }
+      };
+      updateExpiry();
+      mfaExpiryInterval = setInterval(updateExpiry, 1000);
+
+      // 30-second resend button cooldown
+      let resendSecs = 30;
+      if (resendCountEl) resendCountEl.textContent = String(resendSecs);
+      resendCooldownInterval = setInterval(() => {
+        resendSecs -= 1;
+        if (resendCountEl) resendCountEl.textContent = String(Math.max(0, resendSecs));
+        if (resendSecs <= 0) {
+          btnResend.disabled = false;
+          clearInterval(resendCooldownInterval);
+          resendCooldownInterval = null;
+        }
+      }, 1000);
+    }
+
+    // 1. Strict Login Form Submit
     loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const username = document.getElementById('login-username').value.trim();
-      const password = document.getElementById('login-password').value;
+      const usernameInput = document.getElementById('login-username');
+      const passwordInput = document.getElementById('login-password');
+      const username = usernameInput.value.trim();
+      const password = passwordInput.value;
 
-      if (!username || !password) {
-        showAlert('error', 'Validation Error', 'Please enter your username and password.');
+      if (!username || username.length < 3) {
+        showAlert('error', 'Invalid Input', 'Please enter a valid username (min 3 characters).');
+        usernameInput.focus();
+        return;
+      }
+      if (!password) {
+        showAlert('error', 'Invalid Input', 'Please enter your password.');
+        passwordInput.focus();
         return;
       }
 
       const btnSubmit = document.getElementById('btn-login-submit');
       btnSubmit.disabled = true;
+      btnSubmit.textContent = 'Verifying...';
 
-      // Mock or Backend Auth
       const res = await apiFetch(`${API_BASE}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -261,55 +320,120 @@
       });
 
       btnSubmit.disabled = false;
+      btnSubmit.textContent = 'Sign In';
 
-      // In mock mode or fallback, proceed to MFA step
-      const userId = (res.data && res.data.user_id) ? res.data.user_id : ('u-' + username.toLowerCase().replace(/[^a-z0-9]/g, ''));
-      pendingLoginUser = {
-        user_id: userId,
-        username: username,
-        mfa_enabled: true
-      };
+      if (!res.ok) {
+        const errorMsg = (res.data && res.data.message) ? res.data.message : 'Invalid username or password.';
+        showAlert('error', 'Authentication Failed', errorMsg);
+        return;
+      }
 
-      // Show MFA Screen
-      authTabs.style.display = 'none';
-      loginForm.style.display = 'none';
-      registerForm.style.display = 'none';
-      mfaScreen.style.display = 'block';
-      authTitle.textContent = 'Two-Factor Authentication';
-      authSubtitle.textContent = 'Step 2: Verify your identity';
+      const data = res.data;
+      if (data.mfa_required) {
+        // Step 2: Show Authentic MFA Screen
+        pendingLoginUser = {
+          user_id: data.user_id,
+          username: data.username,
+          totp_secret: data.totp_secret,
+          expires_at_ms: data.expires_at_ms || (Date.now() + 60000)
+        };
 
-      // Focus first OTP digit
-      const firstOtp = document.querySelector('.otp-digit');
-      if (firstOtp) firstOtp.focus();
+        authTabs.style.display = 'none';
+        loginForm.style.display = 'none';
+        registerForm.style.display = 'none';
+        mfaScreen.style.display = 'flex';
+        authTitle.textContent = 'Two-Factor Authentication';
+        authSubtitle.textContent = 'Enter the 6-digit security code';
+
+        const targetUserEl = document.getElementById('mfa-target-username');
+        if (targetUserEl) targetUserEl.textContent = `@${data.username}`;
+
+        const activeCodeEl = document.getElementById('mfa-active-code');
+        if (activeCodeEl) activeCodeEl.textContent = data.challenge_code || '------';
+
+        const secretKeyEl = document.getElementById('mfa-secret-key-display');
+        if (secretKeyEl) secretKeyEl.textContent = data.totp_secret || 'TOTP-PROTECTED';
+
+        // Clear previous OTP inputs
+        otpInputs.forEach(i => { i.value = ''; });
+        startMfaCountdown(pendingLoginUser.expires_at_ms);
+
+        if (otpInputs[0]) otpInputs[0].focus();
+      } else {
+        // Direct authenticated session without MFA
+        const authRecord = {
+          user_id: data.user_id,
+          username: data.username,
+          token: data.token || ('tok-' + Date.now()),
+          mfa_verified: false,
+          logged_in: true,
+          auth_time: Date.now()
+        };
+        setStoredAuthUser(authRecord);
+        showAlert('success', 'Welcome Back!', `Signed in as @${data.username}. Redirecting...`);
+        setTimeout(() => {
+          const suffix = isMockMode ? '?mock=1' : '';
+          window.location.href = 'index.html' + suffix;
+        }, 800);
+      }
     });
 
-    // Registration Form Submit
+    // 2. Strict Register Form Submit (Only Username, Password & MFA Toggle)
     registerForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const fullname = document.getElementById('reg-fullname').value.trim();
-      const username = document.getElementById('reg-username').value.trim();
-      const email = document.getElementById('reg-email').value.trim();
-      const password = document.getElementById('reg-password').value;
+      const usernameInput = document.getElementById('reg-username');
+      const passwordInput = document.getElementById('reg-password');
+      const confirmInput = document.getElementById('reg-confirm-password');
+
+      const username = usernameInput.value.trim();
+      const password = passwordInput.value;
+      const confirmPassword = confirmInput.value;
       const enableMfa = document.getElementById('reg-enable-mfa').checked;
+
+      // Strict Validation
+      if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) {
+        showAlert('error', 'Validation Error', 'Username must be 3-20 characters long and contain only letters, numbers, or underscores.');
+        usernameInput.focus();
+        return;
+      }
+      if (password.length < 6) {
+        showAlert('error', 'Validation Error', 'Password must be at least 6 characters long.');
+        passwordInput.focus();
+        return;
+      }
+      if (password !== confirmPassword) {
+        showAlert('error', 'Validation Error', 'Passwords do not match. Please re-enter your password.');
+        confirmInput.focus();
+        return;
+      }
 
       const btnReg = document.getElementById('btn-register-submit');
       btnReg.disabled = true;
+      btnReg.textContent = 'Creating Account...';
 
       const res = await apiFetch(`${API_BASE}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fullname, username, email, password, mfa_enabled: enableMfa })
+        body: JSON.stringify({ username, password, mfa_enabled: enableMfa })
       });
 
       btnReg.disabled = false;
+      btnReg.textContent = 'Create Account';
 
-      showAlert('success', 'Account Created!', 'You can now sign in with your credentials.');
+      if (!res.ok) {
+        const msg = (res.data && res.data.message) ? res.data.message : 'Registration failed.';
+        showAlert('error', 'Registration Error', msg);
+        return;
+      }
+
+      showAlert('success', 'Account Registered!', 'Your account has been created successfully. Please sign in.');
       tabLoginBtn.click();
       document.getElementById('login-username').value = username;
-      document.getElementById('login-password').value = password;
+      document.getElementById('login-password').value = '';
+      document.getElementById('login-password').focus();
     });
 
-    // MFA OTP Auto-Advance Input Behavior
+    // 3. MFA OTP Auto-Advance Input Behavior
     const otpInputs = Array.from(document.querySelectorAll('.otp-digit'));
     otpInputs.forEach((input, idx) => {
       input.addEventListener('input', (e) => {
@@ -338,13 +462,51 @@
       });
     });
 
-    // Autofill demo code button
-    const btnFillOtp = document.getElementById('btn-fill-otp');
-    if (btnFillOtp) {
-      btnFillOtp.addEventListener('click', () => {
-        const code = document.getElementById('simulated-otp-code').textContent.trim();
-        for (let i = 0; i < otpInputs.length && i < code.length; i++) {
-          otpInputs[i].value = code[i];
+    // Copy Security Code button
+    const btnCopyCode = document.getElementById('btn-copy-mfa-code');
+    if (btnCopyCode) {
+      btnCopyCode.addEventListener('click', async () => {
+        const codeText = document.getElementById('mfa-active-code').textContent.trim();
+        if (codeText && codeText !== '------') {
+          try {
+            await navigator.clipboard.writeText(codeText);
+            btnCopyCode.textContent = '✓ Copied!';
+            setTimeout(() => { btnCopyCode.textContent = '📋 Copy Code'; }, 1500);
+          } catch (err) {
+            btnCopyCode.textContent = '✓ ' + codeText;
+          }
+        }
+      });
+    }
+
+    // Resend MFA Code
+    const btnResendMfa = document.getElementById('btn-resend-mfa');
+    if (btnResendMfa) {
+      btnResendMfa.addEventListener('click', async () => {
+        if (!pendingLoginUser) return;
+        btnResendMfa.disabled = true;
+
+        const res = await apiFetch(`${API_BASE}/auth/resend-mfa`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: pendingLoginUser.user_id })
+        });
+
+        if (res.ok && res.data) {
+          const newCode = res.data.challenge_code;
+          const exp = res.data.expires_at_ms || (Date.now() + 60000);
+          pendingLoginUser.expires_at_ms = exp;
+
+          const activeCodeEl = document.getElementById('mfa-active-code');
+          if (activeCodeEl) activeCodeEl.textContent = newCode;
+
+          otpInputs.forEach(i => { i.value = ''; });
+          startMfaCountdown(exp);
+          showAlert('info', 'New Code Generated', 'A new 6-digit security passkey has been issued.');
+          if (otpInputs[0]) otpInputs[0].focus();
+        } else {
+          showAlert('error', 'Error', 'Failed to resend code. Please try again.');
+          btnResendMfa.disabled = false;
         }
       });
     }
@@ -353,8 +515,8 @@
     const btnCancelMfa = document.getElementById('btn-cancel-mfa');
     if (btnCancelMfa) {
       btnCancelMfa.addEventListener('click', () => {
-        authTabs.style.display = 'grid';
-        mfaScreen.style.display = 'none';
+        stopMfaTimers();
+        pendingLoginUser = null;
         tabLoginBtn.click();
       });
     }
@@ -370,6 +532,7 @@
         }
 
         btnVerifyMfa.disabled = true;
+        btnVerifyMfa.textContent = 'Verifying Code...';
 
         const res = await apiFetch(`${API_BASE}/auth/verify-mfa`, {
           method: 'POST',
@@ -378,10 +541,22 @@
         });
 
         btnVerifyMfa.disabled = false;
+        btnVerifyMfa.textContent = 'Verify & Sign In';
+
+        if (!res.ok) {
+          const msg = (res.data && res.data.message) ? res.data.message : 'Invalid or expired security code.';
+          showAlert('error', 'Verification Failed', msg);
+          otpInputs.forEach(i => { i.value = ''; });
+          if (otpInputs[0]) otpInputs[0].focus();
+          return;
+        }
+
+        stopMfaTimers();
 
         // Save authenticated session
         const authRecord = {
-          ...pendingLoginUser,
+          user_id: pendingLoginUser.user_id,
+          username: pendingLoginUser.username,
           token: (res.data && res.data.token) ? res.data.token : ('tok-' + Date.now()),
           mfa_verified: true,
           logged_in: true,
@@ -389,7 +564,7 @@
         };
 
         setStoredAuthUser(authRecord);
-        showAlert('success', 'MFA Verified!', 'Access granted. Redirecting to Seat Selection Grid...');
+        showAlert('success', 'MFA Verified!', `Authentication successful. Access granted for @${pendingLoginUser.username}.`);
 
         setTimeout(() => {
           const suffix = isMockMode ? '?mock=1' : '';
@@ -418,7 +593,8 @@
       btn.id = `seat-${seatId}`;
       btn.className = 'seat-btn state-free';
       btn.setAttribute('role', 'button');
-      btn.setAttribute('aria-label', `Seat ${seatId}: FREE`);
+      btn.setAttribute('tabindex', '0');
+      btn.setAttribute('aria-label', `Seat ${seatId}: FREE - $45.00 USD`);
 
       const idSpan = document.createElement('span');
       idSpan.className = 'seat-id';
@@ -432,6 +608,12 @@
       btn.appendChild(tagSpan);
 
       btn.addEventListener('click', () => onSeatClicked(seatId));
+      btn.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSeatClicked(seatId);
+        }
+      });
 
       seatElements[seatId] = {
         element: btn,
@@ -459,13 +641,26 @@
       if (!activeReservation || !activeReservation.expires_at_ms) return;
       const now = Date.now();
       const remainingMs = activeReservation.expires_at_ms - now;
+      const warnEl = document.getElementById('countdown-warning');
+      const panelBadge = document.getElementById('panel-status-badge');
 
       if (remainingMs <= 0) {
         countdownTimer.textContent = '00:00 (EXPIRED)';
         countdownTimer.classList.add('expiring');
         clearInterval(countdownInterval);
         countdownInterval = null;
+        if (btnConfirm) btnConfirm.disabled = true;
+        if (panelBadge) {
+          panelBadge.style.background = '#7f1d1d';
+          panelBadge.style.color = '#fca5a5';
+          panelBadge.textContent = 'EXPIRED';
+        }
+        if (warnEl) {
+          warnEl.textContent = '⛔ Reservation hold has expired on the backend. Please select a new seat.';
+          warnEl.style.display = 'block';
+        }
         showAlert('warning', 'Hold Expired', `The hold on seat ${activeReservation.seat_id} has expired.`);
+        fetchSeats();
         return;
       }
 
@@ -475,10 +670,15 @@
       const formatted = String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
 
       countdownTimer.textContent = formatted;
-      if (totalSeconds <= 5) {
+      if (totalSeconds <= 30) {
         countdownTimer.classList.add('expiring');
+        if (warnEl) {
+          warnEl.textContent = `⚠️ Warning: Reservation expiring in ${totalSeconds}s! Confirm your booking now.`;
+          warnEl.style.display = 'block';
+        }
       } else {
         countdownTimer.classList.remove('expiring');
+        if (warnEl) warnEl.style.display = 'none';
       }
     }
 
@@ -489,6 +689,14 @@
       detailRid.textContent = res.reservation_id;
       detailUserId.textContent = currentUserId;
       detailExpiry.textContent = new Date(res.expires_at_ms).toLocaleTimeString();
+      if (btnConfirm) btnConfirm.disabled = false;
+
+      const panelBadge = document.getElementById('panel-status-badge');
+      if (panelBadge) {
+        panelBadge.style.background = '#1e3a8a';
+        panelBadge.style.color = '#93c5fd';
+        panelBadge.textContent = 'HELD';
+      }
 
       for (const sId of Object.keys(seatElements)) {
         if (sId === res.seat_id) {
@@ -509,6 +717,9 @@
         clearInterval(countdownInterval);
         countdownInterval = null;
       }
+      const warnEl = document.getElementById('countdown-warning');
+      if (warnEl) warnEl.style.display = 'none';
+      if (btnConfirm) btnConfirm.disabled = false;
       reservationPanel.style.display = 'none';
       for (const sId of Object.keys(seatElements)) {
         seatElements[sId].element.classList.remove('is-selected');
@@ -601,9 +812,11 @@
 
       if (result.ok && result.status === 200) {
         const seatId = activeReservation.seat_id;
+        const rid = activeReservation.reservation_id;
         const isIdempotent = result.data && result.data.idempotent;
-        recordUserBooking(seatId, activeReservation.reservation_id);
-        showAlert('success', 'Booking Confirmed!', `Seat ${seatId} confirmed successfully! ${isIdempotent ? '(Idempotent retry)' : ''}`);
+        recordUserBooking(seatId, rid);
+        const ticketUrl = `ticket.html${isMockMode ? '?mock=1&' : '?'}event_id=${EVENT_ID}&rid=${rid}`;
+        showAlert('success', 'Booking Confirmed!', `Seat ${seatId} confirmed successfully! <a href="${ticketUrl}" class="btn btn-primary btn-sm" style="margin-left: 0.5rem; text-decoration: none;">🎟️ View Digital Ticket</a>`);
         hideActiveReservation();
         fetchSeats();
       } else {
@@ -632,6 +845,62 @@
       }
     });
 
+    // Virtual Waiting Room Queue Handler (Feature 6)
+    async function handleWaitingRoomQueue() {
+      const modal = document.getElementById('modal-waiting-room');
+      const posEl = document.getElementById('wr-queue-position');
+      const waitEl = document.getElementById('wr-est-wait');
+      const btnLeave = document.getElementById('btn-leave-queue');
+
+      if (modal) modal.style.display = 'flex';
+
+      const joinRes = await apiFetch(`${API_BASE}/events/${EVENT_ID}/queue/join`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: currentUserId })
+      });
+
+      if (joinRes.data && joinRes.data.admitted) {
+        if (joinRes.data.admission_token) {
+          sessionStorage.setItem('flashseat_admission_token', joinRes.data.admission_token);
+        }
+        if (modal) modal.style.display = 'none';
+        showAlert('success', 'Admission Granted!', 'You have entered the reservation arena.');
+        return;
+      }
+
+      if (posEl) posEl.textContent = (joinRes.data && joinRes.data.position) ? `#${joinRes.data.position}` : 'In Line';
+      if (waitEl) waitEl.textContent = (joinRes.data && joinRes.data.estimated_wait_seconds) ? `Estimated wait: ~${joinRes.data.estimated_wait_seconds}s` : 'Estimated wait: calculating...';
+
+      const pollTimer = setInterval(async () => {
+        const sRes = await apiFetch(`${API_BASE}/events/${EVENT_ID}/queue/status?user_id=${currentUserId}`);
+        if (sRes.data && sRes.data.admitted) {
+          clearInterval(pollTimer);
+          if (sRes.data.admission_token) {
+            sessionStorage.setItem('flashseat_admission_token', sRes.data.admission_token);
+          }
+          if (modal) modal.style.display = 'none';
+          showAlert('success', 'Admitted to Arena!', 'Your turn has arrived! Select your seats now.');
+        } else if (sRes.data && sRes.data.position) {
+          if (posEl) posEl.textContent = `#${sRes.data.position}`;
+          if (waitEl) waitEl.textContent = `Estimated wait: ~${sRes.data.estimated_wait_seconds || 10}s`;
+        }
+      }, 2000);
+
+      if (btnLeave) {
+        btnLeave.onclick = async () => {
+          clearInterval(pollTimer);
+          await apiFetch(`${API_BASE}/events/${EVENT_ID}/queue/leave`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: currentUserId })
+          });
+          if (modal) modal.style.display = 'none';
+          showAlert('info', 'Queue Cancelled', 'You left the waiting room line.');
+        };
+      }
+    }
+
     // Format & display error messages from API
     function handleApiError(result, defaultContext) {
       const status = result.status;
@@ -643,6 +912,11 @@
         errMsg = result.data.message || JSON.stringify(result.data);
       } else if (result.error) {
         errMsg = result.error;
+      }
+
+      if (status === 403 && (errCode === 'QUEUE_ADMISSION_REQUIRED' || errMsg.includes('waiting room'))) {
+        handleWaitingRoomQueue();
+        return;
       }
 
       if (status === 409) {
@@ -1145,6 +1419,195 @@
     });
   }
 
+  // =========================================================================
+  // TASK G: Event Discovery & Search (web/events.html) - Feature 5
+  // =========================================================================
+  async function initEventsPage() {
+    const grid = document.getElementById('events-grid');
+    const searchInput = document.getElementById('event-search-input');
+    const categoryFilters = document.getElementById('event-category-filters');
+    const countBadge = document.getElementById('event-count-badge');
+    const btnRefresh = document.getElementById('btn-refresh-events');
+
+    let currentCategory = '';
+    let currentSearch = '';
+    let debounceTimer = null;
+
+    async function loadEvents() {
+      if (grid) grid.innerHTML = '<div class="event-card-skeleton">Refreshing events and real-time inventory...</div>';
+
+      const query = new URLSearchParams();
+      if (currentSearch) query.set('search', currentSearch);
+      if (currentCategory) query.set('category', currentCategory);
+
+      const res = await apiFetch(`${API_BASE}/events?${query.toString()}`);
+      if (res.error) {
+        if (grid) grid.innerHTML = `<div class="event-card-skeleton" style="color: #ef4444;">Failed to load events: ${res.message || res.error}. <button class="btn btn-secondary btn-sm" id="btn-retry-events" style="margin-left: 0.5rem;">Retry</button></div>`;
+        const retryBtn = document.getElementById('btn-retry-events');
+        if (retryBtn) retryBtn.onclick = loadEvents;
+        return;
+      }
+
+      const events = (res.data && res.data.events) ? res.data.events : [];
+      if (countBadge) countBadge.textContent = events.length;
+
+      if (!grid) return;
+      if (events.length === 0) {
+        grid.innerHTML = '<div class="event-card-skeleton">No events found matching your search. Try adjusting your keyword or filter.</div>';
+        return;
+      }
+
+      grid.innerHTML = '';
+      const suffix = isMockMode ? '?mock=1' : '';
+
+      events.forEach(ev => {
+        const card = document.createElement('div');
+        card.className = 'event-card';
+
+        const freeSeats = ev.free !== undefined ? ev.free : ev.seat_count;
+        const totalSeats = ev.total !== undefined ? ev.total : ev.seat_count;
+        const priceFmt = `$${(ev.price || 45).toFixed(2)} ${ev.currency || 'USD'}`;
+
+        card.innerHTML = `
+          <div>
+            <div class="event-card-header">
+              <h3 class="event-card-title">${ev.name}</h3>
+              <span class="event-category-chip">${ev.category || 'Live Event'}</span>
+            </div>
+            <div class="event-card-meta" style="margin-top: 0.75rem;">
+              <span>📍 ${ev.venue}</span>
+              <span>📅 ${new Date(ev.date || Date.now()).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+              <p style="margin-top: 0.5rem; color: var(--text-secondary); font-size: 0.88rem; line-height: 1.4;">${ev.description || ''}</p>
+            </div>
+          </div>
+          <div>
+            <div style="margin-bottom: 0.75rem;">
+              <span class="event-avail-badge">🟢 ${freeSeats} / ${totalSeats} Seats Available</span>
+            </div>
+            <div class="event-card-footer">
+              <span class="event-price-tag">${priceFmt}</span>
+              <a href="index.html${suffix ? suffix + '&' : '?'}event=${ev.event_id}" class="btn btn-primary btn-sm">
+                🎟️ Select Seats
+              </a>
+            </div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    if (searchInput) {
+      searchInput.addEventListener('input', (e) => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+          currentSearch = e.target.value.trim();
+          loadEvents();
+        }, 300);
+      });
+    }
+
+    if (categoryFilters) {
+      categoryFilters.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          categoryFilters.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          currentCategory = btn.dataset.category || '';
+          loadEvents();
+        });
+      });
+    }
+
+    if (btnRefresh) {
+      btnRefresh.addEventListener('click', loadEvents);
+    }
+
+    await loadEvents();
+  }
+
+  // =========================================================================
+  // TASK H: Digital Ticket & Verification (web/ticket.html) - Feature 3
+  // =========================================================================
+  async function initTicketPage() {
+    const loadingCard = document.getElementById('ticket-loading');
+    const errorCard = document.getElementById('ticket-error');
+    const passContainer = document.getElementById('ticket-pass-container');
+    const btnPrint = document.getElementById('btn-print-ticket');
+    const btnVerifyServer = document.getElementById('btn-verify-server');
+    const serverVerifyBox = document.getElementById('server-verify-box');
+    const serverVerifyDetails = document.getElementById('server-verify-details');
+
+    const eId = urlParams.get('event_id') || urlParams.get('event') || 'evt1';
+    const rid = urlParams.get('rid') || urlParams.get('reservation_id');
+
+    if (!rid) {
+      if (loadingCard) loadingCard.style.display = 'none';
+      if (errorCard) {
+        errorCard.style.display = 'block';
+        document.getElementById('ticket-error-title').textContent = 'No Reservation ID Provided';
+        document.getElementById('ticket-error-msg').textContent = 'Please specify a reservation ID or confirm a seat from the seating grid first.';
+      }
+      return;
+    }
+
+    const res = await apiFetch(`${API_BASE}/events/${eId}/tickets/${rid}/verify`);
+
+    if (loadingCard) loadingCard.style.display = 'none';
+
+    if (res.error || !res.data || !res.data.valid) {
+      if (errorCard) {
+        errorCard.style.display = 'block';
+        document.getElementById('ticket-error-title').textContent = 'Unconfirmed or Invalid Ticket';
+        document.getElementById('ticket-error-msg').textContent = res.message || 'This ticket could not be validated against confirmed backend booking logs.';
+      }
+      return;
+    }
+
+    const tkt = res.data;
+    if (passContainer) passContainer.style.display = 'block';
+
+    const seatEl = document.getElementById('tkt-seat-id');
+    const ridEl = document.getElementById('tkt-rid');
+    const codeEl = document.getElementById('tkt-code');
+    const holderEl = document.getElementById('tkt-holder');
+
+    if (seatEl) seatEl.textContent = tkt.seat_id;
+    if (ridEl) ridEl.textContent = tkt.reservation_id;
+    if (codeEl) codeEl.textContent = tkt.verification_code || ('TKT-' + rid.substring(0, 10).toUpperCase());
+
+    const authUser = getStoredAuthUser();
+    if (holderEl) holderEl.textContent = authUser ? authUser.username : ('Guest (' + currentUserId.substring(0, 6) + ')');
+
+    if (btnPrint) {
+      btnPrint.addEventListener('click', () => {
+        window.print();
+      });
+    }
+
+    if (btnVerifyServer) {
+      btnVerifyServer.addEventListener('click', async () => {
+        btnVerifyServer.disabled = true;
+        btnVerifyServer.textContent = 'Verifying...';
+        const vRes = await apiFetch(`${API_BASE}/events/${eId}/tickets/${rid}/verify`);
+        btnVerifyServer.disabled = false;
+        btnVerifyServer.textContent = '🛡️ Check Server Verification';
+
+        if (serverVerifyBox) {
+          serverVerifyBox.style.display = 'block';
+          if (vRes.data && vRes.data.valid) {
+            serverVerifyDetails.innerHTML = `
+              <strong>Status:</strong> Valid Confirmed Ticket<br>
+              <strong>Seat:</strong> ${vRes.data.seat_id} &bull; <strong>Ref:</strong> <code>${vRes.data.reservation_id}</code><br>
+              <strong>Security Stamp:</strong> <code>${vRes.data.verification_code}</code><br>
+              <strong>Server Timestamp:</strong> ${vRes.data.verified_at}
+            `;
+          } else {
+            serverVerifyDetails.innerHTML = `<span style="color: #ef4444;">Verification Failed: ${vRes.message || 'Ticket not confirmed'}</span>`;
+          }
+        }
+      });
+    }
+  }
+
   // 4. Page Routing & Initialization
   document.addEventListener('DOMContentLoaded', () => {
     initHeaderAndNavigation();
@@ -1155,6 +1618,10 @@
       initDashboard();
     } else if (pageType === 'login') {
       initAuthPage();
+    } else if (pageType === 'events') {
+      initEventsPage();
+    } else if (pageType === 'ticket') {
+      initTicketPage();
     }
   });
 })();

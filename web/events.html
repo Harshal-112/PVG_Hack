@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FlashSeat — Event Discovery & Search</title>
+  <link rel="stylesheet" href="style.css?v=2.2">
+</head>
+<body data-page="events">
+
+  <header class="app-header">
+    <div class="brand-section">
+      <a href="index.html" class="brand-title" style="text-decoration: none;">⚡ FlashSeat</a>
+      <span class="brand-badge">Event Discovery</span>
+    </div>
+    <nav class="nav-links">
+      <a href="events.html" class="nav-link active" id="nav-events">Explore Events</a>
+      <a href="index.html" class="nav-link" id="nav-grid">Seat Grid</a>
+      <a href="dashboard.html" class="nav-link" id="nav-dashboard">Live Dashboard</a>
+      
+      <!-- User Profile Header Section -->
+      <div id="header-user-section" class="user-header-profile">
+        <div class="user-avatar" id="header-user-avatar">U</div>
+        <div class="user-header-info">
+          <span class="user-header-name" id="header-username">Guest</span>
+          <span class="user-mfa-tag" id="header-user-mfa">🛡️ MFA Active</span>
+        </div>
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-header-auth-action" style="margin-left: 0.25rem;">
+          Sign In
+        </button>
+      </div>
+
+      <span class="system-status-indicator">
+        <span class="status-dot"></span> System Online
+      </span>
+    </nav>
+  </header>
+
+  <main class="container">
+    <!-- Hero Search Section -->
+    <section class="event-hero-card" style="margin-bottom: 2rem;">
+      <div class="event-hero-info">
+        <span class="event-tagline">High-Concurrency Ticketing Arena</span>
+        <h1 class="event-hero-title">Discover High-Demand Live Events</h1>
+        <p style="color: var(--text-secondary); margin-top: 0.5rem; font-size: 1rem; max-width: 650px;">
+          Select any event to access sub-second atomic seat locking, real-time inventory updates, and verifiable digital tickets.
+        </p>
+      </div>
+
+      <div style="margin-top: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
+        <div class="search-input-wrapper" style="max-width: 550px;">
+          <input type="text" id="event-search-input" class="search-seat-input" style="padding: 0.85rem 1.25rem; font-size: 1rem;" placeholder="Search events by name, venue, or category...">
+        </div>
+
+        <div class="filter-group" id="event-category-filters">
+          <button type="button" class="filter-btn active" data-category="">All Categories</button>
+          <button type="button" class="filter-btn" data-category="Concert">Concerts</button>
+          <button type="button" class="filter-btn" data-category="Conference">Conferences</button>
+          <button type="button" class="filter-btn" data-category="Music">Music</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Alert / Message Container -->
+    <div id="alert-container" class="alert-container"></div>
+
+    <!-- Events Grid Section -->
+    <section>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+        <h2 style="font-size: 1.35rem; font-weight: 700;">Available Events (<span id="event-count-badge">0</span>)</h2>
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-refresh-events">🔄 Refresh Availability</button>
+      </div>
+
+      <div id="events-grid" class="events-grid">
+        <!-- Rendered by app.js -->
+        <div class="event-card-skeleton">Loading available events from inventory...</div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    FlashSeat High-Contention Ticketing Engine &bull; Ready for Vercel Static Hosting &bull; Zero Dependencies
+  </footer>
+
+  <!-- Conditional Mock Loader (?mock=1) -->
+  <script>
+    if (new URLSearchParams(window.location.search).get('mock') === '1') {
+      document.write('<script src="mock.js?v=2.2"><\/script>');
+    }
+  </script>
+  <script src="app.js?v=2.2"></script>
+</body>
+</html>

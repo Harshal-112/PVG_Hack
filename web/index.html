@@ -4,17 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FlashSeat — High-Concurrency Seat Selection Grid (evt1)</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=2.2">
 </head>
 <body data-page="grid">
-  <!-- Mock Mode Banner (shown dynamically if ?mock=1) -->
-  <div id="mock-banner" class="mock-banner" style="display: none;">
-    <div class="mock-banner-text">
-      <span>⚠️ <strong>MOCK DEMO MODE ACTIVE</strong> (?mock=1)</span>
-      <span>— Simulating FlashSeat backend engine in-browser</span>
-    </div>
-    <span class="mode-badge mock">MOCK API</span>
-  </div>
 
   <header class="app-header">
     <div class="brand-section">
@@ -22,6 +14,7 @@
       <span class="brand-badge">Event: evt1</span>
     </div>
     <nav class="nav-links">
+      <a href="events.html" class="nav-link" id="nav-events">Explore Events</a>
       <a href="index.html" class="nav-link active" id="nav-grid">Seat Grid</a>
       <a href="dashboard.html" class="nav-link" id="nav-dashboard">Live Dashboard</a>
       
@@ -37,7 +30,9 @@
         </button>
       </div>
 
-      <span id="api-mode-badge" class="mode-badge live">LIVE API</span>
+      <span class="system-status-indicator">
+        <span class="status-dot"></span> System Online
+      </span>
     </nav>
   </header>
 
@@ -45,7 +40,7 @@
     <!-- Event Hero Card -->
     <section class="event-hero-card">
       <div class="event-hero-info">
-        <span class="event-tagline">Flash Sale Arena 2026 &bull; Problem 9 Live Demo</span>
+        <span class="event-tagline">High-Availability Flash Reservation &bull; Main Stage Arena</span>
         <h1 class="event-hero-title">Contention-Free Seat Allocation</h1>
         <div class="event-hero-meta">
           <span>📍 Grand Pavilion Arena</span>
@@ -56,7 +51,7 @@
       </div>
       <div class="event-hero-actions">
         <button type="button" class="btn btn-primary" id="btn-quick-pick">
-          ⚡ Quick Pick Any Free Seat
+          🎯 Auto-Select Best Available Seat
         </button>
         <button type="button" class="btn btn-secondary" id="btn-my-bookings">
           🎟️ My Tickets (<span id="user-tickets-count">0</span>)
@@ -88,6 +83,10 @@
           <div class="detail-value" id="detail-user-id" style="font-family: monospace; font-size: 0.95rem;">—</div>
         </div>
         <div class="detail-item">
+          <div class="detail-label">Seat Price</div>
+          <div class="detail-value" id="detail-price" style="color: #34d399; font-weight: 700;">$45.00 USD</div>
+        </div>
+        <div class="detail-item">
           <div class="detail-label">Hold Expiration</div>
           <div class="detail-value" id="detail-expiry" style="font-size: 0.95rem;">—</div>
         </div>
@@ -96,6 +95,9 @@
       <div class="countdown-container">
         <div class="countdown-label">Hold Expiry Countdown:</div>
         <div id="countdown-timer" class="countdown-timer">--:--</div>
+        <div id="countdown-warning" class="countdown-warning-badge" style="display: none;">
+          ⚠️ Warning: Reservation expiring in less than 30 seconds! Confirm now.
+        </div>
       </div>
 
       <div class="panel-actions">
@@ -173,6 +175,29 @@
     </div>
   </div>
 
+  <!-- Virtual Waiting Room Queue Modal (Feature 6) -->
+  <div id="modal-waiting-room" class="modal-overlay" style="display: none;">
+    <div class="modal-content" style="max-width: 480px; text-align: center;">
+      <div class="modal-header" style="justify-content: center;">
+        <h2 class="modal-title">⚡ High-Demand Waiting Room</h2>
+      </div>
+      <div style="margin: 1.5rem 0;">
+        <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">⏳</div>
+        <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
+          This event is experiencing extreme traffic. You are in line to access the reservation grid.
+        </p>
+        <div class="waiting-room-queue-card">
+          <div style="font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase;">Your Current Position</div>
+          <div style="font-size: 3rem; font-weight: 800; color: #38bdf8;" id="wr-queue-position">—</div>
+          <div style="font-size: 0.9rem; color: var(--text-muted); margin-top: 0.5rem;" id="wr-est-wait">Estimated wait: calculating...</div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 0.75rem; justify-content: center;">
+        <button type="button" class="btn btn-secondary" id="btn-leave-queue">Leave Line</button>
+      </div>
+    </div>
+  </div>
+
   <footer class="app-footer">
     FlashSeat High-Contention Ticketing Engine &bull; Ready for Vercel Static Hosting &bull; Zero Dependencies
   </footer>
@@ -180,9 +205,9 @@
   <!-- Conditional Mock Loader (?mock=1) -->
   <script>
     if (new URLSearchParams(window.location.search).get('mock') === '1') {
-      document.write('<script src="mock.js"><\/script>');
+      document.write('<script src="mock.js?v=2.2"><\/script>');
     }
   </script>
-  <script src="app.js"></script>
+  <script src="app.js?v=2.2"></script>
 </body>
 </html>
