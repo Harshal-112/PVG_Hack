@@ -7,6 +7,8 @@ import {
   getScreeningId,
   getSharedBookings,
   getSharedHolds,
+  fetchSharedHolds,
+  fetchLockedSeats,
   acquireSeatHold,
   releaseSeatHold,
   atomicConfirmBooking,
@@ -22,7 +24,7 @@ import {
   History, 
   QrCode, 
   Download, 
-  CheckCircle2,
+  CheckCircle2, 
   Trash2,
   Sparkles,
   Lock,
@@ -52,6 +54,7 @@ export default function BookingView({
   // Live Collision / Conflict alert state
   const [collisionAlert, setCollisionAlert] = useState(null);
   const [activeHoldsMap, setActiveHoldsMap] = useState({});
+  const [lockedSeats, setLockedSeats] = useState([]);
 
   const {
     movie = MOVIES[0],
@@ -65,39 +68,44 @@ export default function BookingView({
     return getScreeningId(movie, cinema, date, showtime?.time);
   }, [movie, cinema, date, showtime]);
 
-  // Sync active holds for this screening
-  const refreshHolds = useCallback(() => {
-    const holds = getSharedHolds(screeningId);
-    setActiveHoldsMap(holds);
+  // Sync active holds and locked seats for this screening from Supabase
+  const refreshHolds = useCallback(async () => {
+    const holds = await fetchSharedHolds(screeningId);
+    if (holds) setActiveHoldsMap(holds);
+  }, [screeningId]);
+
+  const refreshLockedSeats = useCallback(async () => {
+    const seats = await fetchLockedSeats(screeningId);
+    if (seats) setLockedSeats(seats);
   }, [screeningId]);
 
   useEffect(() => {
     refreshHolds();
-  }, [refreshHolds]);
+    refreshLockedSeats();
+  }, [refreshHolds, refreshLockedSeats]);
 
-  // Subscribe to real-time events across other tabs
+  // Subscribe to real-time events across other tabs & devices
   useEffect(() => {
     const unsubscribe = subscribeToInventoryUpdates((payload) => {
       refreshHolds();
+      refreshLockedSeats();
 
-      if (payload.type === 'BOOKING_COMMITTED') {
-        // If another tab just booked a seat that I currently have selected
-        const bookedInOtherTab = payload.booking?.seats || [];
-        const myConflictedSeats = selectedSeats.filter((s) => bookedInOtherTab.includes(s.code));
+      if (payload.type === 'BOOKING_COMMITTED' || payload.type === 'LOCKED_SEATS_CHANGE') {
+        const bookedInOther = payload.booking?.seats || (payload.payload?.new?.seat_code ? [payload.payload.new.seat_code] : []);
+        const myConflictedSeats = selectedSeats.filter((s) => bookedInOther.includes(s.code));
 
         if (myConflictedSeats.length > 0) {
-          const conflictingUser = payload.booking?.userName || 'another user';
+          const conflictingUser = payload.booking?.userName || payload.payload?.new?.user_name || 'another user';
           setCollisionAlert({
             title: 'Seat Conflict Detected!',
-            message: `Seat ${myConflictedSeats.map(s => s.code).join(', ')} was just booked by ${conflictingUser} in another tab. It has been removed from your selection to prevent collision.`,
+            message: `Seat ${myConflictedSeats.map(s => s.code).join(', ')} was just booked by ${conflictingUser} on another device. Removed from your selection to avoid collision.`,
             type: 'error'
           });
 
           // Automatically unselect conflicted seats
-          setSelectedSeats((prev) => prev.filter((s) => !bookedInOtherTab.includes(s.code)));
+          setSelectedSeats((prev) => prev.filter((s) => !bookedInOther.includes(s.code)));
         }
       } else if (payload.type === 'SEATS_HELD' && payload.screeningId === screeningId) {
-        // Another tab is actively checking out these seats
         if (currentUser && payload.user?.email !== currentUser.email) {
           const heldByOther = payload.seats || [];
           const myConflicted = selectedSeats.filter((s) => heldByOther.includes(s.code));
@@ -114,19 +122,19 @@ export default function BookingView({
     });
 
     return unsubscribe;
-  }, [screeningId, selectedSeats, currentUser, refreshHolds]);
+  }, [screeningId, selectedSeats, currentUser, refreshHolds, refreshLockedSeats]);
 
   // Base pre-booked seats for realistic theatre simulation
   const baseBookedSeats = ['C4', 'C5', 'F6', 'F7', 'G3', 'G4', 'J8', 'B3'];
 
-  // Dynamically calculate booked seats for this specific screening from shared confirmed bookings
+  // Dynamically calculate booked seats from confirmed bookings + Supabase locked seats
   const { currentScreeningBookedSeats, myBookedSeats } = useMemo(() => {
     const allBooked = new Set(baseBookedSeats);
     const userSeats = new Set();
 
     (bookingsList || []).forEach((b) => {
       if (b.status === 'CANCELLED') return;
-      const bScreeningId = getScreeningId(b.movie, b.cinema, b.date, b.time);
+      const bScreeningId = b.screeningId || getScreeningId(b.movie, b.cinema, b.date, b.time);
 
       if (bScreeningId === screeningId) {
         (b.seats || []).forEach((seatCode) => {
@@ -138,11 +146,19 @@ export default function BookingView({
       }
     });
 
+    // Also include seats locked directly in Supabase locked_seats table
+    (lockedSeats || []).forEach((row) => {
+      allBooked.add(row.seat_code);
+      if (currentUser && (row.user_id === currentUser.email || row.user_id === currentUser.id)) {
+        userSeats.add(row.seat_code);
+      }
+    });
+
     return {
       currentScreeningBookedSeats: Array.from(allBooked),
       myBookedSeats: Array.from(userSeats)
     };
-  }, [bookingsList, screeningId, currentUser]);
+  }, [bookingsList, screeningId, currentUser, lockedSeats]);
 
   // Auto-remove any newly booked seats from selection
   useEffect(() => {
@@ -150,7 +166,7 @@ export default function BookingView({
   }, [currentScreeningBookedSeats]);
 
   // Toggle seat selection with lock acquisition
-  const handleToggleSeat = (seat) => {
+  const handleToggleSeat = async (seat) => {
     if (currentScreeningBookedSeats.includes(seat.code)) return;
 
     // Check if held by someone else
@@ -164,22 +180,31 @@ export default function BookingView({
       return;
     }
 
-    setSelectedSeats((prev) => {
-      const exists = prev.some((s) => s.code === seat.code);
-      if (exists) {
-        // Release hold if deselected
-        releaseSeatHold(screeningId, [seat.code], currentUser);
-        return prev.filter((s) => s.code !== seat.code);
-      } else {
-        if (prev.length >= 8) {
-          alert('You can select a maximum of 8 seats per booking transaction.');
-          return prev;
-        }
-        // Try placing temporary hold
-        acquireSeatHold(screeningId, [seat.code], currentUser);
-        return [...prev, seat];
+    const exists = selectedSeats.some((s) => s.code === seat.code);
+    if (exists) {
+      // Release hold if deselected
+      releaseSeatHold(screeningId, [seat.code], currentUser);
+      setSelectedSeats((prev) => prev.filter((s) => s.code !== seat.code));
+    } else {
+      if (selectedSeats.length >= 8) {
+        alert('You can select a maximum of 8 seats per booking transaction.');
+        return;
       }
-    });
+      // Optimistically add seat
+      setSelectedSeats((prev) => [...prev, seat]);
+      // Acquire remote lock
+      const holdRes = await acquireSeatHold(screeningId, [seat.code], currentUser);
+      if (!holdRes.success) {
+        setSelectedSeats((prev) => prev.filter((s) => s.code !== seat.code));
+        setCollisionAlert({
+          title: 'Seat Unavailable',
+          message: holdRes.message || `Seat ${seat.code} was claimed by another customer!`,
+          type: 'warning'
+        });
+        refreshHolds();
+        refreshLockedSeats();
+      }
+    }
   };
 
   const handleRemoveSeat = (seatCode) => {
@@ -188,7 +213,7 @@ export default function BookingView({
   };
 
   // Triggered from OrderSummary "Proceed to Pay" button
-  const handleProceedToPayment = ({ grandTotal, subtotal, convenienceFee, promoDiscount }) => {
+  const handleProceedToPayment = async ({ grandTotal, subtotal, convenienceFee, promoDiscount }) => {
     if (selectedSeats.length === 0) return;
 
     // 1. Check user authentication
@@ -202,25 +227,33 @@ export default function BookingView({
     const seatCodes = selectedSeats.map((s) => s.code);
 
     // 2. ATOMIC PRE-PAYMENT SEAT LOCK: Verify no race condition has occurred
-    const holdResult = acquireSeatHold(screeningId, seatCodes, currentUser);
+    const holdResult = await acquireSeatHold(screeningId, seatCodes, currentUser);
     if (!holdResult.success) {
       if (holdResult.reason === 'ALREADY_BOOKED') {
         setCollisionAlert({
           title: 'Collision Detected!',
-          message: `Seat ${holdResult.conflictSeat} has already been confirmed by ${holdResult.bookedBy}! High-contention lock engine prevented double booking.`,
+          message: `Seat ${holdResult.conflictSeat} has already been confirmed by ${holdResult.bookedBy || 'another customer'}! High-contention lock engine prevented double booking.`,
           type: 'error'
         });
       } else if (holdResult.reason === 'ALREADY_HELD') {
         setCollisionAlert({
           title: 'Seat Held by Another User',
-          message: `Seat ${holdResult.conflictSeat} is currently being checked out by ${holdResult.heldBy}. Please select an alternate seat.`,
+          message: `Seat ${holdResult.conflictSeat} is currently being checked out by ${holdResult.heldBy || 'another customer'}. Please select an alternate seat.`,
           type: 'warning'
+        });
+      } else {
+        setCollisionAlert({
+          title: 'Seat Lock Failed',
+          message: holdResult.message || 'Could not place reservation hold. Please try another seat.',
+          type: 'error'
         });
       }
       // Remove conflicting seat
       if (holdResult.conflictSeat) {
         setSelectedSeats((prev) => prev.filter((s) => s.code !== holdResult.conflictSeat));
       }
+      refreshHolds();
+      refreshLockedSeats();
       return;
     }
 
@@ -241,7 +274,7 @@ export default function BookingView({
   };
 
   // Called when payment is successfully confirmed in PaymentGatewayModal
-  const handlePaymentSuccess = ({ paymentMethod, transactionId, orderId }) => {
+  const handlePaymentSuccess = async ({ paymentMethod, transactionId, orderId }) => {
     setIsProcessing(true);
 
     const newBooking = {
@@ -267,7 +300,7 @@ export default function BookingView({
 
     // 4. ATOMIC CHECK-AND-COMMIT ENGINE:
     // Ensures zero double-booking even if two users click Pay at the exact same instant!
-    const commitResult = atomicConfirmBooking(newBooking, INITIAL_BOOKINGS);
+    const commitResult = await atomicConfirmBooking(newBooking, INITIAL_BOOKINGS);
 
     setIsProcessing(false);
     setPaymentModalData(null);
@@ -283,6 +316,8 @@ export default function BookingView({
       if (commitResult.collisionSeats) {
         setSelectedSeats((prev) => prev.filter((s) => !commitResult.collisionSeats.includes(s.code)));
       }
+      refreshHolds();
+      refreshLockedSeats();
       return;
     }
 
@@ -290,6 +325,8 @@ export default function BookingView({
     onAddBooking(newBooking);
     setConfirmedBooking(newBooking);
     setSelectedSeats([]);
+    refreshHolds();
+    refreshLockedSeats();
   };
 
   return (

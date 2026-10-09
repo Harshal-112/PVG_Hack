@@ -6,7 +6,7 @@ import ShowtimesView from './views/ShowtimesView';
 import BookingView from './views/BookingView';
 import LoginView from './views/LoginView';
 import TicketPassModal from './components/TicketPassModal';
-import { getSharedBookings, subscribeToInventoryUpdates } from './services/inventorySync';
+import { getSharedBookings, fetchSharedBookings, cancelSharedBooking, subscribeToInventoryUpdates } from './services/inventorySync';
 import { MOVIES, CINEMAS, INITIAL_BOOKINGS } from './data/mockData';
 import { Zap, Heart, Shield, Film, X, Sun, Moon } from 'lucide-react';
 
@@ -32,10 +32,17 @@ export default function App() {
     return INITIAL_BOOKINGS;
   });
 
-  // Real-time synchronization across browser tabs (via BroadcastChannel & storage events)
+  // Real-time synchronization across devices and tabs via Supabase & BroadcastChannel
   useEffect(() => {
-    const unsubscribe = subscribeToInventoryUpdates(() => {
-      const fresh = getSharedBookings();
+    // Initial fetch from authoritative Supabase database
+    fetchSharedBookings().then((remoteBookings) => {
+      if (remoteBookings && Array.isArray(remoteBookings) && remoteBookings.length > 0) {
+        setBookingsList(remoteBookings);
+      }
+    });
+
+    const unsubscribe = subscribeToInventoryUpdates(async () => {
+      const fresh = await fetchSharedBookings();
       if (fresh && Array.isArray(fresh) && fresh.length > 0) {
         setBookingsList(fresh);
       }
@@ -141,7 +148,8 @@ export default function App() {
     });
   };
 
-  const handleCancelBooking = (bookingId) => {
+  const handleCancelBooking = async (bookingId) => {
+    await cancelSharedBooking(bookingId);
     setBookingsList((prev) => {
       const updated = prev.filter((b) => b.bookingId !== bookingId);
       try {
