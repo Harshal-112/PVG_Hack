@@ -397,6 +397,207 @@
       return jsonResponse({ event_id: 'evt1', seat_count: TOTAL_SEATS }, 200);
     }
 
+    // 9. GET /api/v1/events (Discovery & Search)
+    if (parsedPath === '/api/v1/events' && method === 'GET') {
+      let freeCount = 0, soldCount = 0, heldCount = 0;
+      for (const s of Object.values(seats)) {
+        if (s === 'FREE') freeCount++;
+        else if (s === 'SOLD') soldCount++;
+        else if (s === 'HELD') heldCount++;
+      }
+      const list = [
+        {
+          event_id: 'evt1',
+          name: 'High-Contention Arena Grand Finale',
+          venue: 'Grand Pavilion Arena, Hall A',
+          date: '2026-11-15T19:00:00Z',
+          category: 'Concert',
+          description: 'Live flash-sale event with 200 real-time contention-free seats and sub-second locking.',
+          seat_count: 200,
+          total: 200,
+          free: freeCount,
+          held: heldCount,
+          sold: soldCount,
+          price: 45.00,
+          currency: 'USD'
+        },
+        {
+          event_id: 'evt2',
+          name: 'Tech Innovation Summit 2026',
+          venue: 'Silicon Center Auditorium',
+          date: '2026-12-01T10:00:00Z',
+          category: 'Conference',
+          description: 'Annual gathering of systems architects, distributed systems developers, and high-performance engineers.',
+          seat_count: 150,
+          total: 150,
+          free: 142,
+          held: 2,
+          sold: 6,
+          price: 120.00,
+          currency: 'USD'
+        },
+        {
+          event_id: 'evt3',
+          name: 'Cyberpunk Symphony Orchestra',
+          venue: 'Metropolis Philharmonic Center',
+          date: '2026-12-20T20:30:00Z',
+          category: 'Music',
+          description: 'An immersive neoclassical synth performance with multi-channel audio projection and laser array.',
+          seat_count: 100,
+          total: 100,
+          free: 88,
+          held: 4,
+          sold: 8,
+          price: 75.00,
+          currency: 'USD'
+        }
+      ];
+      return jsonResponse({ events: list, total_events: list.length }, 200);
+    }
+
+    // 10. GET /api/v1/events/:id (Single Event Detail)
+    const eventDetailMatch = parsedPath.match(/^\/api\/v1\/events\/([^/]+)$/);
+    if (eventDetailMatch && method === 'GET') {
+      const eId = eventDetailMatch[1];
+      let freeCount = 0, soldCount = 0, heldCount = 0;
+      for (const s of Object.values(seats)) {
+        if (s === 'FREE') freeCount++;
+        else if (s === 'SOLD') soldCount++;
+        else if (s === 'HELD') heldCount++;
+      }
+      return jsonResponse({
+        event_id: eId,
+        name: eId === 'evt1' ? 'High-Contention Arena Grand Finale' : `Event ${eId.toUpperCase()}`,
+        venue: 'Grand Pavilion Arena',
+        date: '2026-11-15T19:00:00Z',
+        category: 'Concert',
+        description: 'Live flash-sale event with 200 real-time contention-free seats and sub-second locking.',
+        seat_count: 200,
+        total: 200,
+        free: freeCount,
+        held: heldCount,
+        sold: soldCount,
+        price: 45.00,
+        currency: 'USD'
+      }, 200);
+    }
+
+    // 11. GET /api/v1/events/:id/reservations/:rid (Inspect Reservation)
+    const getResMatch = parsedPath.match(/^\/api\/v1\/events\/([^/]+)\/reservations\/([^/]+)$/);
+    if (getResMatch && method === 'GET') {
+      const eId = getResMatch[1];
+      const rid = getResMatch[2];
+      const res = reservations[rid];
+      if (!res) {
+        return jsonResponse({ error: 'UNKNOWN', message: 'Reservation not found' }, 404);
+      }
+      const now = Date.now();
+      const ttl = Math.max(0, res.expires_at_ms - now);
+      return jsonResponse({
+        reservation_id: rid,
+        event_id: eId,
+        seat_id: res.seat_id,
+        status: res.status,
+        expires_at_ms: res.expires_at_ms,
+        ttl_ms: ttl
+      }, 200);
+    }
+
+    // 12. GET /api/v1/events/:id/tickets/:rid/verify or /api/v1/tickets/verify
+    const ticketVerifyMatch = parsedPath.match(/^\/api\/v1\/events\/([^/]+)\/tickets\/([^/]+)\/verify$/);
+    if ((ticketVerifyMatch || parsedPath === '/api/v1/tickets/verify') && method === 'GET') {
+      let eId = 'evt1';
+      let rid = '';
+      if (ticketVerifyMatch) {
+        eId = ticketVerifyMatch[1];
+        rid = ticketVerifyMatch[2];
+      } else {
+        const u = new URL(url, window.location.origin);
+        eId = u.searchParams.get('event_id') || 'evt1';
+        rid = u.searchParams.get('reservation_id') || '';
+      }
+
+      const res = reservations[rid];
+      if (!res || res.status !== 'CONFIRMED') {
+        return jsonResponse({
+          valid: false,
+          error: 'TICKET_INVALID_OR_NOT_CONFIRMED',
+          message: 'Ticket is either not found, unconfirmed, or expired.'
+        }, 404);
+      }
+
+      return jsonResponse({
+        valid: true,
+        event_id: eId,
+        reservation_id: rid,
+        seat_id: res.seat_id,
+        status: 'CONFIRMED',
+        verification_code: 'TKT-MOCK-' + rid.substring(0, 8).toUpperCase(),
+        verified_at: new Date().toISOString()
+      }, 200);
+    }
+
+    // 13. GET /api/v1/admin/overview
+    if (parsedPath === '/api/v1/admin/overview' && method === 'GET') {
+      let free = 0, held = 0, sold = 0;
+      for (const s of Object.values(seats)) {
+        if (s === 'FREE') free++;
+        else if (s === 'HELD') held++;
+        else if (s === 'SOLD') sold++;
+      }
+      return jsonResponse({
+        refreshed_at: new Date().toISOString(),
+        event_id: 'evt1',
+        inventory: {
+          total: TOTAL_SEATS,
+          free,
+          held,
+          sold,
+          hold_ttl_ms: HOLD_TTL_MS
+        },
+        persistence: {
+          persisted_bookings: pgBookings.size,
+          backlog: Math.max(0, sold - pgBookings.size),
+          stream_len: sold,
+          worker_status: 'HEALTHY',
+          consistent: sold === pgBookings.size
+        },
+        telemetry: {
+          reserves: { ok: sold + held, seat_held: 3, seat_sold: 2 },
+          confirms: { ok: sold, hold_expired: 1 },
+          rate_limiting: { enabled: true, capacity: 20, refill_per_sec: 10 },
+          waiting_room: { enabled: false, max_admitted: 50 }
+        }
+      }, 200);
+    }
+
+    // 14. Virtual Waiting Room Mock Routes
+    if (parsedPath.match(/^\/api\/v1\/events\/[^/]+\/queue\/join$/) && method === 'POST') {
+      return jsonResponse({
+        enabled: false,
+        admitted: true,
+        status: 'BYPASS',
+        admission_token: null,
+        position: 0,
+        estimated_wait_seconds: 0
+      }, 200);
+    }
+
+    if (parsedPath.match(/^\/api\/v1\/events\/[^/]+\/queue\/status$/) && method === 'GET') {
+      return jsonResponse({
+        enabled: false,
+        admitted: true,
+        status: 'BYPASS',
+        admission_token: null,
+        position: 0,
+        estimated_wait_seconds: 0
+      }, 200);
+    }
+
+    if (parsedPath.match(/^\/api\/v1\/events\/[^/]+\/queue\/leave$/) && method === 'POST') {
+      return jsonResponse({ ok: true }, 200);
+    }
+
     return jsonResponse({ error: 'NOT_FOUND', message: 'Endpoint not found in mock API' }, 404);
   };
 })();

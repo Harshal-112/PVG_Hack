@@ -4,8 +4,10 @@
 (function () {
   'use strict';
 
-  const EVENT_ID = 'evt1';
-  const API_BASE = '/api/v1';
+  const urlParams = new URLSearchParams(window.location.search);
+  const isMockMode = urlParams.get('mock') === '1';
+  const EVENT_ID = urlParams.get('event') || urlParams.get('event_id') || 'evt1';
+  const API_BASE = window.__API_BASE__ || localStorage.getItem('flashseat_api_base') || '/api/v1';
 
   // 1. Auth & Session State Management
   function getStoredAuthUser() {
@@ -70,11 +72,9 @@
     }
   }
 
-  // 2. Query Param & Navigation Handling
-  const urlParams = new URLSearchParams(window.location.search);
-  const isMockMode = urlParams.get('mock') === '1';
-
+  // 2. Navigation Handling
   function initHeaderAndNavigation() {
+    const navEvents = document.getElementById('nav-events');
     const navGrid = document.getElementById('nav-grid');
     const navDashboard = document.getElementById('nav-dashboard');
     const apiBadge = document.getElementById('api-mode-badge');
@@ -84,6 +84,7 @@
 
     const brandLink = document.querySelector('.brand-title');
     if (brandLink) brandLink.href = 'index.html' + suffix;
+    if (navEvents) navEvents.href = 'events.html' + suffix;
     if (navGrid) navGrid.href = 'index.html' + suffix;
     if (navDashboard) navDashboard.href = 'dashboard.html' + suffix;
 
@@ -168,7 +169,13 @@
   // Safe API Fetch Wrapper
   async function apiFetch(endpoint, options = {}) {
     try {
-      const resp = await fetch(endpoint, options);
+      const opts = { ...options };
+      opts.headers = { ...(opts.headers || {}) };
+      const admToken = sessionStorage.getItem('flashseat_admission_token');
+      if (admToken && !opts.headers['X-Admission-Token']) {
+        opts.headers['X-Admission-Token'] = admToken;
+      }
+      const resp = await fetch(endpoint, opts);
       let data = null;
       const contentType = resp.headers.get('content-type');
       if (contentType && contentType.includes('application/json')) {
@@ -418,7 +425,8 @@
       btn.id = `seat-${seatId}`;
       btn.className = 'seat-btn state-free';
       btn.setAttribute('role', 'button');
-      btn.setAttribute('aria-label', `Seat ${seatId}: FREE`);
+      btn.setAttribute('tabindex', '0');
+      btn.setAttribute('aria-label', `Seat ${seatId}: FREE - $45.00 USD`);
 
       const idSpan = document.createElement('span');
       idSpan.className = 'seat-id';
@@ -432,6 +440,12 @@
       btn.appendChild(tagSpan);
 
       btn.addEventListener('click', () => onSeatClicked(seatId));
+      btn.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSeatClicked(seatId);
+        }
+      });
 
       seatElements[seatId] = {
         element: btn,
@@ -459,13 +473,26 @@
       if (!activeReservation || !activeReservation.expires_at_ms) return;
       const now = Date.now();
       const remainingMs = activeReservation.expires_at_ms - now;
+      const warnEl = document.getElementById('countdown-warning');
+      const panelBadge = document.getElementById('panel-status-badge');
 
       if (remainingMs <= 0) {
         countdownTimer.textContent = '00:00 (EXPIRED)';
         countdownTimer.classList.add('expiring');
         clearInterval(countdownInterval);
         countdownInterval = null;
+        if (btnConfirm) btnConfirm.disabled = true;
+        if (panelBadge) {
+          panelBadge.style.background = '#7f1d1d';
+          panelBadge.style.color = '#fca5a5';
+          panelBadge.textContent = 'EXPIRED';
+        }
+        if (warnEl) {
+          warnEl.textContent = '⛔ Reservation hold has expired on the backend. Please select a new seat.';
+          warnEl.style.display = 'block';
+        }
         showAlert('warning', 'Hold Expired', `The hold on seat ${activeReservation.seat_id} has expired.`);
+        fetchSeats();
         return;
       }
 
@@ -475,10 +502,15 @@
       const formatted = String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
 
       countdownTimer.textContent = formatted;
-      if (totalSeconds <= 5) {
+      if (totalSeconds <= 30) {
         countdownTimer.classList.add('expiring');
+        if (warnEl) {
+          warnEl.textContent = `⚠️ Warning: Reservation expiring in ${totalSeconds}s! Confirm your booking now.`;
+          warnEl.style.display = 'block';
+        }
       } else {
         countdownTimer.classList.remove('expiring');
+        if (warnEl) warnEl.style.display = 'none';
       }
     }
 
@@ -489,6 +521,14 @@
       detailRid.textContent = res.reservation_id;
       detailUserId.textContent = currentUserId;
       detailExpiry.textContent = new Date(res.expires_at_ms).toLocaleTimeString();
+      if (btnConfirm) btnConfirm.disabled = false;
+
+      const panelBadge = document.getElementById('panel-status-badge');
+      if (panelBadge) {
+        panelBadge.style.background = '#1e3a8a';
+        panelBadge.style.color = '#93c5fd';
+        panelBadge.textContent = 'HELD';
+      }
 
       for (const sId of Object.keys(seatElements)) {
         if (sId === res.seat_id) {
@@ -509,6 +549,9 @@
         clearInterval(countdownInterval);
         countdownInterval = null;
       }
+      const warnEl = document.getElementById('countdown-warning');
+      if (warnEl) warnEl.style.display = 'none';
+      if (btnConfirm) btnConfirm.disabled = false;
       reservationPanel.style.display = 'none';
       for (const sId of Object.keys(seatElements)) {
         seatElements[sId].element.classList.remove('is-selected');
@@ -601,9 +644,11 @@
 
       if (result.ok && result.status === 200) {
         const seatId = activeReservation.seat_id;
+        const rid = activeReservation.reservation_id;
         const isIdempotent = result.data && result.data.idempotent;
-        recordUserBooking(seatId, activeReservation.reservation_id);
-        showAlert('success', 'Booking Confirmed!', `Seat ${seatId} confirmed successfully! ${isIdempotent ? '(Idempotent retry)' : ''}`);
+        recordUserBooking(seatId, rid);
+        const ticketUrl = `ticket.html${isMockMode ? '?mock=1&' : '?'}event_id=${EVENT_ID}&rid=${rid}`;
+        showAlert('success', 'Booking Confirmed!', `Seat ${seatId} confirmed successfully! <a href="${ticketUrl}" class="btn btn-primary btn-sm" style="margin-left: 0.5rem; text-decoration: none;">🎟️ View Digital Ticket</a>`);
         hideActiveReservation();
         fetchSeats();
       } else {
@@ -632,6 +677,62 @@
       }
     });
 
+    // Virtual Waiting Room Queue Handler (Feature 6)
+    async function handleWaitingRoomQueue() {
+      const modal = document.getElementById('modal-waiting-room');
+      const posEl = document.getElementById('wr-queue-position');
+      const waitEl = document.getElementById('wr-est-wait');
+      const btnLeave = document.getElementById('btn-leave-queue');
+
+      if (modal) modal.style.display = 'flex';
+
+      const joinRes = await apiFetch(`${API_BASE}/events/${EVENT_ID}/queue/join`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: currentUserId })
+      });
+
+      if (joinRes.data && joinRes.data.admitted) {
+        if (joinRes.data.admission_token) {
+          sessionStorage.setItem('flashseat_admission_token', joinRes.data.admission_token);
+        }
+        if (modal) modal.style.display = 'none';
+        showAlert('success', 'Admission Granted!', 'You have entered the reservation arena.');
+        return;
+      }
+
+      if (posEl) posEl.textContent = (joinRes.data && joinRes.data.position) ? `#${joinRes.data.position}` : 'In Line';
+      if (waitEl) waitEl.textContent = (joinRes.data && joinRes.data.estimated_wait_seconds) ? `Estimated wait: ~${joinRes.data.estimated_wait_seconds}s` : 'Estimated wait: calculating...';
+
+      const pollTimer = setInterval(async () => {
+        const sRes = await apiFetch(`${API_BASE}/events/${EVENT_ID}/queue/status?user_id=${currentUserId}`);
+        if (sRes.data && sRes.data.admitted) {
+          clearInterval(pollTimer);
+          if (sRes.data.admission_token) {
+            sessionStorage.setItem('flashseat_admission_token', sRes.data.admission_token);
+          }
+          if (modal) modal.style.display = 'none';
+          showAlert('success', 'Admitted to Arena!', 'Your turn has arrived! Select your seats now.');
+        } else if (sRes.data && sRes.data.position) {
+          if (posEl) posEl.textContent = `#${sRes.data.position}`;
+          if (waitEl) waitEl.textContent = `Estimated wait: ~${sRes.data.estimated_wait_seconds || 10}s`;
+        }
+      }, 2000);
+
+      if (btnLeave) {
+        btnLeave.onclick = async () => {
+          clearInterval(pollTimer);
+          await apiFetch(`${API_BASE}/events/${EVENT_ID}/queue/leave`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: currentUserId })
+          });
+          if (modal) modal.style.display = 'none';
+          showAlert('info', 'Queue Cancelled', 'You left the waiting room line.');
+        };
+      }
+    }
+
     // Format & display error messages from API
     function handleApiError(result, defaultContext) {
       const status = result.status;
@@ -643,6 +744,11 @@
         errMsg = result.data.message || JSON.stringify(result.data);
       } else if (result.error) {
         errMsg = result.error;
+      }
+
+      if (status === 403 && (errCode === 'QUEUE_ADMISSION_REQUIRED' || errMsg.includes('waiting room'))) {
+        handleWaitingRoomQueue();
+        return;
       }
 
       if (status === 409) {
@@ -1145,6 +1251,195 @@
     });
   }
 
+  // =========================================================================
+  // TASK G: Event Discovery & Search (web/events.html) - Feature 5
+  // =========================================================================
+  async function initEventsPage() {
+    const grid = document.getElementById('events-grid');
+    const searchInput = document.getElementById('event-search-input');
+    const categoryFilters = document.getElementById('event-category-filters');
+    const countBadge = document.getElementById('event-count-badge');
+    const btnRefresh = document.getElementById('btn-refresh-events');
+
+    let currentCategory = '';
+    let currentSearch = '';
+    let debounceTimer = null;
+
+    async function loadEvents() {
+      if (grid) grid.innerHTML = '<div class="event-card-skeleton">Refreshing events and real-time inventory...</div>';
+
+      const query = new URLSearchParams();
+      if (currentSearch) query.set('search', currentSearch);
+      if (currentCategory) query.set('category', currentCategory);
+
+      const res = await apiFetch(`${API_BASE}/events?${query.toString()}`);
+      if (res.error) {
+        if (grid) grid.innerHTML = `<div class="event-card-skeleton" style="color: #ef4444;">Failed to load events: ${res.message || res.error}. <button class="btn btn-secondary btn-sm" id="btn-retry-events" style="margin-left: 0.5rem;">Retry</button></div>`;
+        const retryBtn = document.getElementById('btn-retry-events');
+        if (retryBtn) retryBtn.onclick = loadEvents;
+        return;
+      }
+
+      const events = (res.data && res.data.events) ? res.data.events : [];
+      if (countBadge) countBadge.textContent = events.length;
+
+      if (!grid) return;
+      if (events.length === 0) {
+        grid.innerHTML = '<div class="event-card-skeleton">No events found matching your search. Try adjusting your keyword or filter.</div>';
+        return;
+      }
+
+      grid.innerHTML = '';
+      const suffix = isMockMode ? '?mock=1' : '';
+
+      events.forEach(ev => {
+        const card = document.createElement('div');
+        card.className = 'event-card';
+
+        const freeSeats = ev.free !== undefined ? ev.free : ev.seat_count;
+        const totalSeats = ev.total !== undefined ? ev.total : ev.seat_count;
+        const priceFmt = `$${(ev.price || 45).toFixed(2)} ${ev.currency || 'USD'}`;
+
+        card.innerHTML = `
+          <div>
+            <div class="event-card-header">
+              <h3 class="event-card-title">${ev.name}</h3>
+              <span class="event-category-chip">${ev.category || 'Live Event'}</span>
+            </div>
+            <div class="event-card-meta" style="margin-top: 0.75rem;">
+              <span>📍 ${ev.venue}</span>
+              <span>📅 ${new Date(ev.date || Date.now()).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+              <p style="margin-top: 0.5rem; color: var(--text-secondary); font-size: 0.88rem; line-height: 1.4;">${ev.description || ''}</p>
+            </div>
+          </div>
+          <div>
+            <div style="margin-bottom: 0.75rem;">
+              <span class="event-avail-badge">🟢 ${freeSeats} / ${totalSeats} Seats Available</span>
+            </div>
+            <div class="event-card-footer">
+              <span class="event-price-tag">${priceFmt}</span>
+              <a href="index.html${suffix ? suffix + '&' : '?'}event=${ev.event_id}" class="btn btn-primary btn-sm">
+                🎟️ Select Seats
+              </a>
+            </div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    if (searchInput) {
+      searchInput.addEventListener('input', (e) => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+          currentSearch = e.target.value.trim();
+          loadEvents();
+        }, 300);
+      });
+    }
+
+    if (categoryFilters) {
+      categoryFilters.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          categoryFilters.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          currentCategory = btn.dataset.category || '';
+          loadEvents();
+        });
+      });
+    }
+
+    if (btnRefresh) {
+      btnRefresh.addEventListener('click', loadEvents);
+    }
+
+    await loadEvents();
+  }
+
+  // =========================================================================
+  // TASK H: Digital Ticket & Verification (web/ticket.html) - Feature 3
+  // =========================================================================
+  async function initTicketPage() {
+    const loadingCard = document.getElementById('ticket-loading');
+    const errorCard = document.getElementById('ticket-error');
+    const passContainer = document.getElementById('ticket-pass-container');
+    const btnPrint = document.getElementById('btn-print-ticket');
+    const btnVerifyServer = document.getElementById('btn-verify-server');
+    const serverVerifyBox = document.getElementById('server-verify-box');
+    const serverVerifyDetails = document.getElementById('server-verify-details');
+
+    const eId = urlParams.get('event_id') || urlParams.get('event') || 'evt1';
+    const rid = urlParams.get('rid') || urlParams.get('reservation_id');
+
+    if (!rid) {
+      if (loadingCard) loadingCard.style.display = 'none';
+      if (errorCard) {
+        errorCard.style.display = 'block';
+        document.getElementById('ticket-error-title').textContent = 'No Reservation ID Provided';
+        document.getElementById('ticket-error-msg').textContent = 'Please specify a reservation ID or confirm a seat from the seating grid first.';
+      }
+      return;
+    }
+
+    const res = await apiFetch(`${API_BASE}/events/${eId}/tickets/${rid}/verify`);
+
+    if (loadingCard) loadingCard.style.display = 'none';
+
+    if (res.error || !res.data || !res.data.valid) {
+      if (errorCard) {
+        errorCard.style.display = 'block';
+        document.getElementById('ticket-error-title').textContent = 'Unconfirmed or Invalid Ticket';
+        document.getElementById('ticket-error-msg').textContent = res.message || 'This ticket could not be validated against confirmed backend booking logs.';
+      }
+      return;
+    }
+
+    const tkt = res.data;
+    if (passContainer) passContainer.style.display = 'block';
+
+    const seatEl = document.getElementById('tkt-seat-id');
+    const ridEl = document.getElementById('tkt-rid');
+    const codeEl = document.getElementById('tkt-code');
+    const holderEl = document.getElementById('tkt-holder');
+
+    if (seatEl) seatEl.textContent = tkt.seat_id;
+    if (ridEl) ridEl.textContent = tkt.reservation_id;
+    if (codeEl) codeEl.textContent = tkt.verification_code || ('TKT-' + rid.substring(0, 10).toUpperCase());
+
+    const authUser = getStoredAuthUser();
+    if (holderEl) holderEl.textContent = authUser ? authUser.username : ('Guest (' + currentUserId.substring(0, 6) + ')');
+
+    if (btnPrint) {
+      btnPrint.addEventListener('click', () => {
+        window.print();
+      });
+    }
+
+    if (btnVerifyServer) {
+      btnVerifyServer.addEventListener('click', async () => {
+        btnVerifyServer.disabled = true;
+        btnVerifyServer.textContent = 'Verifying...';
+        const vRes = await apiFetch(`${API_BASE}/events/${eId}/tickets/${rid}/verify`);
+        btnVerifyServer.disabled = false;
+        btnVerifyServer.textContent = '🛡️ Check Server Verification';
+
+        if (serverVerifyBox) {
+          serverVerifyBox.style.display = 'block';
+          if (vRes.data && vRes.data.valid) {
+            serverVerifyDetails.innerHTML = `
+              <strong>Status:</strong> Valid Confirmed Ticket<br>
+              <strong>Seat:</strong> ${vRes.data.seat_id} &bull; <strong>Ref:</strong> <code>${vRes.data.reservation_id}</code><br>
+              <strong>Security Stamp:</strong> <code>${vRes.data.verification_code}</code><br>
+              <strong>Server Timestamp:</strong> ${vRes.data.verified_at}
+            `;
+          } else {
+            serverVerifyDetails.innerHTML = `<span style="color: #ef4444;">Verification Failed: ${vRes.message || 'Ticket not confirmed'}</span>`;
+          }
+        }
+      });
+    }
+  }
+
   // 4. Page Routing & Initialization
   document.addEventListener('DOMContentLoaded', () => {
     initHeaderAndNavigation();
@@ -1155,6 +1450,10 @@
       initDashboard();
     } else if (pageType === 'login') {
       initAuthPage();
+    } else if (pageType === 'events') {
+      initEventsPage();
+    } else if (pageType === 'ticket') {
+      initTicketPage();
     }
   });
 })();

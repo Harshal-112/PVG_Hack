@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FlashSeat — Digital Ticket & Verification</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body data-page="ticket">
+  <!-- Mock Mode Banner -->
+  <div id="mock-banner" class="mock-banner" style="display: none;">
+    <div class="mock-banner-text">
+      <span>⚠️ <strong>MOCK DEMO MODE ACTIVE</strong> (?mock=1)</span>
+      <span>— Simulating FlashSeat ticket validation in-browser</span>
+    </div>
+    <span class="mode-badge mock">MOCK API</span>
+  </div>
+
+  <header class="app-header">
+    <div class="brand-section">
+      <a href="index.html" class="brand-title" style="text-decoration: none;">⚡ FlashSeat</a>
+      <span class="brand-badge">Official Digital Ticket</span>
+    </div>
+    <nav class="nav-links">
+      <a href="events.html" class="nav-link" id="nav-events">Explore Events</a>
+      <a href="index.html" class="nav-link" id="nav-grid">Seat Grid</a>
+      <a href="dashboard.html" class="nav-link" id="nav-dashboard">Live Dashboard</a>
+      
+      <!-- User Profile Header Section -->
+      <div id="header-user-section" class="user-header-profile">
+        <div class="user-avatar" id="header-user-avatar">U</div>
+        <div class="user-header-info">
+          <span class="user-header-name" id="header-username">Guest</span>
+          <span class="user-mfa-tag" id="header-user-mfa">🛡️ MFA Active</span>
+        </div>
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-header-auth-action" style="margin-left: 0.25rem;">
+          Sign In
+        </button>
+      </div>
+
+      <span id="api-mode-badge" class="mode-badge live">LIVE API</span>
+    </nav>
+  </header>
+
+  <main class="container">
+    <!-- Alert / Message Container -->
+    <div id="alert-container" class="alert-container"></div>
+
+    <div id="ticket-loading" class="ticket-status-card" style="text-align: center; padding: 3rem;">
+      <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">🔍 Loading Ticket Data...</div>
+      <div style="color: var(--text-muted);">Validating reservation status with the backend engine...</div>
+    </div>
+
+    <!-- Ticket Error State -->
+    <div id="ticket-error" class="ticket-status-card" style="display: none; border-color: rgba(239, 68, 68, 0.4); text-align: center; padding: 3rem;">
+      <div style="font-size: 2.5rem; margin-bottom: 1rem;">🚫</div>
+      <h2 style="color: #ef4444; font-size: 1.5rem; margin-bottom: 0.5rem;" id="ticket-error-title">Invalid or Unconfirmed Ticket</h2>
+      <p style="color: var(--text-secondary); max-width: 500px; margin: 0 auto 1.5rem;" id="ticket-error-msg">
+        The requested reservation does not exist, has expired, or was never confirmed by the backend engine.
+      </p>
+      <a href="index.html" class="btn btn-primary">Go to Seat Selection Grid</a>
+    </div>
+
+    <!-- Valid Boarding Pass Pass View -->
+    <div id="ticket-pass-container" style="display: none;">
+      <div class="ticket-boarding-pass">
+        <div class="ticket-top-band">
+          <div class="ticket-brand">
+            <span style="font-size: 1.4rem; font-weight: 800;">⚡ FlashSeat Digital Pass</span>
+            <span class="mode-badge" style="background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid #10b981;">OFFICIAL ENTRY TICKET</span>
+          </div>
+          <div id="ticket-status-tag" class="mode-badge" style="background: rgba(16, 185, 129, 0.25); color: #34d399; border: 1px solid #10b981; font-size: 0.9rem; padding: 0.35rem 0.85rem;">
+            ✓ CONFIRMED
+          </div>
+        </div>
+
+        <div class="ticket-body">
+          <div class="ticket-main-info">
+            <h1 class="ticket-event-name" id="tkt-event-name">High-Contention Arena Grand Finale</h1>
+            <div class="ticket-venue-meta">
+              <span>📍 <strong id="tkt-venue">Grand Pavilion Arena</strong></span>
+              <span>📅 <strong id="tkt-date">November 15, 2026 &bull; 19:00 UTC</strong></span>
+            </div>
+
+            <div class="ticket-meta-grid">
+              <div class="ticket-meta-cell">
+                <span class="ticket-meta-lbl">Assigned Seat</span>
+                <span class="ticket-meta-val highlight" id="tkt-seat-id">S042</span>
+              </div>
+              <div class="ticket-meta-cell">
+                <span class="ticket-meta-lbl">Ticket Holder</span>
+                <span class="ticket-meta-val" id="tkt-holder">Guest</span>
+              </div>
+              <div class="ticket-meta-cell">
+                <span class="ticket-meta-lbl">Reservation Ref</span>
+                <span class="ticket-meta-val monospace" id="tkt-rid">—</span>
+              </div>
+              <div class="ticket-meta-cell">
+                <span class="ticket-meta-lbl">Verification Stamp</span>
+                <span class="ticket-meta-val monospace" id="tkt-code">TKT-VERIFYING</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- QR Code Stamp Section -->
+          <div class="ticket-qr-section">
+            <div id="ticket-qr-box" class="ticket-qr-box">
+              <!-- Rendered SVG QR -->
+              <svg id="qr-svg" width="130" height="130" viewBox="0 0 130 130" xmlns="http://www.w3.org/2000/svg">
+                <rect width="130" height="130" fill="#ffffff" rx="8"/>
+                <!-- Outer Corners -->
+                <rect x="10" y="10" width="30" height="30" fill="#000000"/>
+                <rect x="15" y="15" width="20" height="20" fill="#ffffff"/>
+                <rect x="20" y="20" width="10" height="10" fill="#000000"/>
+                <rect x="90" y="10" width="30" height="30" fill="#000000"/>
+                <rect x="95" y="15" width="20" height="20" fill="#ffffff"/>
+                <rect x="100" y="20" width="10" height="10" fill="#000000"/>
+                <rect x="10" y="90" width="30" height="30" fill="#000000"/>
+                <rect x="15" y="95" width="20" height="20" fill="#ffffff"/>
+                <rect x="20" y="100" width="10" height="10" fill="#000000"/>
+                <!-- Data Blocks -->
+                <rect x="50" y="20" width="8" height="8" fill="#000000"/>
+                <rect x="65" y="20" width="8" height="8" fill="#000000"/>
+                <rect x="55" y="35" width="8" height="8" fill="#000000"/>
+                <rect x="70" y="35" width="8" height="8" fill="#000000"/>
+                <rect x="50" y="55" width="8" height="8" fill="#000000"/>
+                <rect x="65" y="55" width="12" height="12" fill="#000000"/>
+                <rect x="85" y="55" width="8" height="8" fill="#000000"/>
+                <rect x="50" y="75" width="8" height="8" fill="#000000"/>
+                <rect x="65" y="85" width="8" height="8" fill="#000000"/>
+                <rect x="85" y="85" width="8" height="8" fill="#000000"/>
+                <rect x="50" y="95" width="12" height="12" fill="#000000"/>
+                <rect x="95" y="95" width="8" height="8" fill="#000000"/>
+              </svg>
+            </div>
+            <span style="font-size: 0.75rem; color: #64748b; font-family: monospace; text-align: center; margin-top: 0.4rem;">SCAN TO VERIFY</span>
+          </div>
+        </div>
+
+        <div class="ticket-footer-bar">
+          <div style="font-size: 0.85rem; color: var(--text-muted);">
+            Durable Persistence: <strong id="tkt-persisted-status" style="color: #34d399;">Active (Postgres Bookings Logged)</strong>
+          </div>
+          <div class="ticket-actions no-print">
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-verify-server">
+              🛡️ Check Server Verification
+            </button>
+            <button type="button" class="btn btn-primary btn-sm" id="btn-print-ticket">
+              🖨️ Print Ticket / Save PDF
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Server Verification Box -->
+      <div id="server-verify-box" class="server-verify-result" style="display: none; margin-top: 1.5rem;">
+        <h3 style="font-size: 1rem; color: #10b981; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+          <span>✓</span> Server Cryptographic Verification Passed
+        </h3>
+        <div id="server-verify-details" style="font-size: 0.88rem; color: var(--text-secondary); line-height: 1.6;">
+          Verified against authoritative backend inventory and booking logs.
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="app-footer no-print">
+    FlashSeat High-Contention Ticketing Engine &bull; Ready for Vercel Static Hosting &bull; Zero Dependencies
+  </footer>
+
+  <!-- Conditional Mock Loader (?mock=1) -->
+  <script>
+    if (new URLSearchParams(window.location.search).get('mock') === '1') {
+      document.write('<script src="mock.js"><\/script>');
+    }
+  </script>
+  <script src="app.js"></script>
+</body>
+</html>

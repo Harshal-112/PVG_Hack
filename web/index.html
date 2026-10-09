@@ -22,6 +22,7 @@
       <span class="brand-badge">Event: evt1</span>
     </div>
     <nav class="nav-links">
+      <a href="events.html" class="nav-link" id="nav-events">Explore Events</a>
       <a href="index.html" class="nav-link active" id="nav-grid">Seat Grid</a>
       <a href="dashboard.html" class="nav-link" id="nav-dashboard">Live Dashboard</a>
       
@@ -88,6 +89,10 @@
           <div class="detail-value" id="detail-user-id" style="font-family: monospace; font-size: 0.95rem;">—</div>
         </div>
         <div class="detail-item">
+          <div class="detail-label">Seat Price</div>
+          <div class="detail-value" id="detail-price" style="color: #34d399; font-weight: 700;">$45.00 USD</div>
+        </div>
+        <div class="detail-item">
           <div class="detail-label">Hold Expiration</div>
           <div class="detail-value" id="detail-expiry" style="font-size: 0.95rem;">—</div>
         </div>
@@ -96,6 +101,9 @@
       <div class="countdown-container">
         <div class="countdown-label">Hold Expiry Countdown:</div>
         <div id="countdown-timer" class="countdown-timer">--:--</div>
+        <div id="countdown-warning" class="countdown-warning-badge" style="display: none;">
+          ⚠️ Warning: Reservation expiring in less than 30 seconds! Confirm now.
+        </div>
       </div>
 
       <div class="panel-actions">
@@ -169,6 +177,29 @@
       </div>
       <div style="display: flex; justify-content: flex-end;">
         <button type="button" class="btn btn-secondary" id="btn-close-bookings-bottom">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Virtual Waiting Room Queue Modal (Feature 6) -->
+  <div id="modal-waiting-room" class="modal-overlay" style="display: none;">
+    <div class="modal-content" style="max-width: 480px; text-align: center;">
+      <div class="modal-header" style="justify-content: center;">
+        <h2 class="modal-title">⚡ High-Demand Waiting Room</h2>
+      </div>
+      <div style="margin: 1.5rem 0;">
+        <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">⏳</div>
+        <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
+          This event is experiencing extreme traffic. You are in line to access the reservation grid.
+        </p>
+        <div class="waiting-room-queue-card">
+          <div style="font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase;">Your Current Position</div>
+          <div style="font-size: 3rem; font-weight: 800; color: #38bdf8;" id="wr-queue-position">—</div>
+          <div style="font-size: 0.9rem; color: var(--text-muted); margin-top: 0.5rem;" id="wr-est-wait">Estimated wait: calculating...</div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 0.75rem; justify-content: center;">
+        <button type="button" class="btn btn-secondary" id="btn-leave-queue">Leave Line</button>
       </div>
     </div>
   </div>
