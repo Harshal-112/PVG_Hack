@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 
 from app.config import settings
 from app import db
+from app.services.waiting_room import waiting_room_service
 
 router = APIRouter()
 
@@ -125,6 +126,15 @@ async def admin_overview(request: Request, event_id: str = "evt1", admin_key: st
     except Exception:
         pass
 
+    wr_stats = {}
+    try:
+        wr_stats = await waiting_room_service.get_stats(event_id)
+    except Exception:
+        wr_stats = {
+            "enabled": settings.WAITING_ROOM_ENABLED,
+            "max_admitted": settings.WAITING_ROOM_MAX_ADMITTED,
+        }
+
     return JSONResponse(
         status_code=200,
         content={
@@ -152,10 +162,7 @@ async def admin_overview(request: Request, event_id: str = "evt1", admin_key: st
                     "capacity": settings.RL_CAPACITY,
                     "refill_per_sec": settings.RL_REFILL_PER_SEC,
                 },
-                "waiting_room": {
-                    "enabled": settings.WAITING_ROOM_ENABLED,
-                    "max_admitted": settings.WAITING_ROOM_MAX_ADMITTED,
-                },
+                "waiting_room": wr_stats,
             },
         },
     )

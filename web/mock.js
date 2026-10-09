@@ -867,31 +867,107 @@
       }, 200);
     }
 
-    // 14. Virtual Waiting Room Mock Routes
-    if (parsedPath.match(/^\/api\/v1\/events\/[^/]+\/queue\/join$/) && method === 'POST') {
+    // 14. Virtual Waiting Room Mock Routes (Feature 6)
+    let mockQueueSimPosition = 3;
+
+    if (parsedPath.match(/^\/api\/v1\/events\/[^/]+\/(queue|waiting-room)\/join$/) && method === 'POST') {
+      const isSimQueue = window.location.search.includes('mock_queue=1');
+      if (isSimQueue) {
+        mockQueueSimPosition = 3;
+        return jsonResponse({
+          enabled: true,
+          admitted: false,
+          status: 'WAITING',
+          queue_entry_id: 'mock-entry-1',
+          admission_token: null,
+          position: mockQueueSimPosition,
+          users_ahead: mockQueueSimPosition - 1,
+          estimated_wait_seconds: 6,
+          poll_interval_ms: 2000
+        }, 200);
+      }
       return jsonResponse({
         enabled: false,
         admitted: true,
         status: 'BYPASS',
+        queue_entry_id: 'mock-entry-bypass',
         admission_token: null,
         position: 0,
-        estimated_wait_seconds: 0
+        users_ahead: 0,
+        estimated_wait_seconds: 0,
+        poll_interval_ms: 2000
       }, 200);
     }
 
-    if (parsedPath.match(/^\/api\/v1\/events\/[^/]+\/queue\/status$/) && method === 'GET') {
+    if (parsedPath.match(/^\/api\/v1\/events\/[^/]+\/(queue|waiting-room)\/status$/) && method === 'GET') {
+      const isSimQueue = window.location.search.includes('mock_queue=1');
+      if (isSimQueue) {
+        if (mockQueueSimPosition > 1) {
+          mockQueueSimPosition--;
+          return jsonResponse({
+            enabled: true,
+            admitted: false,
+            status: 'WAITING',
+            queue_entry_id: 'mock-entry-1',
+            admission_token: null,
+            position: mockQueueSimPosition,
+            users_ahead: mockQueueSimPosition - 1,
+            estimated_wait_seconds: mockQueueSimPosition * 2,
+            poll_interval_ms: 2000
+          }, 200);
+        } else {
+          return jsonResponse({
+            enabled: true,
+            admitted: true,
+            status: 'ADMITTED',
+            queue_entry_id: 'mock-entry-1',
+            admission_token: 'mock-adm-token-' + Date.now(),
+            position: 0,
+            users_ahead: 0,
+            expires_at_ms: Date.now() + 120000,
+            estimated_wait_seconds: 0,
+            poll_interval_ms: 2000
+          }, 200);
+        }
+      }
       return jsonResponse({
         enabled: false,
         admitted: true,
         status: 'BYPASS',
+        queue_entry_id: 'mock-entry-bypass',
         admission_token: null,
         position: 0,
-        estimated_wait_seconds: 0
+        users_ahead: 0,
+        estimated_wait_seconds: 0,
+        poll_interval_ms: 2000
       }, 200);
     }
 
-    if (parsedPath.match(/^\/api\/v1\/events\/[^/]+\/queue\/leave$/) && method === 'POST') {
-      return jsonResponse({ ok: true }, 200);
+    if (parsedPath.match(/^\/api\/v1\/events\/[^/]+\/(queue|waiting-room)\/leave$/) && method === 'POST') {
+      mockQueueSimPosition = 3;
+      return jsonResponse({ ok: true, status: 'LEFT' }, 200);
+    }
+
+    if (parsedPath.match(/^\/api\/v1\/events\/([^/]+)\/(queue|waiting-room)\/stats$/) && method === 'GET') {
+      const eMatch = parsedPath.match(/^\/api\/v1\/events\/([^/]+)\/(queue|waiting-room)\/stats$/);
+      const eId = eMatch ? eMatch[1] : 'evt1';
+      return jsonResponse({
+        event_id: eId,
+        enabled: false,
+        waiting_count: 0,
+        admitted_count: 0,
+        max_admitted: 50,
+        admission_rate_per_sec: 10,
+        max_queue_size: 10000,
+        token_ttl_sec: 120,
+        poll_interval_ms: 2000,
+        admissions_total: 0,
+        expired_total: 0,
+        rejected_total: 0,
+        left_total: 0,
+        avg_wait_seconds: 0,
+        queue_status: 'DISABLED'
+      }, 200);
     }
 
     return jsonResponse({ error: 'NOT_FOUND', message: 'Endpoint not found in mock API' }, 404);

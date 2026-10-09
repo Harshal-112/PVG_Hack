@@ -1745,6 +1745,125 @@ footer.app-footer {
   margin-bottom: 1rem;
 }
 
+.wr-event-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  border-radius: 9999px;
+  margin-bottom: 0.25rem;
+}
+
+.wr-users-ahead {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  margin-top: 0.35rem;
+}
+
+.wr-progress-track {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 9999px;
+  overflow: hidden;
+  margin: 1rem 0 0.5rem;
+}
+
+.wr-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #38bdf8, #818cf8);
+  border-radius: 9999px;
+  transition: width 0.4s ease;
+}
+
+/* Dashboard Waiting Room Telemetry Section */
+.waiting-room-dashboard-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.waiting-room-dashboard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.waiting-room-dashboard-header h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.wr-status-pill {
+  padding: 0.2rem 0.65rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.wr-status-pill.active {
+  background: rgba(16, 185, 129, 0.18);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.wr-status-pill.bypass {
+  background: rgba(148, 163, 184, 0.18);
+  color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+}
+
+.wr-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 1rem;
+}
+
+.wr-metric-box {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+}
+
+.wr-metric-box .label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.25rem;
+  display: flex;
+  justify-content: space-between;
+  font-weight: 600;
+}
+
+.wr-metric-box .value {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #f8fafc;
+}
+
+.wr-metric-box .subtext {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+}
+
 /* =========================================================
    Print Boarding Pass Styling (@media print)
    ========================================================= */

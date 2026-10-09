@@ -246,22 +246,45 @@
 
   <!-- Virtual Waiting Room Queue Modal (Feature 6) -->
   <div id="modal-waiting-room" class="modal-overlay" style="display: none;">
-    <div class="modal-content" style="max-width: 480px; text-align: center;">
-      <div class="modal-header" style="justify-content: center;">
-        <h2 class="modal-title">⚡ High-Demand Waiting Room</h2>
+    <div class="modal-content" style="max-width: 500px; text-align: center;">
+      <div class="modal-header" style="justify-content: center; flex-direction: column; align-items: center; gap: 0.5rem;">
+        <span id="wr-event-badge" class="wr-event-badge">⚡ Spider-Man (evt1)</span>
+        <h2 class="modal-title" style="font-size: 1.35rem;">High-Demand Waiting Room</h2>
       </div>
-      <div style="margin: 1.5rem 0;">
-        <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">⏳</div>
-        <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
-          This screening is experiencing extreme traffic. You are in line to access the reservation grid.
+      <div style="margin: 1.25rem 0;">
+        <div style="font-size: 2.75rem; margin-bottom: 0.5rem; animation: pulse 2s infinite;">⏳</div>
+        <p style="color: var(--text-secondary); margin-bottom: 1.25rem; font-size: 0.95rem; line-height: 1.5;">
+          This screening is experiencing high contention. You have been placed in an orderly virtual queue to protect booking integrity.
         </p>
+
         <div class="waiting-room-queue-card">
-          <div style="font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase;">Your Current Position</div>
-          <div style="font-size: 3rem; font-weight: 800; color: #38bdf8;" id="wr-queue-position">—</div>
-          <div style="font-size: 0.9rem; color: var(--text-muted); margin-top: 0.5rem;" id="wr-est-wait">Estimated wait: calculating...</div>
+          <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700;">Your Position in Line</div>
+          <div style="font-size: 3.25rem; font-weight: 900; color: #38bdf8; line-height: 1.1; margin: 0.25rem 0;" id="wr-queue-position">—</div>
+          <div id="wr-users-ahead" class="wr-users-ahead">Calculating line position...</div>
+
+          <!-- Progress Bar -->
+          <div class="wr-progress-track">
+            <div id="wr-progress-bar" class="wr-progress-fill" style="width: 5%;"></div>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem;">
+            <span id="wr-est-wait">⏱️ Estimated wait: calculating...</span>
+            <span id="wr-admission-rate">⚡ Rate: 10/sec</span>
+          </div>
+        </div>
+
+        <!-- Admitted Success Panel -->
+        <div id="wr-admit-box" style="display: none; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: var(--radius-md); padding: 1.25rem; margin-top: 1rem;">
+          <div style="color: #34d399; font-weight: 800; font-size: 1.15rem;">🎉 You've Been Admitted!</div>
+          <p style="color: #e2e8f0; font-size: 0.9rem; margin: 0.4rem 0;">Your turn has arrived. Your booking window is now unlocked.</p>
+          <div id="wr-admit-countdown" style="font-size: 0.85rem; color: #a7f3d0; font-weight: 600;">Pass valid for: <strong style="color: #38bdf8;">120s</strong></div>
+          <button type="button" class="btn btn-primary" id="btn-enter-booking" style="margin-top: 0.75rem; width: 100%; font-weight: 700;">
+            Enter Seat Selection &rarr;
+          </button>
         </div>
       </div>
-      <div style="display: flex; gap: 0.75rem; justify-content: center;">
+
+      <div style="display: flex; gap: 0.75rem; justify-content: center;" id="wr-actions-row">
         <button type="button" class="btn btn-secondary" id="btn-leave-queue">Leave Line</button>
       </div>
     </div>
