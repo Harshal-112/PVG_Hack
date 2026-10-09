@@ -3,161 +3,202 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FlashSeat — High-Concurrency Seat Selection Grid (evt1)</title>
-  <link rel="stylesheet" href="style.css?v=2.2">
+  <title>CineReserve — Select Seats | FlashSeat</title>
+  <link rel="stylesheet" href="style.css?v=2.4">
 </head>
-<body data-page="grid">
+<body data-page="grid" class="cinereserve-body">
 
-  <header class="app-header">
-    <div class="brand-section">
-      <a href="index.html" class="brand-title" style="text-decoration: none;">⚡ FlashSeat</a>
-      <span class="brand-badge">Event: evt1</span>
+  <div class="cinereserve-layout">
+    <!-- Left Sidebar Navigation (Exact Match to Reference Design) -->
+    <aside class="cinereserve-sidebar">
+      <div class="sidebar-brand-wrapper">
+        <a href="index.html" class="sidebar-brand-text">CineReserve</a>
+        <div style="font-size: 0.72rem; color: #64748b; font-weight: 700; margin-top: 0.2rem; letter-spacing: 0.04em;">POWERED BY FLASHSEAT</div>
+      </div>
+      <nav class="sidebar-nav-menu">
+        <a href="dashboard.html" class="sidebar-nav-item" id="nav-dashboard">
+          <span class="nav-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+              <polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+          </span>
+          <span>Dashboard</span>
+        </a>
+        <a href="#" class="sidebar-nav-item" id="btn-my-bookings">
+          <span class="nav-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="20" height="14" x="2" y="5" rx="2"/>
+              <line x1="2" x2="22" y1="10" y2="10"/>
+            </svg>
+          </span>
+          <span>Bookings</span>
+          <span class="sidebar-badge" id="user-tickets-count">0</span>
+        </a>
+        <a href="events.html" class="sidebar-nav-item" id="nav-events">
+          <span class="nav-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="20" height="20" x="2" y="2" rx="2.18" ry="2.18"/>
+              <line x1="7" x2="7" y1="2" y2="22"/>
+              <line x1="17" x2="17" y1="2" y2="22"/>
+              <line x1="2" x2="22" y1="12" y2="12"/>
+              <line x1="2" x2="7" y1="7" y2="7"/>
+              <line x1="2" x2="7" y1="17" y2="17"/>
+              <line x1="17" x2="22" y1="17" y2="17"/>
+              <line x1="17" x2="22" y1="7" y2="7"/>
+            </svg>
+          </span>
+          <span>Movies</span>
+        </a>
+        <a href="index.html" class="sidebar-nav-item active" id="nav-grid">
+          <span class="nav-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+          </span>
+          <span>Showtimes</span>
+        </a>
+      </nav>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="cinereserve-main">
+      <!-- Top Header Navigation with Avatar AU -->
+      <header class="cinereserve-topbar">
+        <div class="system-status-indicator">
+          <span class="status-dot"></span> System Online
+        </div>
+        <div class="user-profile-widget" id="header-user-section">
+          <div class="user-avatar-circle" id="header-user-avatar" title="User Profile">AU</div>
+          <button type="button" class="btn-auth-toggle" id="btn-header-auth-action">Sign In</button>
+        </div>
+      </header>
+
+      <!-- Alert / Message Container -->
+      <div id="alert-container" class="alert-container"></div>
+
+      <div class="cinema-content-container">
+        <h1 class="cinema-heading-title">Select Seats</h1>
+
+        <!-- 1. Movie Showcase Top Card (Exact Match to Reference Design) -->
+        <section class="movie-showcase-card">
+          <div class="movie-poster-thumb">
+            <img src="spiderman_poster.svg" alt="Spider Man: No Way Home Poster">
+          </div>
+          <div class="movie-details-info">
+            <div class="movie-title-text" id="movie-title-display">Spider Man: No Way Home</div>
+            <div class="movie-pill-tags">
+              <span class="movie-tag-pill">Action</span>
+              <span class="movie-tag-pill">Sci-Fi</span>
+              <span class="movie-tag-pill">Adventure</span>
+              <span class="movie-meta-item">⏱️ 118 min</span>
+              <span class="movie-rating-badge">G</span>
+            </div>
+            <div class="movie-card-divider"></div>
+            <div class="movie-meta-grid">
+              <div class="movie-meta-box">
+                <div class="movie-meta-icon date">📅</div>
+                <div>
+                  <div class="movie-meta-lbl">DATE</div>
+                  <div class="movie-meta-val">January 31, 2026</div>
+                </div>
+              </div>
+              <div class="movie-meta-box">
+                <div class="movie-meta-icon time">🕒</div>
+                <div>
+                  <div class="movie-meta-lbl">START TIME</div>
+                  <div class="movie-meta-val">11:15 AM</div>
+                </div>
+              </div>
+              <div class="movie-meta-box">
+                <div class="movie-meta-icon time">🕒</div>
+                <div>
+                  <div class="movie-meta-lbl">END TIME</div>
+                  <div class="movie-meta-val">1:45 PM</div>
+                </div>
+              </div>
+              <div class="movie-meta-box">
+                <div class="movie-meta-icon theater">🏛️</div>
+                <div>
+                  <div class="movie-meta-lbl">THEATER</div>
+                  <div class="movie-meta-val" id="movie-venue-display">Cinema 3</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. "Select Your Seats" Card (Exact Match to Reference Design) -->
+        <section class="cinema-seats-card">
+          <div class="seats-card-header-row">
+            <h2 class="cinema-card-header">Select Your Seats</h2>
+            <div class="tier-tabs-bar" id="tier-tabs-bar">
+              <button type="button" class="tier-tab-btn active" data-tier="1">Stalls (Rows A–E)</button>
+              <button type="button" class="tier-tab-btn" data-tier="2">Center (Rows F–J)</button>
+              <button type="button" class="tier-tab-btn" data-tier="3">Balcony (Rows K–O)</button>
+              <button type="button" class="tier-tab-btn" data-tier="all">Full Arena (200 Seats)</button>
+            </div>
+          </div>
+
+          <!-- SCREEN Arc Indicator with glowing top curve -->
+          <div class="cinema-screen-container">
+            <div class="cinema-screen-bar">
+              <span class="cinema-screen-label">SCREEN</span>
+            </div>
+          </div>
+
+          <!-- Armchair Seating Grid -->
+          <div class="cinema-grid-scroll">
+            <div id="grid-container" class="cinema-grid-layout">
+              <!-- Armchair rows injected by app.js -->
+            </div>
+          </div>
+
+          <!-- Cinema Legend (Exact match to reference design) -->
+          <div class="cinema-legend-bar">
+            <div class="cinema-legend-item">
+              <span class="cinema-legend-dot available"></span>
+              <span>Available (<span id="count-free">34</span>)</span>
+            </div>
+            <div class="cinema-legend-item">
+              <span class="cinema-legend-dot selected"></span>
+              <span>Selected (<span id="count-held">2</span>)</span>
+            </div>
+            <div class="cinema-legend-item">
+              <span class="cinema-legend-dot booked"></span>
+              <span>Booked (<span id="count-sold">4</span>)</span>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- 3. Sticky Bottom Checkout Bar (Exact Match to Reference Design) -->
+      <div id="cinema-checkout-bar" class="cinema-checkout-bar">
+        <div class="checkout-left-summary">
+          <div class="checkout-price-row">
+            <span class="checkout-price-val" id="checkout-total-price">$ 20.00</span>
+            <span class="checkout-seats-count" id="checkout-seats-label">for 2 seats</span>
+          </div>
+          <div class="checkout-pills-row" id="checkout-pills-row">
+            <span class="seat-pill-chip">🪑 D4</span>
+            <span class="seat-pill-chip">🪑 D5</span>
+            <span class="rate-badge-chip">🏷️ $50.00 each</span>
+            <span class="hold-countdown-chip" id="checkout-hold-timer">⏱️ 30s</span>
+          </div>
+        </div>
+
+        <div class="checkout-actions-row">
+          <button type="button" class="btn btn-secondary btn-sm" id="btn-release-hold" style="display: none; padding: 0.65rem 1.15rem; font-weight: 700;">
+            ✕ Release
+          </button>
+          <button type="button" class="btn-proceed-booking" id="btn-proceed-booking">
+            Proceed to Booking &rarr;
+          </button>
+        </div>
+      </div>
     </div>
-    <nav class="nav-links">
-      <a href="events.html" class="nav-link" id="nav-events">Explore Events</a>
-      <a href="index.html" class="nav-link active" id="nav-grid">Seat Grid</a>
-      <a href="dashboard.html" class="nav-link" id="nav-dashboard">Live Dashboard</a>
-      
-      <!-- User Profile Header Section -->
-      <div id="header-user-section" class="user-header-profile">
-        <div class="user-avatar" id="header-user-avatar">U</div>
-        <div class="user-header-info">
-          <span class="user-header-name" id="header-username">Guest</span>
-          <span class="user-mfa-tag" id="header-user-mfa">🛡️ MFA Active</span>
-        </div>
-        <button type="button" class="btn btn-secondary btn-sm" id="btn-header-auth-action" style="margin-left: 0.25rem;">
-          Sign In
-        </button>
-      </div>
-
-      <span class="system-status-indicator">
-        <span class="status-dot"></span> System Online
-      </span>
-    </nav>
-  </header>
-
-  <main class="container">
-    <!-- Event Hero Card -->
-    <section class="event-hero-card">
-      <div class="event-hero-info">
-        <span class="event-tagline">High-Availability Flash Reservation &bull; Main Stage Arena</span>
-        <h1 class="event-hero-title">Contention-Free Seat Allocation</h1>
-        <div class="event-hero-meta">
-          <span>📍 Grand Pavilion Arena</span>
-          <span>🎟️ 200 Total Seats</span>
-          <span>⚡ 5,000 Concurrent VUs Tested</span>
-          <span>🔒 Sub-Second Hold Locks</span>
-        </div>
-      </div>
-      <div class="event-hero-actions">
-        <button type="button" class="btn btn-primary" id="btn-quick-pick">
-          🎯 Auto-Select Best Available Seat
-        </button>
-        <button type="button" class="btn btn-secondary" id="btn-my-bookings">
-          🎟️ My Tickets (<span id="user-tickets-count">0</span>)
-        </button>
-      </div>
-    </section>
-
-    <!-- Alert / Message Container -->
-    <div id="alert-container" class="alert-container"></div>
-
-    <!-- Active Reservation Action Panel -->
-    <section id="reservation-panel" class="reservation-panel" style="display: none;">
-      <div class="panel-header">
-        <h2 class="panel-title">Active Reservation Hold</h2>
-        <span id="panel-status-badge" class="mode-badge" style="background: #1e3a8a; color: #93c5fd; border: 1px solid #3b82f6;">HELD</span>
-      </div>
-
-      <div class="reservation-details-grid">
-        <div class="detail-item">
-          <div class="detail-label">Selected Seat</div>
-          <div class="detail-value" id="detail-seat-id">—</div>
-        </div>
-        <div class="detail-item">
-          <div class="detail-label">Reservation ID (rid)</div>
-          <div class="detail-value" id="detail-rid" style="font-family: monospace; font-size: 0.95rem;">—</div>
-        </div>
-        <div class="detail-item">
-          <div class="detail-label">Reserving User</div>
-          <div class="detail-value" id="detail-user-id" style="font-family: monospace; font-size: 0.95rem;">—</div>
-        </div>
-        <div class="detail-item">
-          <div class="detail-label">Seat Price</div>
-          <div class="detail-value" id="detail-price" style="color: #34d399; font-weight: 700;">$45.00 USD</div>
-        </div>
-        <div class="detail-item">
-          <div class="detail-label">Hold Expiration</div>
-          <div class="detail-value" id="detail-expiry" style="font-size: 0.95rem;">—</div>
-        </div>
-      </div>
-
-      <div class="countdown-container">
-        <div class="countdown-label">Hold Expiry Countdown:</div>
-        <div id="countdown-timer" class="countdown-timer">--:--</div>
-        <div id="countdown-warning" class="countdown-warning-badge" style="display: none;">
-          ⚠️ Warning: Reservation expiring in less than 30 seconds! Confirm now.
-        </div>
-      </div>
-
-      <div class="panel-actions">
-        <button id="btn-confirm" class="btn btn-success">
-          ✓ Confirm Reservation
-        </button>
-        <button id="btn-release" class="btn btn-danger">
-          ✕ Release Hold
-        </button>
-      </div>
-    </section>
-
-    <!-- Toolbar: Search & Filters -->
-    <div class="grid-toolbar">
-      <div class="filter-group">
-        <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Filter:</span>
-        <button type="button" class="filter-btn active" data-filter="ALL">All Seats</button>
-        <button type="button" class="filter-btn" data-filter="FREE">🟢 Free Only</button>
-        <button type="button" class="filter-btn" data-filter="HELD">🟡 Held Only</button>
-        <button type="button" class="filter-btn" data-filter="SOLD">🔴 Sold Only</button>
-      </div>
-
-      <div class="search-input-wrapper">
-        <input type="text" id="search-seat" class="search-seat-input" placeholder="Search seat (e.g. S042)">
-      </div>
-    </div>
-
-    <!-- Legend & Counts Bar -->
-    <div class="legend-bar">
-      <span class="legend-title">Live Inventory Status:</span>
-      <div class="legend-items">
-        <div class="legend-chip">
-          <span class="legend-dot free"></span>
-          <span>FREE (<span id="count-free">0</span>)</span>
-        </div>
-        <div class="legend-chip">
-          <span class="legend-dot held"></span>
-          <span>HELD (<span id="count-held">0</span>)</span>
-        </div>
-        <div class="legend-chip">
-          <span class="legend-dot sold"></span>
-          <span>SOLD (<span id="count-sold">0</span>)</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- 200 Seat Grid Container -->
-    <section class="seat-grid-card">
-      <div class="grid-header-meta">
-        <span>Click any <strong>FREE</strong> seat to reserve. Total capacity: 200 seats (S001 – S200).</span>
-        <span id="poll-indicator" style="display: flex; align-items: center; gap: 0.4rem;">
-          <span style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
-          Auto-refreshing 1s
-        </span>
-      </div>
-      <div id="grid-container" class="seat-grid">
-        <!-- 200 seat buttons injected here by app.js -->
-      </div>
-    </section>
-  </main>
+  </div>
 
   <!-- My Tickets / Bookings Modal -->
   <div id="modal-my-bookings" class="modal-overlay" style="display: none;">
@@ -169,7 +210,7 @@
       <div id="bookings-modal-body">
         <div style="color: var(--text-muted); font-size: 0.95rem;">No tickets booked in this session yet. Reserve and confirm a seat from the grid!</div>
       </div>
-      <div style="display: flex; justify-content: flex-end;">
+      <div style="display: flex; justify-content: flex-end; margin-top: 1.25rem;">
         <button type="button" class="btn btn-secondary" id="btn-close-bookings-bottom">Close</button>
       </div>
     </div>
@@ -184,7 +225,7 @@
       <div style="margin: 1.5rem 0;">
         <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">⏳</div>
         <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
-          This event is experiencing extreme traffic. You are in line to access the reservation grid.
+          This screening is experiencing extreme traffic. You are in line to access the reservation grid.
         </p>
         <div class="waiting-room-queue-card">
           <div style="font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase;">Your Current Position</div>
@@ -198,16 +239,12 @@
     </div>
   </div>
 
-  <footer class="app-footer">
-    FlashSeat High-Contention Ticketing Engine &bull; Ready for Vercel Static Hosting &bull; Zero Dependencies
-  </footer>
-
   <!-- Conditional Mock Loader (?mock=1) -->
   <script>
     if (new URLSearchParams(window.location.search).get('mock') === '1') {
-      document.write('<script src="mock.js?v=2.2"><\/script>');
+      document.write('<script src="mock.js?v=2.4"><\/script>');
     }
   </script>
-  <script src="app.js?v=2.2"></script>
+  <script src="app.js?v=2.4"></script>
 </body>
 </html>
