@@ -473,27 +473,41 @@ export async function cancelSharedBooking(bookingId) {
   }
 }
 
+let realtimeChannel = null;
+
+function ensureRealtimeSubscription() {
+  if (realtimeChannel) return;
+
+  try {
+    realtimeChannel = supabase
+      .channel('flashseat_realtime_singleton')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'locked_seats' }, (payload) => {
+        notifyLocalListeners({ type: 'LOCKED_SEATS_CHANGE', payload });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'seat_holds' }, (payload) => {
+        notifyLocalListeners({ type: 'SEAT_HOLDS_CHANGE', payload });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'global_bookings' }, (payload) => {
+        notifyLocalListeners({ type: 'GLOBAL_BOOKINGS_CHANGE', payload });
+      })
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('[Supabase Realtime] Connected to live inventory stream');
+        }
+      });
+  } catch (err) {
+    console.warn('[Supabase Realtime] Subscription error:', err);
+  }
+}
+
 /**
  * Subscribe to real-time inventory events across devices & browser tabs
  */
 export function subscribeToInventoryUpdates(onUpdate) {
   listeners.add(onUpdate);
+  ensureRealtimeSubscription();
 
-  // 1. Supabase Realtime WebSocket subscription
-  const realtimeChannel = supabase
-    .channel('flashseat_realtime_inventory')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'locked_seats' }, (payload) => {
-      onUpdate({ type: 'LOCKED_SEATS_CHANGE', payload });
-    })
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'seat_holds' }, (payload) => {
-      onUpdate({ type: 'SEAT_HOLDS_CHANGE', payload });
-    })
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'global_bookings' }, (payload) => {
-      onUpdate({ type: 'GLOBAL_BOOKINGS_CHANGE', payload });
-    })
-    .subscribe();
-
-  // 2. Window storage event for local fallback
+  // Window storage event for local fallback
   const handleStorage = (e) => {
     if (e.key === 'flashseat_sync_event' && e.newValue) {
       try {
@@ -508,7 +522,7 @@ export function subscribeToInventoryUpdates(onUpdate) {
   };
   window.addEventListener('storage', handleStorage);
 
-  // 3. Heartbeat polling interval (every 2.5s) to guarantee eventual consistency across devices
+  // Heartbeat polling interval (every 2.5s) to guarantee eventual consistency across devices
   const pollInterval = setInterval(() => {
     onUpdate({ type: 'HEARTBEAT_POLL' });
   }, 2500);
@@ -517,8 +531,5 @@ export function subscribeToInventoryUpdates(onUpdate) {
     listeners.delete(onUpdate);
     window.removeEventListener('storage', handleStorage);
     clearInterval(pollInterval);
-    try {
-      supabase.removeChannel(realtimeChannel);
-    } catch {}
   };
 }
