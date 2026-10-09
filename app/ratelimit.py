@@ -61,5 +61,6 @@ async def rate_limiter(request: Request) -> None:
             if not allowed:
                 RESERVE_TOTAL.labels(result="rate_limited").inc()
                 raise RateLimitExceeded(retry_after=1)
-        except NotImplementedError:
+        except (NotImplementedError, AttributeError):
             pass
+

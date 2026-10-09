@@ -16,7 +16,9 @@ from app.ratelimit import APIException
 from app.redis_client import close_redis, get_redis
 from app.services.inventory import InventoryService
 from app import db
-from app.routes import admin, baseline, events, reservations
+from app.routes import admin, baseline, events, payments, reservations
+from fastapi.middleware.cors import CORSMiddleware
+
 
 
 @asynccontextmanager
@@ -55,6 +57,16 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="FlashSeat", lifespan=lifespan)
+
+# CORS configuration for local development and deployed frontend (e.g. Vercel)
+cors_origins = [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=cors_origins if cors_origins else ["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.exception_handler(APIException)
@@ -112,13 +124,16 @@ app.include_router(reservations.router, prefix="/api/v1")
 app.include_router(events.router, prefix="/api/v1")
 app.include_router(admin.router, prefix="/api/v1")
 app.include_router(baseline.router, prefix="/api/v1")
+app.include_router(payments.router, prefix="/api/v1")
 
 # Also mount at root for flexibility
 app.include_router(reservations.router)
 app.include_router(events.router)
 app.include_router(admin.router)
+app.include_router(payments.router)
 
 # Mount web/ at /ui
 web_dir = Path(__file__).resolve().parent.parent / "web"
 if web_dir.is_dir():
     app.mount("/ui", StaticFiles(directory=str(web_dir), html=True), name="ui")
+

@@ -2,12 +2,223 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>FlashSeat - Seat Grid</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FlashSeat - High-Concurrency Seat Reservation & Razorpay Checkout</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <!-- Official Razorpay Checkout JS -->
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 </head>
 <body>
-  <h1>FlashSeat Seat Selection</h1>
-  <div id="grid-container"></div>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="logo-icon">⚡</div>
+        <div class="brand-text">
+          <h1>FlashSeat</h1>
+          <span class="badge live-badge"><span class="dot"></span> LIVE ENGINE</span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <div class="user-chip">
+          <span class="chip-label">User:</span>
+          <span id="current-user-id" class="chip-val">u-guest</span>
+          <button id="switch-user-btn" class="btn-sm" title="Change User ID">Switch</button>
+        </div>
+        <div class="api-env-badge">
+          <span id="env-status">TEST MODE</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <main class="main-layout">
+      <!-- Left Column: Seat Map & Inventory -->
+      <section class="seat-selection-section">
+        <div class="section-card">
+          <div class="section-header">
+            <div>
+              <h2>Seat Selection</h2>
+              <p class="subtitle" id="event-title">Event: FlashSeat Arena Tour (evt1)</p>
+            </div>
+            <div class="quick-reserve-box">
+              <button id="quick-reserve-btn" class="btn btn-secondary">
+                ⚡ Instant Reserve Any Seat
+              </button>
+            </div>
+          </div>
+
+          <!-- Stage Indicator -->
+          <div class="stage-container">
+            <div class="stage-curve">STAGE / MAIN SCREEN</div>
+          </div>
+
+          <!-- Seat Map Legend -->
+          <div class="legend-bar">
+            <div class="legend-item"><span class="legend-dot free"></span> Available (<span id="count-free">0</span>)</div>
+            <div class="legend-item"><span class="legend-dot held"></span> Held (<span id="count-held">0</span>)</div>
+            <div class="legend-item"><span class="legend-dot sold"></span> Sold (<span id="count-sold">0</span>)</div>
+            <div class="legend-item"><span class="legend-dot selected"></span> Your Hold</div>
+          </div>
+
+          <!-- Interactive Seat Grid -->
+          <div id="grid-container" class="seat-grid">
+            <div class="loading-spinner-box">Loading seat inventory...</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Column: Checkout & Reservation Panel -->
+      <aside class="checkout-panel-section">
+        <!-- 1. Idle State: No Seat Selected -->
+        <div id="panel-idle" class="panel-card idle-view">
+          <div class="idle-graphic">🎟️</div>
+          <h3>Select a Seat</h3>
+          <p>Choose an available seat on the grid or click <strong>Instant Reserve</strong> to secure a hold.</p>
+          <div class="feature-pills">
+            <span>✓ Zero Double-Bookings</span>
+            <span>✓ Atomic Redis Lua Lock</span>
+            <span>✓ Razorpay Test Gateway</span>
+          </div>
+        </div>
+
+        <!-- 2. Active Reservation & Hold Countdown Panel -->
+        <div id="panel-held" class="panel-card held-view" style="display: none;">
+          <div class="hold-banner">
+            <span class="hold-icon">🔒</span>
+            <div>
+              <h4>Seat Temporarily Held</h4>
+              <p>Complete payment before your hold expires</p>
+            </div>
+          </div>
+
+          <!-- Countdown Timer -->
+          <div class="timer-box">
+            <div class="timer-label">HOLD EXPIRES IN</div>
+            <div id="countdown-timer" class="timer-display">02:00</div>
+            <div class="timer-bar-track">
+              <div id="timer-bar-progress" class="timer-bar-fill"></div>
+            </div>
+          </div>
+
+          <!-- Order Summary -->
+          <div class="order-summary">
+            <h5>Order Summary</h5>
+            <div class="summary-row">
+              <span>Event</span>
+              <span id="summary-event" class="fw-bold">evt1</span>
+            </div>
+            <div class="summary-row">
+              <span>Selected Seat</span>
+              <span id="summary-seat" class="badge-seat">--</span>
+            </div>
+            <div class="summary-row">
+              <span>Hold Reference</span>
+              <span id="summary-rid" class="font-mono text-muted">--</span>
+            </div>
+            <div class="summary-divider"></div>
+            <div class="summary-row total-row">
+              <span>Total Payable</span>
+              <span id="summary-amount" class="text-accent">₹500.00</span>
+            </div>
+          </div>
+
+          <div id="payment-notice" class="notice-msg" style="display: none;"></div>
+
+          <!-- Checkout Actions -->
+          <div class="checkout-actions">
+            <button id="pay-now-btn" class="btn btn-primary btn-block">
+              <span class="btn-text">💳 Pay with Razorpay</span>
+              <span class="btn-spinner" style="display: none;"></span>
+            </button>
+            <button id="cancel-hold-btn" class="btn btn-ghost btn-block">
+              Release Seat Hold
+            </button>
+          </div>
+        </div>
+
+        <!-- 3. Processing State -->
+        <div id="panel-processing" class="panel-card processing-view" style="display: none;">
+          <div class="spinner-large"></div>
+          <h3>Verifying Payment</h3>
+          <p>Securely confirming booking with Redis inventory engine...</p>
+        </div>
+
+        <!-- 4. Confirmed Ticket Card View -->
+        <div id="panel-confirmed" class="panel-card confirmed-view" style="display: none;">
+          <div class="ticket-card">
+            <div class="ticket-header">
+              <div class="ticket-badge">✓ BOOKING CONFIRMED</div>
+              <div class="ticket-ref-label">REFERENCE</div>
+              <div id="ticket-booking-ref" class="ticket-ref-code">BK-EVT1-S001-XXXX</div>
+            </div>
+            <div class="ticket-body">
+              <div class="ticket-row">
+                <div>
+                  <div class="t-label">EVENT</div>
+                  <div id="ticket-event" class="t-val">FlashSeat Arena (evt1)</div>
+                </div>
+                <div>
+                  <div class="t-label">SEAT</div>
+                  <div id="ticket-seat" class="t-val t-seat">S001</div>
+                </div>
+              </div>
+              <div class="ticket-row">
+                <div>
+                  <div class="t-label">ATTENDEE</div>
+                  <div id="ticket-user" class="t-val font-mono">u-user</div>
+                </div>
+                <div>
+                  <div class="t-label">AMOUNT PAID</div>
+                  <div id="ticket-amount" class="t-val">₹500.00</div>
+                </div>
+              </div>
+              <div class="ticket-row">
+                <div class="full-width">
+                  <div class="t-label">PAYMENT ID (RAZORPAY)</div>
+                  <div id="ticket-payment-id" class="t-val font-mono text-small">pay_xxxxxxxxx</div>
+                </div>
+              </div>
+              <div class="ticket-qr-box">
+                <div class="qr-placeholder">
+                  <div class="qr-code-pattern"></div>
+                  <span class="qr-text">VERIFIED DIGITAL PASS</span>
+                </div>
+              </div>
+            </div>
+            <div class="ticket-footer">
+              <button id="book-another-btn" class="btn btn-primary btn-block">Book Another Seat</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. Hold Expired / Refunded State View -->
+        <div id="panel-expired" class="panel-card expired-view" style="display: none;">
+          <div class="expired-graphic">⏰</div>
+          <h3 id="expired-title">Hold Expired</h3>
+          <p id="expired-desc">Your seat hold was not completed in time and has been returned to the available pool.</p>
+          <div id="refund-box" class="refund-box" style="display: none;">
+            <div class="refund-icon">💸</div>
+            <div>
+              <strong>Automatic Refund Initiated</strong>
+              <div id="refund-id-display" class="font-mono text-small">Refund ID: --</div>
+              <span class="text-muted text-small">Amount will be credited back by the payment gateway.</span>
+            </div>
+          </div>
+          <button id="expired-retry-btn" class="btn btn-secondary btn-block">Select Another Seat</button>
+        </div>
+      </aside>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <p>FlashSeat &copy; 2026. Built with FastAPI, Redis Lua Atomicity, Asyncpg, and Razorpay Test Gateway.</p>
+    </footer>
+  </div>
+
   <script src="app.js"></script>
 </body>
 </html>
