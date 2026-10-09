@@ -6,3 +6,5 @@ __pycache__/
 loadtest/results/*
 !loadtest/results/.gitkeep
 test_higher.png
+frontend/node_modules/
+frontend/dist/

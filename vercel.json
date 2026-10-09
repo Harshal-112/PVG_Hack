@@ -1,14 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "npm --prefix frontend install && npm --prefix frontend run build",
+  "outputDirectory": "frontend/dist",
   "cleanUrls": true,
-  "outputDirectory": "web",
   "rewrites": [
-    { "source": "/", "destination": "/index.html" },
-    { "source": "/ui", "destination": "/index.html" },
-    { "source": "/ui/:match*", "destination": "/:match*" },
-    { "source": "/login", "destination": "/login.html" },
-    { "source": "/dashboard", "destination": "/dashboard.html" },
-    { "source": "/events", "destination": "/events.html" },
-    { "source": "/ticket", "destination": "/ticket.html" }
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
