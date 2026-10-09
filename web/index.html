@@ -5,6 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FlashSeat — High-Concurrency Seat Selection Grid (evt1)</title>
   <link rel="stylesheet" href="style.css?v=2.2">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <!-- Official Razorpay Checkout JS -->
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 </head>
 <body data-page="grid">
 
@@ -84,7 +89,7 @@
         </div>
         <div class="detail-item">
           <div class="detail-label">Seat Price</div>
-          <div class="detail-value" id="detail-price" style="color: #34d399; font-weight: 700;">$45.00 USD</div>
+          <div class="detail-value" id="detail-price" style="color: #34d399; font-weight: 700;">₹500.00 INR</div>
         </div>
         <div class="detail-item">
           <div class="detail-label">Hold Expiration</div>
@@ -96,11 +101,14 @@
         <div class="countdown-label">Hold Expiry Countdown:</div>
         <div id="countdown-timer" class="countdown-timer">--:--</div>
         <div id="countdown-warning" class="countdown-warning-badge" style="display: none;">
-          ⚠️ Warning: Reservation expiring in less than 30 seconds! Confirm now.
+          ⚠️ Warning: Reservation expiring in less than 30 seconds! Confirm or pay now.
         </div>
       </div>
 
       <div class="panel-actions">
+        <button id="btn-pay-razorpay" class="btn btn-primary" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);">
+          💳 Pay with Razorpay (₹500.00)
+        </button>
         <button id="btn-confirm" class="btn btn-success">
           ✓ Confirm Reservation
         </button>
@@ -108,6 +116,8 @@
           ✕ Release Hold
         </button>
       </div>
+
+      <div id="payment-notice" class="notice-msg" style="display: none; margin-top: 0.75rem;"></div>
     </section>
 
     <!-- Toolbar: Search & Filters -->

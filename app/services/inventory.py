@@ -223,3 +223,30 @@ class InventoryService:
     async def stream_len(self) -> int:
         """Return the length of stream fr:bookings."""
         return await self.redis.xlen("fr:bookings")
+
+    async def get_reservation(self, event_id: str, reservation_id: str) -> dict | None:
+        """Check status and expiration of a reservation in Redis after reaping expired holds."""
+        free_key = f"fr:{event_id}:free"
+        holds_key = f"fr:{event_id}:holds"
+        owners_key = f"fr:{event_id}:owners"
+        rids_key = f"fr:{event_id}:rids"
+
+        await self._reap_script(keys=[free_key, holds_key, owners_key, rids_key], args=[])
+
+        st = await self.redis.hget(rids_key, reservation_id)
+        if not st:
+            return None
+        parts = st.split("|", 1)
+        status = parts[0]
+        seat = parts[1] if len(parts) > 1 else None
+        exp = None
+        if status == "HELD" and seat:
+            exp_score = await self.redis.zscore(holds_key, seat)
+            if exp_score is not None:
+                exp = int(float(exp_score))
+        return {
+            "status": status,
+            "seat_id": seat,
+            "expires_at_ms": exp,
+        }
+

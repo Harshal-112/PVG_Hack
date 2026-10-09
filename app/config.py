@@ -24,5 +24,14 @@ class Settings:
     WAITING_ROOM_MAX_ADMITTED: int = int(os.getenv("WAITING_ROOM_MAX_ADMITTED", "50"))
     WAITING_ROOM_TOKEN_TTL_SEC: int = int(os.getenv("WAITING_ROOM_TOKEN_TTL_SEC", "300"))
 
+    # Razorpay Payment Gateway (Test Mode)
+    RAZORPAY_KEY_ID: str = os.getenv("RAZORPAY_KEY_ID", "rzp_test_placeholder_key_id")
+    RAZORPAY_KEY_SECRET: str = os.getenv("RAZORPAY_KEY_SECRET", "mock_secret_key_1234567890")
+    RAZORPAY_WEBHOOK_SECRET: str = os.getenv("RAZORPAY_WEBHOOK_SECRET", "mock_webhook_secret_987654321")
+    RAZORPAY_API_BASE: str = os.getenv("RAZORPAY_API_BASE", "https://api.razorpay.com/v1")
+    TICKET_PRICE_PAISE: int = int(os.getenv("TICKET_PRICE_PAISE", "50000"))  # 50,000 paise = 500 INR
+    CORS_ORIGINS: str = os.getenv("CORS_ORIGINS", "*")
+
 
 settings = Settings()
+
