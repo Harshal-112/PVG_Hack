@@ -1,0 +1,46 @@
+{
+  "metrics": {
+    "http_reqs": {
+      "values": {
+        "count": 250
+      }
+    },
+    "reserve_ok": {
+      "values": {
+        "count": 250
+      }
+    },
+    "reserve_conflict": {
+      "values": {
+        "count": 0
+      }
+    },
+    "reserve_rate_limited": {
+      "values": {
+        "count": 0
+      }
+    },
+    "confirm_ok": {
+      "values": {
+        "count": 0
+      }
+    },
+    "confirm_expired": {
+      "values": {
+        "count": 0
+      }
+    },
+    "reserve_latency_ms": {
+      "values": {
+        "avg": 1846.048448562622,
+        "min": 1164.9184226989746,
+        "med": 1989.877700805664,
+        "max": 2191.1308765411377,
+        "p(50)": 1989.877700805664,
+        "p(90)": 2159.3334674835205,
+        "p(95)": 2167.811393737793,
+        "p(99)": 2179.1701316833496
+      }
+    }
+  }
+}
