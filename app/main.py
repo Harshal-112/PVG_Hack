@@ -6,7 +6,7 @@ import time
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import JSONResponse, Response, FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 
@@ -137,3 +137,11 @@ app.include_router(waitlist.router)
 web_dir = Path(__file__).resolve().parent.parent / "web"
 if web_dir.is_dir():
     app.mount("/ui", StaticFiles(directory=str(web_dir), html=True), name="ui")
+
+
+@app.get("/")
+async def root_index():
+    index_file = web_dir / "index.html"
+    if index_file.is_file():
+        return FileResponse(index_file)
+    return RedirectResponse(url="/ui/")
