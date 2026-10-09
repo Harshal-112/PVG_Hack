@@ -3,27 +3,40 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FlashSeat — Live Dashboard (evt1)</title>
+  <title>FlashSeat — Real-Time Telemetry & Monitoring Dashboard (evt1)</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body data-page="dashboard">
   <!-- Mock Mode Banner (shown dynamically if ?mock=1) -->
   <div id="mock-banner" class="mock-banner" style="display: none;">
     <div class="mock-banner-text">
-      <span>⚠️ <strong>MOCK MODE ACTIVE</strong> (?mock=1)</span>
-      <span>— Simulating FlashSeat backend API in-browser</span>
+      <span>⚠️ <strong>MOCK DEMO MODE ACTIVE</strong> (?mock=1)</span>
+      <span>— Simulating FlashSeat backend engine in-browser</span>
     </div>
     <span class="mode-badge mock">MOCK API</span>
   </div>
 
   <header class="app-header">
     <div class="brand-section">
-      <div class="brand-title">⚡ FlashSeat</div>
+      <a href="index.html" class="brand-title" style="text-decoration: none;">⚡ FlashSeat</a>
       <span class="brand-badge">Event: evt1</span>
     </div>
     <nav class="nav-links">
       <a href="index.html" class="nav-link" id="nav-grid">Seat Grid</a>
       <a href="dashboard.html" class="nav-link active" id="nav-dashboard">Live Dashboard</a>
+
+      <!-- User Profile Header Section -->
+      <div id="header-user-section" class="user-header-profile">
+        <div class="user-avatar" id="header-user-avatar">U</div>
+        <div class="user-header-info">
+          <span class="user-header-name" id="header-username">Guest</span>
+          <span class="user-mfa-tag" id="header-user-mfa">🛡️ MFA Active</span>
+        </div>
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-header-auth-action" style="margin-left: 0.25rem;">
+          Sign In
+        </button>
+      </div>
+
       <span id="api-mode-badge" class="mode-badge live">LIVE API</span>
     </nav>
   </header>
@@ -31,12 +44,12 @@
   <main class="container">
     <div class="page-header">
       <div>
-        <h1 class="page-title">Live Monitoring Dashboard</h1>
-        <p class="page-subtitle">Real-time inventory metrics, asynchronous write backlog & engine consistency</p>
+        <h1 class="page-title">Live Engine Telemetry &amp; Dashboard</h1>
+        <p class="page-subtitle">Real-time inventory metrics, asynchronous write backlog &amp; Postgres consistency</p>
       </div>
       <div id="poll-indicator" style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.95rem; color: var(--text-muted); font-weight: 600;">
         <span style="width: 10px; height: 10px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
-        Polling stats (1s)
+        Polling telemetry (1s)
       </div>
     </div>
 
@@ -49,7 +62,7 @@
         <span id="consistency-icon" style="font-size: 1.5rem;">✓</span>
         <div>
           <strong id="consistency-text">CONSISTENT</strong>
-          <span style="font-size: 0.95rem; font-weight: 600; opacity: 0.85; margin-left: 0.5rem;">(Backlog: 0 & Sold == Persisted)</span>
+          <span style="font-size: 0.95rem; font-weight: 600; opacity: 0.85; margin-left: 0.5rem;">(Backlog: 0 &amp; Sold == Persisted)</span>
         </div>
       </div>
       <span id="consistency-tag" class="consistency-status-tag">Postgres in Sync</span>
@@ -69,7 +82,7 @@
       <!-- Free -->
       <div class="stat-card stat-free">
         <div class="stat-label">
-          <span>Free Seats</span>
+          <span>Free Available</span>
           <span>🟢</span>
         </div>
         <div class="stat-value" id="stat-free">—</div>
@@ -154,7 +167,7 @@
       </div>
 
       <div id="verify-loading" style="display: none; padding: 1rem; color: #93c5fd; font-weight: 700;">
-        ⏳ Running database & inventory verification... please wait (up to 5s drain check)...
+        ⏳ Running database &amp; inventory verification... please wait (up to 5s drain check)...
       </div>
 
       <div id="verify-results-container" style="display: none;">
@@ -175,7 +188,7 @@
   </main>
 
   <footer class="app-footer">
-    FlashSeat High-Contention Reservation Engine — Problem 9 Hack-a-Night 2026. Plain HTML + Vanilla JS.
+    FlashSeat High-Contention Ticketing Engine &bull; Ready for Vercel Static Hosting &bull; Zero Dependencies
   </footer>
 
   <!-- Conditional Mock Loader (?mock=1) -->

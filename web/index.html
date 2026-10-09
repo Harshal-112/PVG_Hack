@@ -3,55 +3,80 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FlashSeat — Seat Grid (evt1)</title>
+  <title>FlashSeat — High-Concurrency Seat Selection Grid (evt1)</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body data-page="grid">
   <!-- Mock Mode Banner (shown dynamically if ?mock=1) -->
   <div id="mock-banner" class="mock-banner" style="display: none;">
     <div class="mock-banner-text">
-      <span>⚠️ <strong>MOCK MODE ACTIVE</strong> (?mock=1)</span>
-      <span>— Simulating FlashSeat backend API in-browser</span>
+      <span>⚠️ <strong>MOCK DEMO MODE ACTIVE</strong> (?mock=1)</span>
+      <span>— Simulating FlashSeat backend engine in-browser</span>
     </div>
     <span class="mode-badge mock">MOCK API</span>
   </div>
 
   <header class="app-header">
     <div class="brand-section">
-      <div class="brand-title">⚡ FlashSeat</div>
+      <a href="index.html" class="brand-title" style="text-decoration: none;">⚡ FlashSeat</a>
       <span class="brand-badge">Event: evt1</span>
     </div>
     <nav class="nav-links">
       <a href="index.html" class="nav-link active" id="nav-grid">Seat Grid</a>
       <a href="dashboard.html" class="nav-link" id="nav-dashboard">Live Dashboard</a>
+      
+      <!-- User Profile Header Section -->
+      <div id="header-user-section" class="user-header-profile">
+        <div class="user-avatar" id="header-user-avatar">U</div>
+        <div class="user-header-info">
+          <span class="user-header-name" id="header-username">Guest</span>
+          <span class="user-mfa-tag" id="header-user-mfa">🛡️ MFA Active</span>
+        </div>
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-header-auth-action" style="margin-left: 0.25rem;">
+          Sign In
+        </button>
+      </div>
+
       <span id="api-mode-badge" class="mode-badge live">LIVE API</span>
     </nav>
   </header>
 
   <main class="container">
-    <div class="page-header">
-      <div>
-        <h1 class="page-title">Seat Selection Grid</h1>
-        <p class="page-subtitle">Interactive 200-seat real-time reservation grid with sub-second TTL holds</p>
+    <!-- Event Hero Card -->
+    <section class="event-hero-card">
+      <div class="event-hero-info">
+        <span class="event-tagline">Flash Sale Arena 2026 &bull; Problem 9 Live Demo</span>
+        <h1 class="event-hero-title">Contention-Free Seat Allocation</h1>
+        <div class="event-hero-meta">
+          <span>📍 Grand Pavilion Arena</span>
+          <span>🎟️ 200 Total Seats</span>
+          <span>⚡ 5,000 Concurrent VUs Tested</span>
+          <span>🔒 Sub-Second Hold Locks</span>
+        </div>
       </div>
-      <div id="user-session-meta" style="font-size: 0.95rem; color: var(--text-muted); font-weight: 600;">
-        User ID: <span id="current-user-id" style="color: #60a5fa; font-family: monospace;"></span>
+      <div class="event-hero-actions">
+        <button type="button" class="btn btn-primary" id="btn-quick-pick">
+          ⚡ Quick Pick Any Free Seat
+        </button>
+        <button type="button" class="btn btn-secondary" id="btn-my-bookings">
+          🎟️ My Tickets (<span id="user-tickets-count">0</span>)
+        </button>
       </div>
-    </div>
+    </section>
 
     <!-- Alert / Message Container -->
     <div id="alert-container" class="alert-container"></div>
 
-    <!-- Reservation Action Panel (shown on active reservation) -->
+    <!-- Active Reservation Action Panel -->
     <section id="reservation-panel" class="reservation-panel" style="display: none;">
       <div class="panel-header">
-        <h2 class="panel-title">Active Reservation</h2>
+        <h2 class="panel-title">Active Reservation Hold</h2>
         <span id="panel-status-badge" class="mode-badge" style="background: #1e3a8a; color: #93c5fd; border: 1px solid #3b82f6;">HELD</span>
       </div>
 
       <div class="reservation-details-grid">
         <div class="detail-item">
-          <div class="detail-label">Seat ID</div>
+          <div class="detail-label">Selected Seat</div>
           <div class="detail-value" id="detail-seat-id">—</div>
         </div>
         <div class="detail-item">
@@ -59,17 +84,17 @@
           <div class="detail-value" id="detail-rid" style="font-family: monospace; font-size: 0.95rem;">—</div>
         </div>
         <div class="detail-item">
-          <div class="detail-label">User ID</div>
+          <div class="detail-label">Reserving User</div>
           <div class="detail-value" id="detail-user-id" style="font-family: monospace; font-size: 0.95rem;">—</div>
         </div>
         <div class="detail-item">
-          <div class="detail-label">Hold Expiry Time</div>
+          <div class="detail-label">Hold Expiration</div>
           <div class="detail-value" id="detail-expiry" style="font-size: 0.95rem;">—</div>
         </div>
       </div>
 
       <div class="countdown-container">
-        <div class="countdown-label">Hold Countdown:</div>
+        <div class="countdown-label">Hold Expiry Countdown:</div>
         <div id="countdown-timer" class="countdown-timer">--:--</div>
       </div>
 
@@ -83,9 +108,24 @@
       </div>
     </section>
 
+    <!-- Toolbar: Search & Filters -->
+    <div class="grid-toolbar">
+      <div class="filter-group">
+        <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Filter:</span>
+        <button type="button" class="filter-btn active" data-filter="ALL">All Seats</button>
+        <button type="button" class="filter-btn" data-filter="FREE">🟢 Free Only</button>
+        <button type="button" class="filter-btn" data-filter="HELD">🟡 Held Only</button>
+        <button type="button" class="filter-btn" data-filter="SOLD">🔴 Sold Only</button>
+      </div>
+
+      <div class="search-input-wrapper">
+        <input type="text" id="search-seat" class="search-seat-input" placeholder="Search seat (e.g. S042)">
+      </div>
+    </div>
+
     <!-- Legend & Counts Bar -->
     <div class="legend-bar">
-      <span class="legend-title">Legend & Live Status:</span>
+      <span class="legend-title">Live Inventory Status:</span>
       <div class="legend-items">
         <div class="legend-chip">
           <span class="legend-dot free"></span>
@@ -117,8 +157,24 @@
     </section>
   </main>
 
+  <!-- My Tickets / Bookings Modal -->
+  <div id="modal-my-bookings" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">🎟️ My Confirmed Tickets</h2>
+        <button type="button" class="alert-close" id="btn-close-bookings-modal">&times;</button>
+      </div>
+      <div id="bookings-modal-body">
+        <div style="color: var(--text-muted); font-size: 0.95rem;">No tickets booked in this session yet. Reserve and confirm a seat from the grid!</div>
+      </div>
+      <div style="display: flex; justify-content: flex-end;">
+        <button type="button" class="btn btn-secondary" id="btn-close-bookings-bottom">Close</button>
+      </div>
+    </div>
+  </div>
+
   <footer class="app-footer">
-    FlashSeat High-Contention Reservation Engine — Problem 9 Hack-a-Night 2026. Plain HTML + Vanilla JS.
+    FlashSeat High-Contention Ticketing Engine &bull; Ready for Vercel Static Hosting &bull; Zero Dependencies
   </footer>
 
   <!-- Conditional Mock Loader (?mock=1) -->

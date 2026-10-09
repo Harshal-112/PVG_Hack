@@ -1,0 +1,13 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/", "destination": "/web/index.html" },
+    { "source": "/ui", "destination": "/web/index.html" },
+    { "source": "/ui/", "destination": "/web/index.html" },
+    { "source": "/ui/:match*", "destination": "/web/:match*" },
+    { "source": "/login", "destination": "/web/login.html" },
+    { "source": "/dashboard", "destination": "/web/dashboard.html" },
+    { "source": "/:match*", "destination": "/web/:match*" }
+  ]
+}
