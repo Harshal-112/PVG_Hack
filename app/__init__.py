@@ -1,0 +1,1 @@
+"""FlashSeat application package."""
