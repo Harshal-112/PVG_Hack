@@ -1044,9 +1044,11 @@
       }
 
       // Reserve seat via POST /reserve
+      const admToken = sessionStorage.getItem('flashseat_admission_token');
       const payload = {
         user_id: currentUserId,
-        seat_id: seatId
+        seat_id: seatId,
+        ...(admToken ? { admission_token: admToken } : {})
       };
 
       const result = await apiFetch(`${API_BASE}/events/${currentEventId}/reserve`, {
@@ -1375,7 +1377,8 @@
         errMsg = result.error;
       }
 
-      if (status === 403 && (errCode === 'QUEUE_ADMISSION_REQUIRED' || errMsg.includes('waiting room'))) {
+      if (status === 403 && (errCode === 'QUEUE_ADMISSION_REQUIRED' || errMsg.includes('waiting room') || errMsg.includes('queue'))) {
+        sessionStorage.removeItem('flashseat_admission_token');
         handleWaitingRoomQueue();
         return;
       }
@@ -1394,57 +1397,147 @@
     }
 
     // Virtual Waiting Room Queue Handler (Feature 6)
+    let waitingRoomPollingInterval = null;
+    let admissionExpiryTimer = null;
+
     async function handleWaitingRoomQueue() {
       const modal = document.getElementById('modal-waiting-room');
+      const badgeEl = document.getElementById('wr-event-badge');
       const posEl = document.getElementById('wr-queue-position');
+      const aheadEl = document.getElementById('wr-users-ahead');
       const waitEl = document.getElementById('wr-est-wait');
+      const rateEl = document.getElementById('wr-admission-rate');
+      const progressBar = document.getElementById('wr-progress-bar');
+      const admitBox = document.getElementById('wr-admit-box');
+      const countdownEl = document.getElementById('wr-admit-countdown');
+      const btnEnter = document.getElementById('btn-enter-booking');
       const btnLeave = document.getElementById('btn-leave-queue');
+      const actionsRow = document.getElementById('wr-actions-row');
 
-      if (modal) modal.style.display = 'flex';
+      if (!modal) return;
+      modal.style.display = 'flex';
 
-      const joinRes = await apiFetch(`${API_BASE}/events/${currentEventId}/queue/join`, {
+      if (badgeEl) {
+        const evName = (currentMovie && currentMovie.name) ? currentMovie.name : currentEventId;
+        badgeEl.textContent = `⚡ ${evName} (${currentEventId})`;
+      }
+      if (admitBox) admitBox.style.display = 'none';
+      if (actionsRow) actionsRow.style.display = 'flex';
+
+      let initialPosition = null;
+
+      function updateUIWithPosition(pos, waitSec, usersAhead, rate) {
+        if (posEl) posEl.textContent = pos ? `#${pos}` : 'In Line';
+        if (aheadEl) {
+          aheadEl.textContent = (pos > 1) ? `${usersAhead ?? (pos - 1)} users ahead of you` : (pos === 1 ? 'You are next in line! Getting admission pass...' : '0 users ahead in queue');
+        }
+        if (waitEl) waitEl.textContent = `⏱️ Estimated wait: ~${waitSec || 1}s`;
+        if (rateEl && rate) rateEl.textContent = `⚡ Rate: ${rate}/sec`;
+
+        if (!initialPosition || pos > initialPosition) {
+          initialPosition = pos || 1;
+        }
+        const pct = Math.max(8, Math.min(95, Math.round(((initialPosition - pos + 1) / (initialPosition + 1)) * 100)));
+        if (progressBar) progressBar.style.width = `${pct}%`;
+      }
+
+      function handleAdmittedSuccess(token, expiresAtMs) {
+        if (waitingRoomPollingInterval) {
+          clearInterval(waitingRoomPollingInterval);
+          waitingRoomPollingInterval = null;
+        }
+        if (token) {
+          sessionStorage.setItem('flashseat_admission_token', token);
+        }
+        if (progressBar) progressBar.style.width = '100%';
+        if (posEl) posEl.textContent = 'PASS';
+        if (aheadEl) aheadEl.textContent = 'Admission granted! Booking unlocked.';
+
+        if (admitBox) admitBox.style.display = 'block';
+        if (actionsRow) actionsRow.style.display = 'none';
+
+        if (countdownEl && expiresAtMs) {
+          if (admissionExpiryTimer) clearInterval(admissionExpiryTimer);
+          const updateCountdown = () => {
+            const remSec = Math.max(0, Math.round((expiresAtMs - Date.now()) / 1000));
+            countdownEl.innerHTML = `Pass valid for: <strong style="color: #38bdf8;">${remSec}s</strong>`;
+            if (remSec <= 0) {
+              clearInterval(admissionExpiryTimer);
+              sessionStorage.removeItem('flashseat_admission_token');
+              showAlert('warning', 'Admission Expired', 'Your waiting room pass has expired. Re-joining queue...');
+              handleWaitingRoomQueue();
+            }
+          };
+          updateCountdown();
+          admissionExpiryTimer = setInterval(updateCountdown, 1000);
+        }
+
+        if (btnEnter) {
+          btnEnter.onclick = () => {
+            modal.style.display = 'none';
+            showAlert('success', 'Admission Active', 'You can now select and confirm your seats!');
+          };
+        }
+      }
+
+      // 1. Join queue via POST /waiting-room/join
+      const joinRes = await apiFetch(`${API_BASE}/events/${currentEventId}/waiting-room/join`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: currentUserId })
       });
 
       if (joinRes.data && joinRes.data.admitted) {
-        if (joinRes.data.admission_token) {
-          sessionStorage.setItem('flashseat_admission_token', joinRes.data.admission_token);
-        }
-        if (modal) modal.style.display = 'none';
-        showAlert('success', 'Admission Granted!', 'You have entered the reservation arena.');
+        handleAdmittedSuccess(joinRes.data.admission_token, joinRes.data.expires_at_ms);
         return;
       }
 
-      if (posEl) posEl.textContent = (joinRes.data && joinRes.data.position) ? `#${joinRes.data.position}` : 'In Line';
-      if (waitEl) waitEl.textContent = (joinRes.data && joinRes.data.estimated_wait_seconds) ? `Estimated wait: ~${joinRes.data.estimated_wait_seconds}s` : 'Estimated wait: calculating...';
+      if (joinRes.data && joinRes.data.position) {
+        updateUIWithPosition(
+          joinRes.data.position,
+          joinRes.data.estimated_wait_seconds,
+          joinRes.data.users_ahead,
+          joinRes.data.admission_rate_per_sec
+        );
+      }
 
-      const pollTimer = setInterval(async () => {
-        const sRes = await apiFetch(`${API_BASE}/events/${currentEventId}/queue/status?user_id=${currentUserId}`);
+      // 2. Poll status every poll_interval_ms (default 2000ms)
+      if (waitingRoomPollingInterval) clearInterval(waitingRoomPollingInterval);
+      const pollMs = (joinRes.data && joinRes.data.poll_interval_ms) ? joinRes.data.poll_interval_ms : 2000;
+
+      waitingRoomPollingInterval = setInterval(async () => {
+        const sRes = await apiFetch(`${API_BASE}/events/${currentEventId}/waiting-room/status?user_id=${currentUserId}`);
         if (sRes.data && sRes.data.admitted) {
-          clearInterval(pollTimer);
-          if (sRes.data.admission_token) {
-            sessionStorage.setItem('flashseat_admission_token', sRes.data.admission_token);
-          }
-          if (modal) modal.style.display = 'none';
-          showAlert('success', 'Admitted to Arena!', 'Your turn has arrived! Select your seats now.');
+          handleAdmittedSuccess(sRes.data.admission_token, sRes.data.expires_at_ms);
         } else if (sRes.data && sRes.data.position) {
-          if (posEl) posEl.textContent = `#${sRes.data.position}`;
-          if (waitEl) waitEl.textContent = `Estimated wait: ~${sRes.data.estimated_wait_seconds || 10}s`;
+          updateUIWithPosition(
+            sRes.data.position,
+            sRes.data.estimated_wait_seconds,
+            sRes.data.users_ahead,
+            sRes.data.admission_rate_per_sec
+          );
         }
-      }, 2000);
+      }, pollMs);
 
+      // 3. Leave button
       if (btnLeave) {
         btnLeave.onclick = async () => {
-          clearInterval(pollTimer);
-          await apiFetch(`${API_BASE}/events/${currentEventId}/queue/leave`, {
+          if (waitingRoomPollingInterval) {
+            clearInterval(waitingRoomPollingInterval);
+            waitingRoomPollingInterval = null;
+          }
+          if (admissionExpiryTimer) {
+            clearInterval(admissionExpiryTimer);
+            admissionExpiryTimer = null;
+          }
+          await apiFetch(`${API_BASE}/events/${currentEventId}/waiting-room/leave`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ user_id: currentUserId })
           });
-          if (modal) modal.style.display = 'none';
-          showAlert('info', 'Queue Cancelled', 'You left the waiting room line.');
+          sessionStorage.removeItem('flashseat_admission_token');
+          modal.style.display = 'none';
+          showAlert('info', 'Queue Departed', 'You left the waiting room line.');
         };
       }
     }
@@ -1546,11 +1639,25 @@
     updateCheckoutBar();
     fetchSeats();
 
+    // Check if waiting room is active and whether admission is required
+    (async function checkWaitingRoomOnLoad() {
+      const res = await apiFetch(`${API_BASE}/events/${currentEventId}/waiting-room/status?user_id=${currentUserId}`);
+      if (res.ok && res.data && res.data.enabled) {
+        if (res.data.admitted && res.data.admission_token) {
+          sessionStorage.setItem('flashseat_admission_token', res.data.admission_token);
+        } else if (!res.data.admitted) {
+          handleWaitingRoomQueue();
+        }
+      }
+    })();
+
     const pollInterval = setInterval(fetchSeats, 1000);
 
     window.addEventListener('beforeunload', () => {
       clearInterval(pollInterval);
       if (countdownInterval) clearInterval(countdownInterval);
+      if (waitingRoomPollingInterval) clearInterval(waitingRoomPollingInterval);
+      if (admissionExpiryTimer) clearInterval(admissionExpiryTimer);
     });
   }
 
@@ -1763,6 +1870,43 @@
         }
 
         renderChart();
+      }
+      await fetchWaitingRoomStats();
+    }
+
+    async function fetchWaitingRoomStats() {
+      const wrPill = document.getElementById('wr-status-pill');
+      const wrQueue = document.getElementById('wr-stat-queue');
+      const wrQueueSub = document.getElementById('wr-stat-queue-sub');
+      const wrAdmitted = document.getElementById('wr-stat-admitted');
+      const wrAdmittedSub = document.getElementById('wr-stat-admitted-sub');
+      const wrRate = document.getElementById('wr-stat-rate');
+      const wrTotal = document.getElementById('wr-stat-total-admitted');
+      const wrTtl = document.getElementById('wr-stat-token-ttl');
+      const wrDepartures = document.getElementById('wr-stat-departures');
+      const wrDeparturesSub = document.getElementById('wr-stat-departures-sub');
+      const wrPollInterval = document.getElementById('wr-poll-interval');
+
+      if (!wrQueue) return;
+
+      const res = await apiFetch(`${API_BASE}/events/${EVENT_ID}/waiting-room/stats`);
+      if (res.ok && res.data) {
+        const d = res.data;
+        const isEnabled = Boolean(d.enabled);
+        if (wrPill) {
+          wrPill.textContent = isEnabled ? 'ACTIVE' : 'BYPASS';
+          wrPill.className = `wr-status-pill ${isEnabled ? 'active' : 'bypass'}`;
+        }
+        if (wrPollInterval && d.poll_interval_ms) wrPollInterval.textContent = `${Number(d.poll_interval_ms).toLocaleString()}ms`;
+        if (wrQueue) wrQueue.textContent = d.waiting_count ?? 0;
+        if (wrQueueSub) wrQueueSub.textContent = `${d.waiting_count ?? 0} users in FIFO queue (avg wait: ~${d.avg_wait_seconds ?? 0}s)`;
+        if (wrAdmitted) wrAdmitted.textContent = d.admitted_count ?? 0;
+        if (wrAdmittedSub) wrAdmittedSub.textContent = `Capacity: ${d.admitted_count ?? 0} / ${d.max_admitted ?? 50} sessions`;
+        if (wrRate) wrRate.textContent = `${d.admission_rate_per_sec ?? 10}/s`;
+        if (wrTotal) wrTotal.textContent = d.admissions_total ?? 0;
+        if (wrTtl) wrTtl.textContent = `${d.token_ttl_sec ?? 120}s`;
+        if (wrDepartures) wrDepartures.textContent = `${d.left_total ?? 0} / ${d.expired_total ?? 0}`;
+        if (wrDeparturesSub) wrDeparturesSub.textContent = `${d.left_total ?? 0} left / ${d.expired_total ?? 0} expired holds`;
       }
     }
 

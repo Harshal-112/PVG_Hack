@@ -23,6 +23,11 @@ class Settings:
     WAITING_ROOM_ENABLED: bool = os.getenv("WAITING_ROOM_ENABLED", "false").lower() in ("true", "1", "yes")
     WAITING_ROOM_MAX_ADMITTED: int = int(os.getenv("WAITING_ROOM_MAX_ADMITTED", "50"))
     WAITING_ROOM_TOKEN_TTL_SEC: int = int(os.getenv("WAITING_ROOM_TOKEN_TTL_SEC", "300"))
+    WAITING_ROOM_ADMISSION_RATE: int = int(os.getenv("WAITING_ROOM_ADMISSION_RATE", "10"))
+    WAITING_ROOM_MAX_QUEUE_SIZE: int = int(os.getenv("WAITING_ROOM_MAX_QUEUE_SIZE", "10000"))
+    WAITING_ROOM_ENTRY_TTL_SEC: int = int(os.getenv("WAITING_ROOM_ENTRY_TTL_SEC", "600"))
+    WAITING_ROOM_POLL_INTERVAL_MS: int = int(os.getenv("WAITING_ROOM_POLL_INTERVAL_MS", "2000"))
+    WAITING_ROOM_CLEANUP_INTERVAL_SEC: int = int(os.getenv("WAITING_ROOM_CLEANUP_INTERVAL_SEC", "30"))
 
     # Razorpay Payment Gateway (Test Mode)
     RAZORPAY_KEY_ID: str = os.getenv("RAZORPAY_KEY_ID", "rzp_test_placeholder_key_id")

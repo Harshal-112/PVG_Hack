@@ -94,9 +94,49 @@ class FakeWaitingRoomRedis:
     async def get(self, key):
         return self.keys.get(key)
 
+    async def hgetall(self, key):
+        return dict(self.hashes.get(key, {}))
+
+    async def hincrby(self, key, field, amount=1):
+        if key not in self.hashes:
+            self.hashes[key] = {}
+        val = int(self.hashes[key].get(field, 0)) + amount
+        self.hashes[key][field] = str(val)
+        return val
+
+    async def zcard(self, key):
+        return len(self.zsets.get(key, {}))
+
+    async def zrange(self, key, start, stop, withscores=False):
+        z = self.zsets.get(key, {})
+        sorted_members = sorted(z.keys(), key=lambda m: z[m])
+        if stop == -1:
+            res = sorted_members[start:]
+        else:
+            res = sorted_members[start:stop + 1]
+        if withscores:
+            return [(m, z[m]) for m in res]
+        return res
+
+    async def zpopmin(self, key, count=1):
+        z = self.zsets.get(key, {})
+        sorted_members = sorted(z.keys(), key=lambda m: z[m])
+        to_pop = sorted_members[:count]
+        res = []
+        for m in to_pop:
+            res.append((m, z[m]))
+            del z[m]
+        return res
+
     async def delete(self, key):
         if key in self.keys:
             del self.keys[key]
+            return 1
+        if key in self.hashes:
+            del self.hashes[key]
+            return 1
+        if key in self.zsets:
+            del self.zsets[key]
             return 1
         return 0
 

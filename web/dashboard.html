@@ -120,6 +120,86 @@
       </div>
     </section>
 
+    <!-- Virtual Waiting Room Live Telemetry Section (Feature 6) -->
+    <section class="waiting-room-dashboard-section" id="waiting-room-dashboard-section">
+      <div class="waiting-room-dashboard-header">
+        <div>
+          <h2>
+            <span>⚡ Virtual Waiting Room &amp; Traffic Throttling</span>
+            <span class="wr-status-pill bypass" id="wr-status-pill">BYPASS</span>
+          </h2>
+          <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 2px;">
+            FIFO queued clients, rate-limited admission bucket, short-lived tokens &amp; capacity ceiling
+          </p>
+        </div>
+        <div style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">
+          Poll Interval: <span id="wr-poll-interval" style="color: #38bdf8;">2,000ms</span>
+        </div>
+      </div>
+
+      <div class="wr-metrics-grid">
+        <!-- 1. Queue Length -->
+        <div class="wr-metric-box">
+          <div class="label">
+            <span>Waiting In Line</span>
+            <span>⏳</span>
+          </div>
+          <div class="value" id="wr-stat-queue" style="color: #38bdf8;">0</div>
+          <div class="subtext" id="wr-stat-queue-sub">0 users in FIFO queue</div>
+        </div>
+
+        <!-- 2. Active Admitted Sessions -->
+        <div class="wr-metric-box">
+          <div class="label">
+            <span>Active Admitted</span>
+            <span>🎟️</span>
+          </div>
+          <div class="value" id="wr-stat-admitted" style="color: #10b981;">0</div>
+          <div class="subtext" id="wr-stat-admitted-sub">Capacity: 0 / 50 sessions</div>
+        </div>
+
+        <!-- 3. Admission Flow Rate -->
+        <div class="wr-metric-box">
+          <div class="label">
+            <span>Admission Rate</span>
+            <span>⚡</span>
+          </div>
+          <div class="value" id="wr-stat-rate" style="color: #f59e0b;">10/s</div>
+          <div class="subtext">Token bucket refill rate</div>
+        </div>
+
+        <!-- 4. Total Admitted -->
+        <div class="wr-metric-box">
+          <div class="label">
+            <span>Total Admitted</span>
+            <span>✅</span>
+          </div>
+          <div class="value" id="wr-stat-total-admitted" style="color: #a7f3d0;">0</div>
+          <div class="subtext">Cumulative granted entries</div>
+        </div>
+
+        <!-- 5. Token Validity TTL -->
+        <div class="wr-metric-box">
+          <div class="label">
+            <span>Token Lifetime</span>
+            <span>⏱️</span>
+          </div>
+          <div class="value" id="wr-stat-token-ttl" style="color: #e2e8f0;">120s</div>
+          <div class="subtext">Window to reserve seats</div>
+        </div>
+
+        <!-- 6. Queue Departures & Expired -->
+        <div class="wr-metric-box">
+          <div class="label">
+            <span>Left / Expired</span>
+            <span>🚪</span>
+          </div>
+          <div class="value" id="wr-stat-departures" style="color: #94a3b8;">0 / 0</div>
+          <div class="subtext" id="wr-stat-departures-sub">Departed / Reaped holds</div>
+        </div>
+      </div>
+    </section>
+
     <!-- Historical Rolling Line Chart (Task C) -->
     <section class="chart-card">
       <div class="chart-header">
