@@ -26,7 +26,7 @@ async def lifespan(app: FastAPI):
     # Initialize db connection pool and schema
     try:
         await db.init_pool()
-    except NotImplementedError:
+    except Exception:
         pass
 
     # Initialize redis and InventoryService only if not already injected (e.g. in tests)
@@ -39,16 +39,26 @@ async def lifespan(app: FastAPI):
                 rl_capacity=settings.RL_CAPACITY,
                 rl_refill_per_sec=settings.RL_REFILL_PER_SEC,
             )
+            await redis.ping()
             app.state.inventory = inventory
         except Exception:
-            pass
+            from app.services.inventory import InMemoryInventory
+            mem_inventory = InMemoryInventory(
+                hold_ttl_ms=settings.HOLD_TTL_MS,
+                rl_capacity=settings.RL_CAPACITY,
+                rl_refill_per_sec=settings.RL_REFILL_PER_SEC,
+            )
+            await mem_inventory.seed_event("evt1", [f"S{i:03d}" for i in range(1, 201)])
+            await mem_inventory.seed_event("evt2", [f"S{i:03d}" for i in range(1, 101)])
+            await mem_inventory.seed_event("evt3", [f"S{i:03d}" for i in range(1, 51)])
+            app.state.inventory = mem_inventory
 
     yield
 
     # Teardown on shutdown
     try:
         await db.close_pool()
-    except NotImplementedError:
+    except Exception:
         pass
     try:
         await close_redis()

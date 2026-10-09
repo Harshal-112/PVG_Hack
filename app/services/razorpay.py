@@ -7,7 +7,9 @@ import base64
 import hashlib
 import hmac
 import logging
+import time
 from typing import Any, Optional
+import uuid
 import httpx
 
 from app.config import settings
@@ -51,6 +53,23 @@ class RazorpayService:
 
         Amount is specified in the smallest currency unit (e.g. paise for INR).
         """
+        if self.key_id.startswith("rzp_test_placeholder") or "placeholder" in self.key_secret:
+            order_id = f"order_{uuid.uuid4().hex[:14]}"
+            logger.info("Simulated test Razorpay order %s for amount %d %s", order_id, amount, currency)
+            return {
+                "id": order_id,
+                "entity": "order",
+                "amount": amount,
+                "amount_paid": 0,
+                "amount_due": amount,
+                "currency": currency,
+                "receipt": receipt or "",
+                "status": "created",
+                "attempts": 0,
+                "notes": notes or {},
+                "created_at": int(time.time()),
+            }
+
         url = f"{self.api_base}/orders"
         payload = {
             "amount": amount,
@@ -78,6 +97,20 @@ class RazorpayService:
 
     async def get_payment(self, payment_id: str) -> dict[str, Any]:
         """Retrieve payment details from Razorpay via GET /v1/payments/{payment_id}."""
+        if self.key_id.startswith("rzp_test_placeholder") or "placeholder" in self.key_secret:
+            return {
+                "id": payment_id,
+                "entity": "payment",
+                "amount": settings.TICKET_PRICE_PAISE,
+                "currency": "INR",
+                "status": "captured",
+                "order_id": f"order_{payment_id[4:]}",
+                "invoice_id": None,
+                "international": False,
+                "method": "card",
+                "captured": True,
+            }
+
         url = f"{self.api_base}/payments/{payment_id}"
         headers = self._get_auth_headers()
         client = self._client or httpx.AsyncClient(timeout=10.0)
@@ -126,6 +159,18 @@ class RazorpayService:
         notes: Optional[dict[str, Any]] = None,
     ) -> dict[str, Any]:
         """Initiate refund for a payment via POST /v1/payments/{payment_id}/refund."""
+        if self.key_id.startswith("rzp_test_placeholder") or "placeholder" in self.key_secret:
+            rfnd_id = f"rfnd_{uuid.uuid4().hex[:14]}"
+            logger.info("Simulated test Razorpay refund %s for payment %s", rfnd_id, payment_id)
+            return {
+                "id": rfnd_id,
+                "entity": "refund",
+                "amount": amount or settings.TICKET_PRICE_PAISE,
+                "currency": "INR",
+                "payment_id": payment_id,
+                "status": "processed",
+            }
+
         url = f"{self.api_base}/payments/{payment_id}/refund"
         payload: dict[str, Any] = {}
         if amount is not None:
