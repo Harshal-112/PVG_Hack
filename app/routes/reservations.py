@@ -1,11 +1,15 @@
 """Reservation routes: reserve, confirm, release. Owned by [P2]."""
 
+import hashlib
+import time
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
+from app.config import settings
 from app.metrics import CONFIRM_TOTAL, RESERVE_TOTAL
 from app.ratelimit import rate_limiter
+from app.services.waiting_room import waiting_room_service
 
 router = APIRouter()
 
@@ -13,6 +17,7 @@ router = APIRouter()
 class ReserveRequest(BaseModel):
     user_id: str = Field(..., min_length=1, max_length=64)
     seat_id: str | None = None
+    admission_token: str | None = None
 
 
 class ReserveResponse(BaseModel):
@@ -55,6 +60,18 @@ class ErrorResponse(BaseModel):
 )
 async def reserve_seat(event_id: str, body: ReserveRequest, request: Request):
     """Reserve a seat or any available seat."""
+    if settings.WAITING_ROOM_ENABLED:
+        token = request.headers.get("X-Admission-Token") or body.admission_token
+        is_admitted = await waiting_room_service.verify_admission_token(event_id, body.user_id, token)
+        if not is_admitted:
+            return JSONResponse(
+                status_code=403,
+                content={
+                    "error": "QUEUE_ADMISSION_REQUIRED",
+                    "message": "High-demand event requires admission through the virtual waiting room",
+                },
+            )
+
     inventory = request.app.state.inventory
     result = await inventory.reserve(event_id, body.user_id, body.seat_id)
 
@@ -185,3 +202,63 @@ async def release_reservation(event_id: str, reservation_id: str, request: Reque
             status_code=400,
             content={"error": result.code, "message": f"Release failed: {result.code}"},
         )
+
+
+@router.get(
+    "/events/{event_id}/reservations/{reservation_id}",
+    status_code=200,
+    responses={404: {"model": ErrorResponse}},
+)
+async def get_reservation(event_id: str, reservation_id: str, request: Request):
+    """Retrieve authoritative reservation lifecycle metadata and TTL countdown."""
+    inventory = request.app.state.inventory
+    data = await inventory.get_reservation(event_id, reservation_id)
+    if not data:
+        return JSONResponse(
+            status_code=404,
+            content={"error": "UNKNOWN", "message": "Reservation was not found"},
+        )
+    return JSONResponse(status_code=200, content=data)
+
+
+@router.get(
+    "/events/{event_id}/tickets/{reservation_id}/verify",
+    status_code=200,
+    responses={404: {"model": ErrorResponse}},
+)
+async def verify_event_ticket(event_id: str, reservation_id: str, request: Request):
+    """Server-side ticket verification validating confirmed booking status."""
+    inventory = request.app.state.inventory
+    data = await inventory.get_reservation(event_id, reservation_id)
+
+    if not data or data.get("status") != "CONFIRMED":
+        return JSONResponse(
+            status_code=404,
+            content={
+                "valid": False,
+                "error": "TICKET_INVALID_OR_NOT_CONFIRMED",
+                "message": "Ticket is either not found, unconfirmed, or expired.",
+            },
+        )
+
+    hash_material = f"{event_id}:{reservation_id}:{data['seat_id']}:flashseat_secure"
+    verification_code = "TKT-" + hashlib.sha256(hash_material.encode("utf-8")).hexdigest()[:12].upper()
+
+    return JSONResponse(
+        status_code=200,
+        content={
+            "valid": True,
+            "event_id": event_id,
+            "reservation_id": reservation_id,
+            "seat_id": data["seat_id"],
+            "status": "CONFIRMED",
+            "verification_code": verification_code,
+            "verified_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        },
+    )
+
+
+@router.get("/tickets/verify", status_code=200)
+async def verify_ticket_query(event_id: str, reservation_id: str, request: Request):
+    """Convenience endpoint for QR code scanner verification."""
+    return await verify_event_ticket(event_id, reservation_id, request)

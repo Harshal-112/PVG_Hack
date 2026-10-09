@@ -114,6 +114,44 @@ class InventoryService:
         seat = res[1] if len(res) > 1 else None
         return ReleaseResult(code=code, seat_id=seat)
 
+    async def get_reservation(self, event_id: str, reservation_id: str) -> dict | None:
+        """Fetch current reservation metadata, status, and authoritative expiry TTL."""
+        free_key = f"fr:{event_id}:free"
+        holds_key = f"fr:{event_id}:holds"
+        owners_key = f"fr:{event_id}:owners"
+        rids_key = f"fr:{event_id}:rids"
+
+        # Reap expired holds first to ensure accurate state
+        await self._reap_script(keys=[free_key, holds_key, owners_key, rids_key], args=[])
+
+        st = await self.redis.hget(rids_key, reservation_id)
+        if not st:
+            return None
+
+        # st is in format "STATUS|SEAT_ID"
+        status, seat_id = st.split("|", 1)
+        expires_at_ms = None
+        ttl_ms = 0
+
+        if status == "HELD":
+            score = await self.redis.zscore(holds_key, seat_id)
+            if score is not None:
+                expires_at_ms = int(score)
+                t = await self.redis.time()
+                now_ms = t[0] * 1000 + t[1] // 1000
+                ttl_ms = max(0, expires_at_ms - now_ms)
+                if expires_at_ms <= now_ms:
+                    status = "EXPIRED"
+
+        return {
+            "reservation_id": reservation_id,
+            "event_id": event_id,
+            "seat_id": seat_id,
+            "status": status,
+            "expires_at_ms": expires_at_ms,
+            "ttl_ms": ttl_ms,
+        }
+
     async def stats(self, event_id: str) -> dict:
         """Counts from SCARD/ZCARD/HLEN after a reap: {"event_id","total","free","held","sold","hold_ttl_ms"}."""
         free_key = f"fr:{event_id}:free"

@@ -4,7 +4,7 @@ import os
 from dataclasses import dataclass
 
 
-@dataclass(frozen=True)
+@dataclass
 class Settings:
     REDIS_URL: str = os.getenv("REDIS_URL", "redis://redis:6379/0")
     DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql://flash:flash@postgres:5432/flash")
@@ -18,6 +18,11 @@ class Settings:
     WRITER_BLOCK_MS: int = int(os.getenv("WRITER_BLOCK_MS", "500"))
     DEFAULT_EVENT_ID: str = os.getenv("DEFAULT_EVENT_ID", "evt1")
     DEFAULT_SEAT_COUNT: int = int(os.getenv("DEFAULT_SEAT_COUNT", "200"))
+    CORS_ORIGINS: str = os.getenv("CORS_ORIGINS", "*")
+    ADMIN_SECRET_KEY: str = os.getenv("ADMIN_SECRET_KEY", "flash_admin_sec_2026")
+    WAITING_ROOM_ENABLED: bool = os.getenv("WAITING_ROOM_ENABLED", "false").lower() in ("true", "1", "yes")
+    WAITING_ROOM_MAX_ADMITTED: int = int(os.getenv("WAITING_ROOM_MAX_ADMITTED", "50"))
+    WAITING_ROOM_TOKEN_TTL_SEC: int = int(os.getenv("WAITING_ROOM_TOKEN_TTL_SEC", "300"))
 
 
 settings = Settings()
