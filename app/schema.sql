@@ -21,3 +21,28 @@ CREATE TABLE IF NOT EXISTS baseline_bookings (
   user_id TEXT NOT NULL, created_at TIMESTAMPTZ DEFAULT now()
   -- intentionally NO unique constraint, so the naive mode can show double bookings
 );
+
+CREATE TABLE IF NOT EXISTS waitlist_entries (
+  id              BIGSERIAL PRIMARY KEY,
+  entry_id        TEXT NOT NULL UNIQUE,
+  event_id        TEXT NOT NULL,
+  user_id         TEXT NOT NULL,
+  seat_id         TEXT,
+  status          TEXT NOT NULL,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS waitlist_offers (
+  id              BIGSERIAL PRIMARY KEY,
+  offer_id        TEXT NOT NULL UNIQUE,
+  entry_id        TEXT NOT NULL,
+  event_id        TEXT NOT NULL,
+  seat_id         TEXT NOT NULL,
+  user_id         TEXT NOT NULL,
+  status          TEXT NOT NULL,
+  expires_at      TIMESTAMPTZ NOT NULL,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+

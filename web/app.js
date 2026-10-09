@@ -1033,12 +1033,8 @@
       }
 
       const state = currentSeatStates[seatId] || 'FREE';
-      if (state === 'SOLD') {
-        showAlert('error', 'Seat Booked', `Seat ${seatCode} has already been booked.`);
-        return;
-      }
-      if (state === 'HELD') {
-        showAlert('warning', 'Seat Held', `Seat ${seatCode} is currently held by another guest.`);
+      if (state === 'SOLD' || state === 'HELD') {
+        openWaitlistJoinModal(seatId, seatCode, state);
         return;
       }
 
@@ -1408,9 +1404,46 @@
               </div>
               <div style="text-align: right;">
                 <span class="verify-badge pass">VALID PASS</span>
+                <div style="margin-top: 0.4rem;">
+                  <button type="button" class="btn btn-secondary btn-sm btn-cancel-booking" data-rid="${b.reservation_id}" data-seat="${b.seat_id}" style="font-size: 0.72rem; padding: 0.25rem 0.5rem; color: #f87171; border-color: rgba(239, 68, 68, 0.4);">
+                    ✕ Cancel Ticket
+                  </button>
+                </div>
               </div>
             </div>
           `).join('');
+
+          bookingsModalBody.querySelectorAll('.btn-cancel-booking').forEach(btn => {
+            btn.addEventListener('click', async (ev) => {
+              const rid = ev.currentTarget.dataset.rid;
+              const sId = ev.currentTarget.dataset.seat;
+              if (!confirm(`Are you sure you want to cancel booking for Seat ${sId}? It will be offered to the waitlist immediately.`)) {
+                return;
+              }
+              ev.currentTarget.disabled = true;
+              ev.currentTarget.textContent = 'Cancelling...';
+
+              const cRes = await apiFetch(`${API_BASE}/events/${currentEventId}/reservations/${rid}/cancel`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: currentUserId })
+              });
+
+              if (cRes.ok) {
+                const list = getUserBookings().filter(b => b.reservation_id !== rid);
+                localStorage.setItem(`flashseat_bookings_${currentUserId}`, JSON.stringify(list));
+                updateUserTicketsBadge();
+                showAlert('info', 'Ticket Cancelled', `Seat ${sId} booking cancelled. The seat is now being reallocated via the waitlist.`);
+                bookingsModal.style.display = 'none';
+                fetchSeats();
+                checkWaitlistStatus();
+              } else {
+                showAlert('error', 'Cancellation Failed', (cRes.data && cRes.data.message) ? cRes.data.message : 'Could not cancel booking.');
+                ev.currentTarget.disabled = false;
+                ev.currentTarget.textContent = '✕ Cancel Ticket';
+              }
+            });
+          });
         }
         bookingsModal.style.display = 'flex';
       });
@@ -1423,11 +1456,287 @@
       });
     }
 
+    // -----------------------------------------------------------------------
+    // Automated Waitlist: Join Modal & Queue Integration
+    // -----------------------------------------------------------------------
+    const modalWlJoin = document.getElementById('modal-waitlist-join');
+    const btnCloseWl = document.getElementById('btn-close-waitlist-modal');
+    const btnCancelWl = document.getElementById('btn-cancel-waitlist-join');
+    const btnConfirmWl = document.getElementById('btn-confirm-waitlist-join');
+    const wlJoinSeatName = document.getElementById('wl-join-seat-name');
+    let pendingWaitlistSeatId = null;
+
+    function openWaitlistJoinModal(seatId, seatCode, state) {
+      pendingWaitlistSeatId = seatId;
+      if (wlJoinSeatName) {
+        wlJoinSeatName.textContent = `${seatCode} (${seatId}) - ${state === 'SOLD' ? 'Booked' : 'Held'}`;
+      }
+      if (modalWlJoin) {
+        modalWlJoin.style.display = 'flex';
+      }
+    }
+
+    function closeWaitlistJoinModal() {
+      if (modalWlJoin) modalWlJoin.style.display = 'none';
+      pendingWaitlistSeatId = null;
+    }
+
+    if (btnCloseWl) btnCloseWl.addEventListener('click', closeWaitlistJoinModal);
+    if (btnCancelWl) btnCancelWl.addEventListener('click', closeWaitlistJoinModal);
+    if (modalWlJoin) {
+      modalWlJoin.addEventListener('click', (e) => {
+        if (e.target === modalWlJoin) closeWaitlistJoinModal();
+      });
+    }
+
+    if (btnConfirmWl) {
+      btnConfirmWl.addEventListener('click', async () => {
+        if (!pendingWaitlistSeatId) return;
+        btnConfirmWl.disabled = true;
+        btnConfirmWl.textContent = 'Joining Waitlist...';
+
+        const res = await apiFetch(`${API_BASE}/events/${currentEventId}/waitlist/join`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: currentUserId,
+            seat_id: pendingWaitlistSeatId
+          })
+        });
+
+        btnConfirmWl.disabled = false;
+        btnConfirmWl.textContent = 'Join Waitlist';
+        closeWaitlistJoinModal();
+
+        if (res.ok && res.data) {
+          const pos = res.data.position || 1;
+          const sName = res.data.seat_id || pendingWaitlistSeatId;
+          showAlert('success', 'Waitlist Joined', `You joined the waitlist for seat ${sName}! Queue Position: #${pos}. We will alert you if the seat is released.`);
+          await checkWaitlistStatus();
+          await fetchNotifications();
+        } else {
+          showAlert('error', 'Waitlist Error', (res.data && res.data.message) ? res.data.message : 'Could not join waitlist.');
+        }
+      });
+    }
+
+    // -----------------------------------------------------------------------
+    // Automated Waitlist: Exclusive Offer Modal & Real-time Countdown
+    // -----------------------------------------------------------------------
+    const modalOffer = document.getElementById('modal-waitlist-offer');
+    const offerEventBadge = document.getElementById('offer-event-badge');
+    const offerSeatCode = document.getElementById('offer-seat-code');
+    const offerPriceTag = document.getElementById('offer-price-tag');
+    const offerCountdownTimer = document.getElementById('offer-countdown-timer');
+    const btnAcceptOffer = document.getElementById('btn-accept-offer');
+    const btnDeclineOffer = document.getElementById('btn-decline-offer');
+
+    let activeOfferData = null;
+    let offerTimerInterval = null;
+
+    function handleWaitlistOffer(offer) {
+      if (!offer || !modalOffer) return;
+      if (activeOfferData && activeOfferData.offer_id === offer.offer_id && modalOffer.style.display === 'flex') {
+        return;
+      }
+      activeOfferData = offer;
+
+      const movie = MOVIE_CATALOG[currentEventId];
+      if (offerEventBadge) {
+        offerEventBadge.textContent = `⚡ ${(movie && movie.name) || currentEventId} (${currentEventId})`;
+      }
+      if (offerSeatCode) {
+        offerSeatCode.textContent = offer.seat_id;
+      }
+      if (offerPriceTag) {
+        const price = (movie && movie.price) ? movie.price : 50.00;
+        offerPriceTag.textContent = `$${price.toFixed(2)} • Reserved Allocation`;
+      }
+
+      if (offerTimerInterval) clearInterval(offerTimerInterval);
+      const updateTimer = () => {
+        const remMs = offer.expires_at_ms - Date.now();
+        const secs = Math.max(0, Math.ceil(remMs / 1000));
+        if (offerCountdownTimer) {
+          offerCountdownTimer.textContent = `${secs}s`;
+        }
+        if (secs <= 0) {
+          clearInterval(offerTimerInterval);
+          offerTimerInterval = null;
+          modalOffer.style.display = 'none';
+          activeOfferData = null;
+          showAlert('warning', 'Offer Expired', `Your reserved window for seat ${offer.seat_id} has expired.`);
+          fetchSeats();
+        }
+      };
+      updateTimer();
+      offerTimerInterval = setInterval(updateTimer, 1000);
+
+      modalOffer.style.display = 'flex';
+    }
+
+    if (btnAcceptOffer) {
+      btnAcceptOffer.addEventListener('click', async () => {
+        if (!activeOfferData) return;
+        btnAcceptOffer.disabled = true;
+        btnAcceptOffer.textContent = 'Confirming...';
+
+        const res = await apiFetch(`${API_BASE}/events/${currentEventId}/waitlist/offers/${activeOfferData.offer_id}/accept`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: currentUserId })
+        });
+
+        btnAcceptOffer.disabled = false;
+        btnAcceptOffer.textContent = 'Accept & Confirm →';
+
+        if (res.ok && res.data) {
+          const seatId = activeOfferData.seat_id;
+          const rid = res.data.reservation_id;
+          recordUserBooking(seatId, rid);
+
+          if (offerTimerInterval) clearInterval(offerTimerInterval);
+          if (modalOffer) modalOffer.style.display = 'none';
+          activeOfferData = null;
+
+          const ticketUrl = `ticket.html${isMockMode ? '?mock=1&' : '?'}event_id=${currentEventId}&rid=${rid}&seat=${seatId}`;
+          showAlert('success', 'Seat Confirmed!', `Seat ${seatId} successfully claimed from waitlist! <a href="${ticketUrl}" class="btn btn-primary btn-sm" style="margin-left: 0.5rem; text-decoration: none;">🎟️ View Digital Pass</a>`);
+          fetchSeats();
+          fetchNotifications();
+        } else {
+          showAlert('error', 'Accept Failed', (res.data && res.data.message) ? res.data.message : 'Could not accept offer.');
+        }
+      });
+    }
+
+    if (btnDeclineOffer) {
+      btnDeclineOffer.addEventListener('click', async () => {
+        if (!activeOfferData) return;
+        btnDeclineOffer.disabled = true;
+        btnDeclineOffer.textContent = 'Declining...';
+
+        const res = await apiFetch(`${API_BASE}/events/${currentEventId}/waitlist/offers/${activeOfferData.offer_id}/decline`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: currentUserId })
+        });
+
+        btnDeclineOffer.disabled = false;
+        btnDeclineOffer.textContent = 'Decline';
+
+        if (offerTimerInterval) clearInterval(offerTimerInterval);
+        if (modalOffer) modalOffer.style.display = 'none';
+        activeOfferData = null;
+
+        showAlert('info', 'Offer Declined', 'The seat has been offered to the next waitlisted candidate.');
+        fetchSeats();
+        fetchNotifications();
+      });
+    }
+
+    async function checkWaitlistStatus() {
+      const res = await apiFetch(`${API_BASE}/events/${currentEventId}/waitlist/status?user_id=${currentUserId}`);
+      if (res.ok && res.data) {
+        if (res.data.status === 'OFFERED' && res.data.offer) {
+          handleWaitlistOffer(res.data.offer);
+        }
+      }
+    }
+
+    // -----------------------------------------------------------------------
+    // Automated Waitlist: Non-Blocking In-App Notifications Center
+    // -----------------------------------------------------------------------
+    const btnNotifBell = document.getElementById('btn-notif-bell');
+    const notifBadge = document.getElementById('notif-badge');
+    const modalNotifs = document.getElementById('modal-notifications');
+    const notifsModalBody = document.getElementById('notifs-modal-body');
+    const btnCloseNotifs = document.getElementById('btn-close-notifs-modal');
+    const btnCloseNotifsBottom = document.getElementById('btn-close-notifs-bottom');
+    const btnMarkAllRead = document.getElementById('btn-mark-all-read');
+
+    let cachedNotifications = [];
+
+    function closeNotifsModal() {
+      if (modalNotifs) modalNotifs.style.display = 'none';
+    }
+
+    if (btnCloseNotifs) btnCloseNotifs.addEventListener('click', closeNotifsModal);
+    if (btnCloseNotifsBottom) btnCloseNotifsBottom.addEventListener('click', closeNotifsModal);
+    if (modalNotifs) {
+      modalNotifs.addEventListener('click', (e) => {
+        if (e.target === modalNotifs) closeNotifsModal();
+      });
+    }
+
+    async function fetchNotifications() {
+      const res = await apiFetch(`${API_BASE}/events/${currentEventId}/notifications?user_id=${currentUserId}`);
+      if (res.ok && res.data) {
+        cachedNotifications = res.data.notifications || [];
+        const unreadCount = cachedNotifications.filter(n => !n.read).length;
+        if (notifBadge) {
+          if (unreadCount > 0) {
+            notifBadge.textContent = String(unreadCount);
+            notifBadge.style.display = 'inline-block';
+          } else {
+            notifBadge.style.display = 'none';
+          }
+        }
+      }
+    }
+
+    function renderNotifications() {
+      if (!notifsModalBody) return;
+      if (cachedNotifications.length === 0) {
+        notifsModalBody.innerHTML = '<div style="color: var(--text-muted); font-size: 0.95rem; text-align: center; padding: 2rem 0;">No notifications yet. You will be alerted when waitlist offers and reservation updates arrive.</div>';
+        return;
+      }
+
+      notifsModalBody.innerHTML = cachedNotifications.map(n => {
+        const isUnread = !n.read;
+        const timeStr = n.created_at ? new Date(n.created_at).toLocaleTimeString() : '';
+        return `
+          <div class="notification-item" style="background: ${isUnread ? 'rgba(56, 189, 248, 0.08)' : 'rgba(0,0,0,0.3)'}; border: 1px solid ${isUnread ? 'rgba(56, 189, 248, 0.35)' : 'var(--border-color)'}; border-radius: 8px; padding: 0.85rem 1rem; margin-bottom: 0.65rem;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.25rem;">
+              <strong style="color: ${isUnread ? '#38bdf8' : '#e2e8f0'}; font-size: 0.95rem;">${n.title || 'Notification'}</strong>
+              <span style="font-size: 0.75rem; color: var(--text-dim);">${timeStr}</span>
+            </div>
+            <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.4;">${n.message}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    if (btnNotifBell) {
+      btnNotifBell.addEventListener('click', async (e) => {
+        e.preventDefault();
+        await fetchNotifications();
+        renderNotifications();
+        if (modalNotifs) modalNotifs.style.display = 'flex';
+      });
+    }
+
+    if (btnMarkAllRead) {
+      btnMarkAllRead.addEventListener('click', async () => {
+        btnMarkAllRead.disabled = true;
+        await apiFetch(`${API_BASE}/events/${currentEventId}/notifications/read`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: currentUserId })
+        });
+        btnMarkAllRead.disabled = false;
+        cachedNotifications.forEach(n => { n.read = true; });
+        if (notifBadge) notifBadge.style.display = 'none';
+        renderNotifications();
+      });
+    }
+
     // Initial render and polling
     renderMovieHeader(currentEventId);
     renderGrid();
     updateCheckoutBar();
     fetchSeats();
+    checkWaitlistStatus();
+    fetchNotifications();
 
     // Check if waiting room is active and whether admission is required
     (async function checkWaitingRoomOnLoad() {
@@ -1441,13 +1750,18 @@
       }
     })();
 
-    const pollInterval = setInterval(fetchSeats, 1000);
+    const pollInterval = setInterval(() => {
+      fetchSeats();
+      checkWaitlistStatus();
+      fetchNotifications();
+    }, 2000);
 
     window.addEventListener('beforeunload', () => {
       clearInterval(pollInterval);
       if (countdownInterval) clearInterval(countdownInterval);
       if (waitingRoomPollingInterval) clearInterval(waitingRoomPollingInterval);
       if (admissionExpiryTimer) clearInterval(admissionExpiryTimer);
+      if (offerTimerInterval) clearInterval(offerTimerInterval);
     });
   }
 
@@ -1662,6 +1976,40 @@
         renderChart();
       }
       await fetchWaitingRoomStats();
+      await fetchWaitlistStats();
+    }
+
+    async function fetchWaitlistStats() {
+      const wlPill = document.getElementById('wl-status-pill');
+      const wlWaiting = document.getElementById('wl-stat-waiting');
+      const wlWaitingSub = document.getElementById('wl-stat-waiting-sub');
+      const wlOffers = document.getElementById('wl-stat-active-offers');
+      const wlAccepted = document.getElementById('wl-stat-accepted');
+      const wlDeclined = document.getElementById('wl-stat-declined');
+      const wlExpired = document.getElementById('wl-stat-expired');
+      const wlNotifs = document.getElementById('wl-stat-notifs');
+      const wlTtl = document.getElementById('wl-stat-ttl');
+
+      if (!wlWaiting) return;
+
+      const res = await apiFetch(`${API_BASE}/events/${EVENT_ID}/waitlist/stats`);
+      if (res.ok && res.data) {
+        const d = res.data;
+        const isEnabled = Boolean(d.enabled);
+        if (wlPill) {
+          wlPill.textContent = isEnabled ? 'ACTIVE (FIFO)' : 'DISABLED';
+          wlPill.className = `wr-status-pill ${isEnabled ? 'active' : 'bypass'}`;
+        }
+        if (wlTtl) wlTtl.textContent = `${d.offer_ttl_sec || 120}s`;
+        const waiting = d.active_waiting ?? d.waiting_count ?? 0;
+        if (wlWaiting) wlWaiting.textContent = waiting;
+        if (wlWaitingSub) wlWaitingSub.textContent = `${waiting} queued candidates`;
+        if (wlOffers) wlOffers.textContent = d.active_offers ?? d.active_offers_count ?? 0;
+        if (wlAccepted) wlAccepted.textContent = d.offers_accepted ?? d.accepted_count ?? 0;
+        if (wlDeclined) wlDeclined.textContent = d.offers_declined ?? d.declined_count ?? 0;
+        if (wlExpired) wlExpired.textContent = d.offers_expired ?? d.expired_count ?? 0;
+        if (wlNotifs) wlNotifs.textContent = d.notifications_sent ?? 0;
+      }
     }
 
     async function fetchWaitingRoomStats() {

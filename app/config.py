@@ -28,6 +28,10 @@ class Settings:
     WAITING_ROOM_ENTRY_TTL_SEC: int = int(os.getenv("WAITING_ROOM_ENTRY_TTL_SEC", "600"))
     WAITING_ROOM_POLL_INTERVAL_MS: int = int(os.getenv("WAITING_ROOM_POLL_INTERVAL_MS", "2000"))
     WAITING_ROOM_CLEANUP_INTERVAL_SEC: int = int(os.getenv("WAITING_ROOM_CLEANUP_INTERVAL_SEC", "30"))
+    WAITLIST_ENABLED: bool = os.getenv("WAITLIST_ENABLED", "true").lower() in ("true", "1", "yes")
+    WAITLIST_OFFER_TTL_SEC: int = int(os.getenv("WAITLIST_OFFER_TTL_SEC", "120"))
+    WAITLIST_MAX_SIZE: int = int(os.getenv("WAITLIST_MAX_SIZE", "5000"))
+    WAITLIST_CLEANUP_INTERVAL_SEC: int = int(os.getenv("WAITLIST_CLEANUP_INTERVAL_SEC", "10"))
 
 
 settings = Settings()

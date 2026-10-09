@@ -16,7 +16,7 @@ from app.ratelimit import APIException
 from app.redis_client import close_redis, get_redis
 from app.services.inventory import InventoryService
 from app import db
-from app.routes import admin, baseline, events, reservations, waiting_room
+from app.routes import admin, baseline, events, reservations, waiting_room, waitlist
 
 
 @asynccontextmanager
@@ -124,12 +124,14 @@ app.include_router(events.router, prefix="/api/v1")
 app.include_router(admin.router, prefix="/api/v1")
 app.include_router(baseline.router, prefix="/api/v1")
 app.include_router(waiting_room.router, prefix="/api/v1")
+app.include_router(waitlist.router, prefix="/api/v1")
 
 # Also mount at root for flexibility
 app.include_router(reservations.router)
 app.include_router(events.router)
 app.include_router(admin.router)
 app.include_router(waiting_room.router)
+app.include_router(waitlist.router)
 
 # Mount web/ at /ui
 web_dir = Path(__file__).resolve().parent.parent / "web"

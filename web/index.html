@@ -69,9 +69,14 @@
         <div class="system-status-indicator">
           <span class="status-dot"></span> System Online
         </div>
-        <div class="user-profile-widget" id="header-user-section">
-          <div class="user-avatar-circle" id="header-user-avatar" title="User Profile">AU</div>
-          <button type="button" class="btn-auth-toggle" id="btn-header-auth-action">Sign In</button>
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <button type="button" class="btn-notif-bell" id="btn-notif-bell" title="In-App Notifications">
+            🔔 <span class="notif-badge" id="notif-badge" style="display: none;">0</span>
+          </button>
+          <div class="user-profile-widget" id="header-user-section">
+            <div class="user-avatar-circle" id="header-user-avatar" title="User Profile">AU</div>
+            <button type="button" class="btn-auth-toggle" id="btn-header-auth-action">Sign In</button>
+          </div>
         </div>
       </header>
 
@@ -286,6 +291,81 @@
 
       <div style="display: flex; gap: 0.75rem; justify-content: center;" id="wr-actions-row">
         <button type="button" class="btn btn-secondary" id="btn-leave-queue">Leave Line</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Automated Waitlist Live Offer Modal -->
+  <div id="modal-waitlist-offer" class="modal-overlay" style="display: none;">
+    <div class="modal-content" style="max-width: 480px; text-align: center; border: 2px solid #38bdf8; box-shadow: 0 0 25px rgba(56, 189, 248, 0.25);">
+      <div class="modal-header" style="justify-content: center; flex-direction: column; align-items: center; gap: 0.5rem;">
+        <span class="wr-event-badge" id="offer-event-badge">⚡ Spider-Man (evt1)</span>
+        <h2 class="modal-title" style="font-size: 1.4rem; color: #38bdf8;">🎟️ Exclusive Seat Offer!</h2>
+      </div>
+      <div style="margin: 1.25rem 0;">
+        <div style="font-size: 2.75rem; margin-bottom: 0.5rem; animation: pulse 2s infinite;">✨</div>
+        <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.95rem; line-height: 1.5;">
+          A previously held seat just became available from the waitlist! It has been locked exclusively for you.
+        </p>
+
+        <div class="waitlist-offer-card" style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(56, 189, 248, 0.4); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1rem;">
+          <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">Exclusively Reserved Seat</div>
+          <div style="font-size: 3.25rem; font-weight: 900; color: #10b981; line-height: 1.1; margin: 0.25rem 0;" id="offer-seat-code">S042</div>
+          <div style="font-size: 0.95rem; color: #cbd5e1; margin-top: 0.35rem;" id="offer-price-tag">$50.00 &bull; Recliner</div>
+
+          <div style="margin-top: 1rem; padding: 0.75rem; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 8px;">
+            <div style="font-size: 0.75rem; color: #fca5a5; font-weight: 700; letter-spacing: 0.05em;">OFFER WINDOW EXPIRING IN</div>
+            <div style="font-size: 1.75rem; font-weight: 900; color: #f87171;" id="offer-countdown-timer">120s</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 0.75rem; justify-content: center;">
+        <button type="button" class="btn btn-secondary" id="btn-decline-offer" style="flex: 1; font-weight: 700;">Decline</button>
+        <button type="button" class="btn btn-primary" id="btn-accept-offer" style="flex: 2; font-weight: 800;">Accept &amp; Confirm &rarr;</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Join Waitlist Modal -->
+  <div id="modal-waitlist-join" class="modal-overlay" style="display: none;">
+    <div class="modal-content" style="max-width: 440px;">
+      <div class="modal-header">
+        <h2 class="modal-title">📋 Join Seat Waitlist</h2>
+        <button type="button" class="alert-close" id="btn-close-waitlist-modal">&times;</button>
+      </div>
+      <div style="margin: 1.25rem 0;">
+        <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 1rem; line-height: 1.5;">
+          Seat <strong id="wl-join-seat-name" style="color: #38bdf8;">S001</strong> is currently unavailable. Join the automated waitlist to receive an exclusive allocation window if this seat is released or cancelled.
+        </p>
+        <div style="background: rgba(15, 23, 42, 0.6); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-color); font-size: 0.85rem; color: var(--text-muted); line-height: 1.6;">
+          &bull; <strong>Queue Policy:</strong> Strict FIFO ordering<br>
+          &bull; <strong>Booking Window:</strong> 120 seconds to claim once offered<br>
+          &bull; <strong>Notifications:</strong> Instant in-app notification when released
+        </div>
+      </div>
+      <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+        <button type="button" class="btn btn-secondary" id="btn-cancel-waitlist-join">Cancel</button>
+        <button type="button" class="btn btn-primary" id="btn-confirm-waitlist-join">Join Waitlist</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- In-App Notifications Modal -->
+  <div id="modal-notifications" class="modal-overlay" style="display: none;">
+    <div class="modal-content" style="max-width: 480px;">
+      <div class="modal-header">
+        <h2 class="modal-title">🔔 In-App Notifications</h2>
+        <button type="button" class="alert-close" id="btn-close-notifs-modal">&times;</button>
+      </div>
+      <div id="notifs-modal-body" style="max-height: 380px; overflow-y: auto; margin: 1rem 0;">
+        <div style="color: var(--text-muted); font-size: 0.95rem; text-align: center; padding: 2rem 0;">
+          No notifications yet. You will be alerted when waitlist offers and reservation updates arrive.
+        </div>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-mark-all-read">Mark All Read</button>
+        <button type="button" class="btn btn-secondary" id="btn-close-notifs-bottom">Close</button>
       </div>
     </div>
   </div>

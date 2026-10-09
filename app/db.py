@@ -65,6 +65,11 @@ async def reset_event(event_id: str) -> None:
             await conn.execute("DELETE FROM booking_conflicts WHERE event_id = $1", event_id)
             await conn.execute("DELETE FROM baseline_bookings WHERE event_id = $1", event_id)
             await conn.execute("DELETE FROM baseline_seats WHERE event_id = $1", event_id)
+            try:
+                await conn.execute("DELETE FROM waitlist_entries WHERE event_id = $1", event_id)
+                await conn.execute("DELETE FROM waitlist_offers WHERE event_id = $1", event_id)
+            except Exception:
+                pass
 
 
 async def seed_baseline(event_id: str, seat_ids: list[str]) -> None:

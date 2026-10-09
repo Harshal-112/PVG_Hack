@@ -970,6 +970,155 @@
       }, 200);
     }
 
+    // 15. Automated Waitlist Mock Routes (Feature 7)
+    let mockWaitlistOffers = {};
+    let mockNotifications = [];
+
+    if (parsedPath.match(/^\/api\/v1\/events\/[^/]+\/waitlist\/join$/) && method === 'POST') {
+      const eMatch = parsedPath.match(/^\/api\/v1\/events\/([^/]+)\/waitlist\/join$/);
+      const eId = eMatch ? eMatch[1] : 'evt1';
+      const seatTarget = body?.seat_id || 'S001';
+      const offerId = 'off-mock-' + Date.now();
+
+      // If simulated offer requested (?mock_offer=1), immediately grant an offer!
+      const isSimOffer = window.location.search.includes('mock_offer=1');
+      if (isSimOffer) {
+        mockWaitlistOffers[body?.user_id] = {
+          offer_id: offerId,
+          seat_id: seatTarget,
+          status: 'ACTIVE',
+          created_at_ms: Date.now(),
+          expires_at_ms: Date.now() + 120000,
+          remaining_seconds: 120
+        };
+        mockNotifications.unshift({
+          notification_id: 'ntf-' + Date.now(),
+          event_id: eId,
+          user_id: body?.user_id || 'guest',
+          type: 'OFFER_CREATED',
+          title: '🎟️ Seat Offer Ready!',
+          message: `Seat ${seatTarget} is exclusively held for you! You have 120s to claim.`,
+          data: { offer_id: offerId, seat_id: seatTarget },
+          status: 'DELIVERED',
+          read: false,
+          created_at_ms: Date.now()
+        });
+      }
+
+      return jsonResponse({
+        waitlist_entry_id: 'wl-mock-entry-1',
+        event_id: eId,
+        user_id: body?.user_id || 'guest',
+        seat_id: seatTarget,
+        status: isSimOffer ? 'OFFERED' : 'WAITING',
+        position: isSimOffer ? 0 : 1,
+        users_ahead: 0,
+        created_at_ms: Date.now(),
+        estimated_wait_seconds: 15
+      }, 200);
+    }
+
+    if (parsedPath.match(/^\/api\/v1\/events\/[^/]+\/waitlist\/status$/) && method === 'GET') {
+      const uId = urlParams.get('user_id') || 'guest';
+      const activeOff = mockWaitlistOffers[uId];
+      if (activeOff) {
+        return jsonResponse({
+          event_id: 'evt1',
+          user_id: uId,
+          status: 'OFFERED',
+          waitlist_entry_id: 'wl-mock-entry-1',
+          seat_id: activeOff.seat_id,
+          position: 0,
+          users_ahead: 0,
+          offer: {
+            ...activeOff,
+            remaining_seconds: Math.max(0, Math.round((activeOff.expires_at_ms - Date.now()) / 1000))
+          }
+        }, 200);
+      }
+      return jsonResponse({
+        event_id: 'evt1',
+        user_id: uId,
+        status: 'NONE',
+        waitlist_entry_id: null,
+        seat_id: null,
+        position: 0,
+        users_ahead: 0,
+        offer: null
+      }, 200);
+    }
+
+    if (parsedPath.match(/^\/api\/v1\/events\/[^/]+\/waitlist\/leave$/) && method === 'POST') {
+      const uId = body?.user_id || 'guest';
+      delete mockWaitlistOffers[uId];
+      return jsonResponse({ ok: true, status: 'LEFT' }, 200);
+    }
+
+    if (parsedPath.match(/^\/api\/v1\/events\/[^/]+\/waitlist\/offers\/[^/]+\/accept$/) && method === 'POST') {
+      const uId = body?.user_id || 'guest';
+      delete mockWaitlistOffers[uId];
+      return jsonResponse({
+        ok: true,
+        status: 'ACCEPTED',
+        idempotent: false,
+        seat_id: 'S001',
+        reservation_id: 'off-mock-res-' + Date.now(),
+        message: 'Seat successfully claimed from waitlist offer'
+      }, 200);
+    }
+
+    if (parsedPath.match(/^\/api\/v1\/events\/[^/]+\/waitlist\/offers\/[^/]+\/decline$/) && method === 'POST') {
+      const uId = body?.user_id || 'guest';
+      delete mockWaitlistOffers[uId];
+      return jsonResponse({
+        ok: true,
+        status: 'DECLINED',
+        seat_id: 'S001',
+        message: 'Offer declined. Seat released.'
+      }, 200);
+    }
+
+    if (parsedPath.match(/^\/api\/v1\/events\/[^/]+\/waitlist\/stats$/) && method === 'GET') {
+      return jsonResponse({
+        event_id: 'evt1',
+        enabled: true,
+        total_entries: 3,
+        active_waiting: 1,
+        active_offers: 1,
+        offers_accepted: 2,
+        offers_declined: 1,
+        offers_expired: 0,
+        total_bookings: 2,
+        offer_ttl_sec: 120,
+        notifications_sent: mockNotifications.length,
+        notifications_failed: 0
+      }, 200);
+    }
+
+    // 16. In-App Notifications Mock
+    if (parsedPath.match(/^\/api\/v1\/events\/[^/]+\/notifications$/) && method === 'GET') {
+      return jsonResponse({
+        event_id: 'evt1',
+        user_id: urlParams.get('user_id') || 'guest',
+        notifications: mockNotifications
+      }, 200);
+    }
+
+    if (parsedPath.match(/^\/api\/v1\/events\/[^/]+\/notifications\/read$/) && method === 'POST') {
+      mockNotifications.forEach(n => { n.read = true; });
+      return jsonResponse({ ok: true, marked_count: mockNotifications.length }, 200);
+    }
+
+    // 17. Booking Cancellation Mock
+    if (parsedPath.match(/^\/api\/v1\/events\/[^/]+\/reservations\/[^/]+\/cancel$/) && method === 'POST') {
+      return jsonResponse({
+        status: 'CANCELLED',
+        reservation_id: 'rid-mock',
+        seat_id: 'S001',
+        message: 'Booking cancelled and seat submitted for waitlist reallocation'
+      }, 200);
+    }
+
     return jsonResponse({ error: 'NOT_FOUND', message: 'Endpoint not found in mock API' }, 404);
   };
 })();

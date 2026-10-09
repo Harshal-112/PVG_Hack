@@ -10,6 +10,7 @@ from app.config import settings
 from app.metrics import CONFIRM_TOTAL, RESERVE_TOTAL
 from app.ratelimit import rate_limiter
 from app.services.waiting_room import waiting_room_service
+from app.services.waitlist import waitlist_service
 
 router = APIRouter()
 
@@ -180,6 +181,11 @@ async def release_reservation(event_id: str, reservation_id: str, request: Reque
     result = await inventory.release(event_id, reservation_id)
 
     if result.code in ("OK", "NOOP"):
+        if result.code == "OK" and result.seat_id:
+            try:
+                await waitlist_service.process_inventory_release(event_id, result.seat_id)
+            except Exception:
+                pass
         return JSONResponse(
             status_code=200,
             content={
@@ -201,6 +207,61 @@ async def release_reservation(event_id: str, reservation_id: str, request: Reque
         return JSONResponse(
             status_code=400,
             content={"error": result.code, "message": f"Release failed: {result.code}"},
+        )
+
+
+class CancelBookingRequest(BaseModel):
+    user_id: str = Field(..., min_length=1, max_length=64)
+
+
+@router.post(
+    "/events/{event_id}/reservations/{reservation_id}/cancel",
+    status_code=200,
+    responses={
+        404: {"model": ErrorResponse},
+        409: {"model": ErrorResponse},
+    },
+)
+async def cancel_reservation(
+    event_id: str,
+    reservation_id: str,
+    body: CancelBookingRequest,
+    request: Request,
+):
+    """Cancel a confirmed booking and immediately trigger atomic waitlist reallocation."""
+    inventory = request.app.state.inventory
+    result = await inventory.cancel_booking(event_id, reservation_id)
+
+    if result.get("code") == "OK":
+        seat_id = result.get("seat_id")
+        if seat_id:
+            try:
+                await waitlist_service.process_inventory_release(event_id, seat_id)
+            except Exception:
+                pass
+        return JSONResponse(
+            status_code=200,
+            content={
+                "status": "CANCELLED",
+                "reservation_id": reservation_id,
+                "seat_id": seat_id,
+                "message": "Booking cancelled and seat submitted for waitlist reallocation",
+            },
+        )
+    elif result.get("code") == "NOT_CONFIRMED":
+        return JSONResponse(
+            status_code=409,
+            content={"error": "NOT_CONFIRMED", "message": "Reservation is not in CONFIRMED state to cancel"},
+        )
+    elif result.get("code") == "OWNER_MISMATCH":
+        return JSONResponse(
+            status_code=403,
+            content={"error": "OWNER_MISMATCH", "message": "Reservation does not own this seat"},
+        )
+    else:
+        return JSONResponse(
+            status_code=404,
+            content={"error": "UNKNOWN", "message": "Reservation not found"},
         )
 
 

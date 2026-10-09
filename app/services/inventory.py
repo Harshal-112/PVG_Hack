@@ -45,6 +45,11 @@ class InventoryService:
         self._release_script = self.redis.register_script(release_code)
         self._tb_script = self.redis.register_script(token_bucket_code)
         self._reap_script = self.redis.register_script(reap_code)
+        cancel_path = lua_dir / "cancel_booking.lua"
+        if cancel_path.exists():
+            self._cancel_script = self.redis.register_script(cancel_path.read_text(encoding="utf-8"))
+        else:
+            self._cancel_script = None
 
     async def seed_event(self, event_id: str, seat_ids: list[str]) -> None:
         """Wipes event keys, fills all+free."""
@@ -113,6 +118,30 @@ class InventoryService:
         code = res[0]
         seat = res[1] if len(res) > 1 else None
         return ReleaseResult(code=code, seat_id=seat)
+
+    async def cancel_booking(self, event_id: str, reservation_id: str) -> dict:
+        """Atomic cancellation of a confirmed booking."""
+        keys = [
+            f"fr:{event_id}:free",
+            f"fr:{event_id}:holds",
+            f"fr:{event_id}:owners",
+            f"fr:{event_id}:sold",
+            f"fr:{event_id}:rids",
+        ]
+        if self._cancel_script:
+            res = await self._cancel_script(keys=keys, args=[reservation_id])
+            code = res[0]
+            seat = res[1] if len(res) > 1 else None
+            return {"code": code, "seat_id": seat}
+        # Fallback if script not registered
+        st = await self.redis.hget(f"fr:{event_id}:rids", reservation_id)
+        if not st or not str(st).startswith("CONFIRMED|"):
+            return {"code": "NOT_CONFIRMED", "seat_id": None}
+        seat = str(st).split("|")[1]
+        await self.redis.hdel(f"fr:{event_id}:sold", seat)
+        await self.redis.sadd(f"fr:{event_id}:free", seat)
+        await self.redis.hset(f"fr:{event_id}:rids", reservation_id, f"CANCELLED|{seat}")
+        return {"code": "OK", "seat_id": seat}
 
     async def get_reservation(self, event_id: str, reservation_id: str) -> dict | None:
         """Fetch current reservation metadata, status, and authoritative expiry TTL."""

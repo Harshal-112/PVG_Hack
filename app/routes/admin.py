@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 from app.config import settings
 from app import db
 from app.services.waiting_room import waiting_room_service
+from app.services.waitlist import waitlist_service
 
 router = APIRouter()
 
@@ -54,6 +55,10 @@ async def reset_event(event_id: str, request: Request):
         await db.reset_event(event_id)
         await db.seed_baseline(event_id, seat_ids)
     except (NotImplementedError, RuntimeError):
+        pass
+    try:
+        await waitlist_service.reset(event_id)
+    except Exception:
         pass
 
     return JSONResponse(
@@ -135,6 +140,12 @@ async def admin_overview(request: Request, event_id: str = "evt1", admin_key: st
             "max_admitted": settings.WAITING_ROOM_MAX_ADMITTED,
         }
 
+    wl_stats = {}
+    try:
+        wl_stats = await waitlist_service.get_stats(event_id)
+    except Exception:
+        wl_stats = {"enabled": settings.WAITLIST_ENABLED}
+
     return JSONResponse(
         status_code=200,
         content={
@@ -163,6 +174,7 @@ async def admin_overview(request: Request, event_id: str = "evt1", admin_key: st
                     "refill_per_sec": settings.RL_REFILL_PER_SEC,
                 },
                 "waiting_room": wr_stats,
+                "waitlist": wl_stats,
             },
         },
     )

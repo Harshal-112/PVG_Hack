@@ -1865,6 +1865,86 @@ footer.app-footer {
 }
 
 /* =========================================================
+   Feature 7: Automated Waitlist & Notifications
+   ========================================================= */
+.btn-notif-bell {
+  position: relative;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  cursor: pointer;
+  color: #f8fafc;
+  transition: all 0.2s ease;
+}
+
+.btn-notif-bell:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: #38bdf8;
+  transform: scale(1.05);
+}
+
+.notif-badge {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  border-radius: 9999px;
+  min-width: 17px;
+  height: 17px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  border: 2px solid #0f172a;
+}
+
+.notif-card-item {
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1rem;
+  margin-bottom: 0.6rem;
+  transition: border-color 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  text-align: left;
+}
+
+.notif-card-item.unread {
+  border-left: 3px solid #38bdf8;
+  background: rgba(56, 189, 248, 0.06);
+}
+
+.notif-card-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #f8fafc;
+  display: flex;
+  justify-content: space-between;
+}
+
+.notif-card-msg {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.notif-card-time {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+/* =========================================================
    Print Boarding Pass Styling (@media print)
    ========================================================= */
 @media print {

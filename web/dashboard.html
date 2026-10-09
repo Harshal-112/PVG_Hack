@@ -196,6 +196,85 @@
           </div>
           <div class="value" id="wr-stat-departures" style="color: #94a3b8;">0 / 0</div>
           <div class="subtext" id="wr-stat-departures-sub">Departed / Reaped holds</div>
+      </div>
+    </section>
+
+    <!-- Automated Waitlist Live Telemetry Section -->
+    <section class="waiting-room-dashboard-section" id="waitlist-dashboard-section" style="border-color: rgba(56, 189, 248, 0.3);">
+      <div class="waiting-room-dashboard-header">
+        <div>
+          <h2>
+            <span>📋 Automated Waitlist &amp; Dynamic Reallocation</span>
+            <span class="wr-status-pill active" id="wl-status-pill">ACTIVE (FIFO)</span>
+          </h2>
+          <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 2px;">
+            Fair FIFO queue reallocation upon hold expiration, cancellation, or decline (120s offer window)
+          </p>
+        </div>
+        <div style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">
+          Booking Window: <span id="wl-stat-ttl" style="color: #38bdf8;">120s</span>
+        </div>
+      </div>
+
+      <div class="wr-metrics-grid">
+        <!-- 1. Active Waiting -->
+        <div class="wr-metric-box">
+          <div class="label">
+            <span>Waiting In Line</span>
+            <span>⏳</span>
+          </div>
+          <div class="value" id="wl-stat-waiting" style="color: #38bdf8;">0</div>
+          <div class="subtext" id="wl-stat-waiting-sub">0 queued candidates</div>
+        </div>
+
+        <!-- 2. Active Offers -->
+        <div class="wr-metric-box">
+          <div class="label">
+            <span>Active Offers</span>
+            <span>🎟️</span>
+          </div>
+          <div class="value" id="wl-stat-active-offers" style="color: #f59e0b;">0</div>
+          <div class="subtext">Currently offered seats</div>
+        </div>
+
+        <!-- 3. Offers Accepted -->
+        <div class="wr-metric-box">
+          <div class="label">
+            <span>Offers Accepted</span>
+            <span>✅</span>
+          </div>
+          <div class="value" id="wl-stat-accepted" style="color: #10b981;">0</div>
+          <div class="subtext">Successfully claimed</div>
+        </div>
+
+        <!-- 4. Offers Declined -->
+        <div class="wr-metric-box">
+          <div class="label">
+            <span>Offers Declined</span>
+            <span>✕</span>
+          </div>
+          <div class="value" id="wl-stat-declined" style="color: #f87171;">0</div>
+          <div class="subtext">Reallocated to next</div>
+        </div>
+
+        <!-- 5. Offers Expired -->
+        <div class="wr-metric-box">
+          <div class="label">
+            <span>Offers Expired</span>
+            <span>⏱️</span>
+          </div>
+          <div class="value" id="wl-stat-expired" style="color: #cbd5e1;">0</div>
+          <div class="subtext">Window timed out</div>
+        </div>
+
+        <!-- 6. Notifications Dispatched -->
+        <div class="wr-metric-box">
+          <div class="label">
+            <span>Notifications</span>
+            <span>🔔</span>
+          </div>
+          <div class="value" id="wl-stat-notifs" style="color: #a7f3d0;">0</div>
+          <div class="subtext">In-app alerts dispatched</div>
         </div>
       </div>
     </section>
