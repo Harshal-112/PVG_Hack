@@ -1,0 +1,81 @@
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 2s
+      retries: 10
+      start_period: 2s
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: flash
+      POSTGRES_PASSWORD: flash
+      POSTGRES_DB: flash
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U flash -d flash"]
+      interval: 2s
+      timeout: 2s
+      retries: 10
+      start_period: 2s
+
+  app:
+    build: .
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+    ports:
+      - "8000:8000"
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      DATABASE_URL: postgresql://flash:flash@postgres:5432/flash
+      HOLD_TTL_MS: 120000
+      RL_ENABLED: "true"
+      RL_CAPACITY: 20
+      RL_REFILL_PER_SEC: 10
+      PG_POOL_MAX: 10
+      BASELINE_POOL_MAX: 10
+      WRITER_BATCH: 200
+      WRITER_BLOCK_MS: 500
+      DEFAULT_EVENT_ID: evt1
+      DEFAULT_SEAT_COUNT: 200
+
+  worker:
+    build: .
+    command: ["python", "-m", "app.worker.writer"]
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      DATABASE_URL: postgresql://flash:flash@postgres:5432/flash
+      HOLD_TTL_MS: 120000
+      RL_ENABLED: "true"
+      RL_CAPACITY: 20
+      RL_REFILL_PER_SEC: 10
+      PG_POOL_MAX: 10
+      BASELINE_POOL_MAX: 10
+      WRITER_BATCH: 200
+      WRITER_BLOCK_MS: 500
+      DEFAULT_EVENT_ID: evt1
+      DEFAULT_SEAT_COUNT: 200
+
+  k6:
+    image: grafana/k6
+    profiles:
+      - loadtest
+    depends_on:
+      - app
+    volumes:
+      - ./loadtest:/loadtest
