@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node -e \"fs.cpSync('dist','web',{recursive:true})\"",
     "lint": "oxlint",
     "preview": "vite preview"
   },
