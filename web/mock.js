@@ -1,4 +1,4 @@
-// FlashSeat Mock API Layer - Owned by [P5]
+﻿// FlashSeat Mock API Layer - Owned by [P5]
 // This mock is ONLY loaded and active when the page URL contains ?mock=1
 (function () {
   'use strict';
@@ -9,18 +9,147 @@
   const TOTAL_SEATS = 200;
   const HOLD_TTL_MS = 30000; // 30s TTL for live UI testing
 
-  // State store for event evt1 - All 200 seats start FREE with zero fake reservations
-  const seats = {};
-  for (let i = 1; i <= TOTAL_SEATS; i++) {
-    const seatId = 'S' + String(i).padStart(3, '0');
-    seats[seatId] = 'FREE';
-  }
+  // Multi-Event State Stores for BookMyShow Catalog
+  const MOVIE_CATALOG_DATA = {
+    evt1: {
+      event_id: 'evt1',
+      name: 'Spider-Man: No Way Home',
+      category: 'Action',
+      tags: ['Action', 'Sci-Fi', 'Adventure'],
+      rating: 'UA 16+',
+      runtime: '148 min',
+      language: 'English, Hindi',
+      format: 'IMAX 2D',
+      date: '2026-01-31T11:15:00Z',
+      startTime: '11:15 AM',
+      endTime: '1:45 PM',
+      theater: 'Cinema 3 &bull; Dolby Atmos',
+      venue: 'PVR: Inorbit Mall, Cyberabad',
+      price: 50.00,
+      currency: 'USD',
+      poster: 'spiderman_poster.svg',
+      shows: ['11:15 AM', '02:30 PM', '06:00 PM', '09:30 PM'],
+      description: 'With Spider-Man\'s identity revealed, Peter asks Doctor Strange for help. When a spell goes wrong, multiverse foes emerge.'
+    },
+    evt2: {
+      event_id: 'evt2',
+      name: 'Dune: Part Two',
+      category: 'Sci-Fi',
+      tags: ['Sci-Fi', 'Adventure', 'Drama'],
+      rating: 'UA 13+',
+      runtime: '166 min',
+      language: 'English, Hindi',
+      format: 'IMAX 70mm',
+      date: '2026-01-31T14:30:00Z',
+      startTime: '02:30 PM',
+      endTime: '05:15 PM',
+      theater: 'Cinema 1 &bull; Grand Laser IMAX',
+      venue: 'INOX: Megaplex Arena',
+      price: 55.00,
+      currency: 'USD',
+      poster: 'dune_poster.svg',
+      shows: ['01:00 PM', '02:30 PM', '07:00 PM', '10:30 PM'],
+      description: 'Paul Atreides unites with Chani and the Fremen while seeking revenge against the conspirators who destroyed his family.'
+    },
+    evt3: {
+      event_id: 'evt3',
+      name: 'Deadpool & Wolverine',
+      category: 'Action',
+      tags: ['Action', 'Comedy', 'Superhero'],
+      rating: 'A 18+',
+      runtime: '128 min',
+      language: 'English, Hindi, Telugu',
+      format: '4DX 3D',
+      date: '2026-01-31T18:00:00Z',
+      startTime: '06:00 PM',
+      endTime: '08:10 PM',
+      theater: 'Cinema 2 &bull; Prime Lounge',
+      venue: 'Cinepolis: Grand VIP Lounge',
+      price: 48.00,
+      currency: 'USD',
+      poster: 'deadpool_poster.svg',
+      shows: ['12:30 PM', '03:45 PM', '06:00 PM', '09:15 PM'],
+      description: 'Wolverine is recovering from his injuries when he crosses paths with the loudmouth Deadpool to defeat a common enemy.'
+    },
+    evt4: {
+      event_id: 'evt4',
+      name: 'Oppenheimer',
+      category: 'Drama',
+      tags: ['Biography', 'Drama', 'History'],
+      rating: 'R / UA',
+      runtime: '180 min',
+      language: 'English',
+      format: 'IMAX 70mm',
+      date: '2026-01-31T20:30:00Z',
+      startTime: '08:30 PM',
+      endTime: '11:30 PM',
+      theater: 'Cinema 4 &bull; 70mm Film Dome',
+      venue: 'PVR Director\'s Cut',
+      price: 60.00,
+      currency: 'USD',
+      poster: 'oppenheimer_poster.svg',
+      shows: ['10:45 AM', '02:45 PM', '08:30 PM'],
+      description: 'The story of American scientist J. Robert Oppenheimer and his role in the development of the atomic bomb.'
+    },
+    evt5: {
+      event_id: 'evt5',
+      name: 'Interstellar (10th Anniv. IMAX)',
+      category: 'Sci-Fi',
+      tags: ['Sci-Fi', 'Mystery', 'Adventure'],
+      rating: 'UA 13+',
+      runtime: '169 min',
+      language: 'English',
+      format: 'IMAX 2D',
+      date: '2026-02-01T21:45:00Z',
+      startTime: '09:45 PM',
+      endTime: '12:35 AM',
+      theater: 'Cinema 5 &bull; Laser Audi',
+      venue: 'Miraj Cinemas: IMAX Dome',
+      price: 50.00,
+      currency: 'USD',
+      poster: 'interstellar_poster.svg',
+      shows: ['11:00 AM', '04:00 PM', '09:45 PM'],
+      description: 'When Earth becomes uninhabitable, an ex-NASA pilot is tasked with piloting a spacecraft along with a team of researchers.'
+    }
+  };
 
-  // Active reservations: rid -> { rid, seat_id, user_id, expires_at_ms, status }
-  const reservations = {};
-  const owners = {}; // seat_id -> rid
-  const soldMap = {}; // seat_id -> rid
-  const pgBookings = new Set();
+  const eventStores = {};
+  const INITIAL_BOOKED = {
+    evt1: ['S008', 'S009', 'S020'],
+    evt2: ['S005', 'S006', 'S012', 'S013', 'S025', 'S026'],
+    evt3: ['S001', 'S002', 'S010', 'S011', 'S040', 'S041'],
+    evt4: ['S015', 'S016', 'S017'],
+    evt5: ['S003', 'S004', 'S021', 'S022']
+  };
+
+  function getStore(eId) {
+    const id = eId || 'evt1';
+    if (!eventStores[id]) {
+      const s = {};
+      for (let i = 1; i <= TOTAL_SEATS; i++) {
+        const seatId = 'S' + String(i).padStart(3, '0');
+        s[seatId] = 'FREE';
+      }
+      const initialBooked = INITIAL_BOOKED[id] || [];
+      const pgSet = new Set();
+      const sold = {};
+      initialBooked.forEach(sid => {
+        if (s[sid]) {
+          s[sid] = 'SOLD';
+          sold[sid] = 'init_' + sid;
+          pgSet.add(sid);
+        }
+      });
+      eventStores[id] = {
+        seats: s,
+        reservations: {},
+        owners: {},
+        soldMap: sold,
+        pgBookings: pgSet
+      };
+    }
+    return eventStores[id];
+  }
 
   // Token bucket for rate limiting: client_key -> { tokens, last_ms }
   const rateLimitBuckets = {};
@@ -45,19 +174,26 @@
     return { allowed: false, remaining: 0 };
   }
 
-  function reapExpiredHolds() {
+  function reapExpiredHolds(store) {
+    if (!store) return;
     const now = Date.now();
-    for (const rid of Object.keys(reservations)) {
-      const res = reservations[rid];
+    for (const rid of Object.keys(store.reservations)) {
+      const res = store.reservations[rid];
       if (res.status === 'HELD' && res.expires_at_ms <= now) {
         res.status = 'EXPIRED';
         const sId = res.seat_id;
-        if (owners[sId] === rid) {
-          delete owners[sId];
-          seats[sId] = 'FREE';
+        if (store.owners[sId] === rid) {
+          delete store.owners[sId];
+          store.seats[sId] = 'FREE';
           console.log(`[FlashSeat Mock API] Reaped expired hold on ${sId} (rid: ${rid})`);
         }
       }
+    }
+  }
+
+  function reapAllStores() {
+    for (const st of Object.values(eventStores)) {
+      reapExpiredHolds(st);
     }
   }
 
@@ -97,13 +233,16 @@
       return originalFetch.apply(this, arguments);
     }
 
-    // Always reap expired holds before handling any request (matches Redis Lua reap snippet)
-    reapExpiredHolds();
+    // Always reap expired holds across all stores before handling any request
+    reapAllStores();
 
     // 1. GET /api/v1/events/{e}/seats
     const seatsMatch = parsedPath.match(/^\/api\/v1\/events\/([^/]+)\/seats$/);
     if (seatsMatch && method === 'GET') {
-      return jsonResponse({ seats: { ...seats } }, 200);
+      const eId = seatsMatch[1];
+      const store = getStore(eId);
+      reapExpiredHolds(store);
+      return jsonResponse({ seats: { ...store.seats } }, 200);
     }
 
     // 2. POST /api/v1/events/{e}/reserve
@@ -115,6 +254,10 @@
       } catch (e) {
         return jsonResponse({ error: 'INVALID_JSON', message: 'Payload must be valid JSON' }, 422);
       }
+
+      const eId = reserveMatch[1];
+      const store = getStore(eId);
+      reapExpiredHolds(store);
 
       const userId = body.user_id;
       let seatId = body.seat_id;
@@ -135,38 +278,38 @@
 
       if (!seatId) {
         // Any seat (SPOP)
-        const freeSeats = Object.keys(seats).filter(s => seats[s] === 'FREE');
+        const freeSeats = Object.keys(store.seats).filter(s => store.seats[s] === 'FREE');
         if (freeSeats.length === 0) {
           return jsonResponse({ error: 'SOLD_OUT', message: 'Event is completely sold out' }, 409);
         }
         seatId = freeSeats[Math.floor(Math.random() * freeSeats.length)];
       }
 
-      if (!seats[seatId]) {
+      if (!store.seats[seatId]) {
         return jsonResponse({ error: 'SEAT_UNKNOWN', message: `Seat ${seatId} does not exist` }, 404);
       }
 
-      if (seats[seatId] === 'SOLD') {
+      if (store.seats[seatId] === 'SOLD') {
         return jsonResponse({ error: 'SEAT_SOLD', message: `Seat ${seatId} has already been purchased` }, 409);
       }
 
-      if (seats[seatId] === 'HELD') {
+      if (store.seats[seatId] === 'HELD') {
         return jsonResponse({ error: 'SEAT_HELD', message: `Seat ${seatId} is currently held by another customer` }, 409);
       }
 
       // Reserve the seat
-      seats[seatId] = 'HELD';
+      store.seats[seatId] = 'HELD';
       const rid = generateRid();
       const expiresAt = Date.now() + HOLD_TTL_MS;
 
-      reservations[rid] = {
+      store.reservations[rid] = {
         rid,
         seat_id: seatId,
         user_id: userId,
         expires_at_ms: expiresAt,
         status: 'HELD'
       };
-      owners[seatId] = rid;
+      store.owners[seatId] = rid;
 
       return jsonResponse({
         reservation_id: rid,
@@ -186,8 +329,10 @@
         return jsonResponse({ error: 'INVALID_JSON', message: 'Payload must be valid JSON' }, 422);
       }
 
+      const eId = confirmMatch[1];
       const rid = confirmMatch[2];
-      const res = reservations[rid];
+      const store = getStore(eId);
+      const res = store.reservations[rid];
 
       if (!res) {
         return jsonResponse({ error: 'UNKNOWN', message: 'Reservation ID was not found' }, 404);
@@ -208,13 +353,13 @@
 
       // Confirm seat
       res.status = 'CONFIRMED';
-      seats[res.seat_id] = 'SOLD';
-      soldMap[res.seat_id] = rid;
-      delete owners[res.seat_id];
+      store.seats[res.seat_id] = 'SOLD';
+      store.soldMap[res.seat_id] = rid;
+      delete store.owners[res.seat_id];
 
       // Simulate async writer worker: persisted lands in Postgres
       setTimeout(() => {
-        pgBookings.add(res.seat_id);
+        store.pgBookings.add(res.seat_id);
       }, 1200);
 
       return jsonResponse({
@@ -227,8 +372,10 @@
     // 4. DELETE /api/v1/events/{e}/reservations/{rid}
     const releaseMatch = parsedPath.match(/^\/api\/v1\/events\/([^/]+)\/reservations\/([^/]+)$/);
     if (releaseMatch && method === 'DELETE') {
+      const eId = releaseMatch[1];
       const rid = releaseMatch[2];
-      const res = reservations[rid];
+      const store = getStore(eId);
+      const res = store.reservations[rid];
 
       if (!res) {
         return jsonResponse({ error: 'UNKNOWN', message: 'Reservation ID was not found' }, 404);
@@ -244,8 +391,8 @@
 
       // Release seat
       res.status = 'RELEASED';
-      seats[res.seat_id] = 'FREE';
-      delete owners[res.seat_id];
+      store.seats[res.seat_id] = 'FREE';
+      delete store.owners[res.seat_id];
 
       return jsonResponse({ status: 'RELEASED', seat_id: res.seat_id }, 200);
     }
@@ -254,17 +401,20 @@
     const statsMatch = parsedPath.match(/^\/api\/v1\/events\/([^/]+)\/stats$/);
     if (statsMatch && method === 'GET') {
       const eId = statsMatch[1];
+      const store = getStore(eId);
+      reapExpiredHolds(store);
+
       let free = 0;
       let held = 0;
       let sold = 0;
 
-      for (const s of Object.values(seats)) {
+      for (const s of Object.values(store.seats)) {
         if (s === 'FREE') free++;
         else if (s === 'HELD') held++;
         else if (s === 'SOLD') sold++;
       }
 
-      const persisted = pgBookings.size;
+      const persisted = store.pgBookings.size;
       const backlog = Math.max(0, sold - persisted);
 
       return jsonResponse({
@@ -283,17 +433,18 @@
     const verifyMatch = parsedPath.match(/^\/api\/v1\/events\/([^/]+)\/verify$/);
     if (verifyMatch && method === 'GET') {
       const eId = verifyMatch[1];
+      const store = getStore(eId);
 
       let sold = 0;
-      for (const s of Object.values(seats)) {
+      for (const s of Object.values(store.seats)) {
         if (s === 'SOLD') sold++;
       }
 
-      for (const sId of Object.keys(soldMap)) {
-        pgBookings.add(sId);
+      for (const sId of Object.keys(store.soldMap)) {
+        store.pgBookings.add(sId);
       }
 
-      const pgCount = pgBookings.size;
+      const pgCount = store.pgBookings.size;
       const drained = sold === pgCount;
 
       return jsonResponse({
@@ -530,74 +681,60 @@
     }
 
     // 8. Admin Reset
-    if (parsedPath.match(/^\/api\/v1\/admin\/events(\/[^/]+\/reset)?$/) && method === 'POST') {
+    const adminResetMatch = parsedPath.match(/^\/api\/v1\/admin\/events(?:\/([^/]+)\/reset)?$/);
+    if (adminResetMatch && method === 'POST') {
+      const eId = adminResetMatch[1] || 'evt1';
+      const store = getStore(eId);
       for (let i = 1; i <= TOTAL_SEATS; i++) {
         const sId = 'S' + String(i).padStart(3, '0');
-        seats[sId] = 'FREE';
+        store.seats[sId] = 'FREE';
       }
-      for (const k of Object.keys(owners)) delete owners[k];
-      for (const k of Object.keys(reservations)) delete reservations[k];
-      for (const k of Object.keys(soldMap)) delete soldMap[k];
-      pgBookings.clear();
+      for (const k of Object.keys(store.owners)) delete store.owners[k];
+      for (const k of Object.keys(store.reservations)) delete store.reservations[k];
+      for (const k of Object.keys(store.soldMap)) delete store.soldMap[k];
+      store.pgBookings.clear();
 
-      return jsonResponse({ event_id: 'evt1', seat_count: TOTAL_SEATS }, 200);
+      return jsonResponse({ event_id: eId, seat_count: TOTAL_SEATS }, 200);
     }
 
     // 9. GET /api/v1/events (Discovery & Search)
     if (parsedPath === '/api/v1/events' && method === 'GET') {
-      let freeCount = 0, soldCount = 0, heldCount = 0;
-      for (const s of Object.values(seats)) {
-        if (s === 'FREE') freeCount++;
-        else if (s === 'SOLD') soldCount++;
-        else if (s === 'HELD') heldCount++;
-      }
-      const list = [
-        {
-          event_id: 'evt1',
-          name: 'High-Contention Arena Grand Finale',
-          venue: 'Grand Pavilion Arena, Hall A',
-          date: '2026-11-15T19:00:00Z',
-          category: 'Concert',
-          description: 'Live flash-sale event with 200 real-time contention-free seats and sub-second locking.',
-          seat_count: 200,
-          total: 200,
+      const u = new URL(url, window.location.origin);
+      const search = (u.searchParams.get('search') || '').trim().toLowerCase();
+      const category = (u.searchParams.get('category') || '').trim().toLowerCase();
+
+      let list = Object.values(MOVIE_CATALOG_DATA).map(m => {
+        const store = getStore(m.event_id);
+        reapExpiredHolds(store);
+        let freeCount = 0, soldCount = 0, heldCount = 0;
+        for (const s of Object.values(store.seats)) {
+          if (s === 'FREE') freeCount++;
+          else if (s === 'SOLD') soldCount++;
+          else if (s === 'HELD') heldCount++;
+        }
+        return {
+          ...m,
+          total: TOTAL_SEATS,
+          seat_count: TOTAL_SEATS,
           free: freeCount,
           held: heldCount,
-          sold: soldCount,
-          price: 45.00,
-          currency: 'USD'
-        },
-        {
-          event_id: 'evt2',
-          name: 'Tech Innovation Summit 2026',
-          venue: 'Silicon Center Auditorium',
-          date: '2026-12-01T10:00:00Z',
-          category: 'Conference',
-          description: 'Annual gathering of systems architects, distributed systems developers, and high-performance engineers.',
-          seat_count: 150,
-          total: 150,
-          free: 142,
-          held: 2,
-          sold: 6,
-          price: 120.00,
-          currency: 'USD'
-        },
-        {
-          event_id: 'evt3',
-          name: 'Cyberpunk Symphony Orchestra',
-          venue: 'Metropolis Philharmonic Center',
-          date: '2026-12-20T20:30:00Z',
-          category: 'Music',
-          description: 'An immersive neoclassical synth performance with multi-channel audio projection and laser array.',
-          seat_count: 100,
-          total: 100,
-          free: 88,
-          held: 4,
-          sold: 8,
-          price: 75.00,
-          currency: 'USD'
-        }
-      ];
+          sold: soldCount
+        };
+      });
+
+      if (category) {
+        list = list.filter(e => (e.category || '').toLowerCase() === category);
+      }
+      if (search) {
+        list = list.filter(e =>
+          (e.name || '').toLowerCase().includes(search) ||
+          (e.venue || '').toLowerCase().includes(search) ||
+          (e.description || '').toLowerCase().includes(search) ||
+          (e.format || '').toLowerCase().includes(search) ||
+          (e.tags || []).some(t => t.toLowerCase().includes(search))
+        );
+      }
+
       return jsonResponse({ events: list, total_events: list.length }, 200);
     }
 
@@ -605,26 +742,34 @@
     const eventDetailMatch = parsedPath.match(/^\/api\/v1\/events\/([^/]+)$/);
     if (eventDetailMatch && method === 'GET') {
       const eId = eventDetailMatch[1];
+      const store = getStore(eId);
+      reapExpiredHolds(store);
+
       let freeCount = 0, soldCount = 0, heldCount = 0;
-      for (const s of Object.values(seats)) {
+      for (const s of Object.values(store.seats)) {
         if (s === 'FREE') freeCount++;
         else if (s === 'SOLD') soldCount++;
         else if (s === 'HELD') heldCount++;
       }
-      return jsonResponse({
+
+      const m = MOVIE_CATALOG_DATA[eId] || {
         event_id: eId,
-        name: eId === 'evt1' ? 'High-Contention Arena Grand Finale' : `Event ${eId.toUpperCase()}`,
+        name: `Event ${eId.toUpperCase()}`,
         venue: 'Grand Pavilion Arena',
-        date: '2026-11-15T19:00:00Z',
-        category: 'Concert',
+        date: '2026-01-31T11:15:00Z',
+        category: 'Cinema',
         description: 'Live flash-sale event with 200 real-time contention-free seats and sub-second locking.',
-        seat_count: 200,
-        total: 200,
+        price: 50.00,
+        currency: 'USD'
+      };
+
+      return jsonResponse({
+        ...m,
+        total: TOTAL_SEATS,
+        seat_count: TOTAL_SEATS,
         free: freeCount,
         held: heldCount,
-        sold: soldCount,
-        price: 45.00,
-        currency: 'USD'
+        sold: soldCount
       }, 200);
     }
 
@@ -633,7 +778,8 @@
     if (getResMatch && method === 'GET') {
       const eId = getResMatch[1];
       const rid = getResMatch[2];
-      const res = reservations[rid];
+      const store = getStore(eId);
+      const res = store.reservations[rid];
       if (!res) {
         return jsonResponse({ error: 'UNKNOWN', message: 'Reservation not found' }, 404);
       }
@@ -663,7 +809,8 @@
         rid = u.searchParams.get('reservation_id') || '';
       }
 
-      const res = reservations[rid];
+      const store = getStore(eId);
+      const res = store.reservations[rid];
       if (!res || res.status !== 'CONFIRMED') {
         return jsonResponse({
           valid: false,
@@ -685,15 +832,18 @@
 
     // 13. GET /api/v1/admin/overview
     if (parsedPath === '/api/v1/admin/overview' && method === 'GET') {
+      const u = new URL(url, window.location.origin);
+      const eId = u.searchParams.get('event_id') || 'evt1';
+      const store = getStore(eId);
       let free = 0, held = 0, sold = 0;
-      for (const s of Object.values(seats)) {
+      for (const s of Object.values(store.seats)) {
         if (s === 'FREE') free++;
         else if (s === 'HELD') held++;
         else if (s === 'SOLD') sold++;
       }
       return jsonResponse({
         refreshed_at: new Date().toISOString(),
-        event_id: 'evt1',
+        event_id: eId,
         inventory: {
           total: TOTAL_SEATS,
           free,
@@ -702,11 +852,11 @@
           hold_ttl_ms: HOLD_TTL_MS
         },
         persistence: {
-          persisted_bookings: pgBookings.size,
-          backlog: Math.max(0, sold - pgBookings.size),
+          persisted_bookings: store.pgBookings.size,
+          backlog: Math.max(0, sold - store.pgBookings.size),
           stream_len: sold,
           worker_status: 'HEALTHY',
-          consistent: sold === pgBookings.size
+          consistent: sold === store.pgBookings.size
         },
         telemetry: {
           reserves: { ok: sold + held, seat_held: 3, seat_sold: 2 },
@@ -742,84 +892,6 @@
 
     if (parsedPath.match(/^\/api\/v1\/events\/[^/]+\/queue\/leave$/) && method === 'POST') {
       return jsonResponse({ ok: true }, 200);
-    }
-
-    // 15. Razorpay Payments Mock Endpoints
-    if (parsedPath.match(/^\/api\/v1\/payments\/order$/) && method === 'POST') {
-      let body = {};
-      try { body = init && init.body ? JSON.parse(init.body) : {}; } catch (e) {}
-      const res = reservations[body.reservation_id];
-      if (!res) {
-        return jsonResponse({ error: 'RESERVATION_NOT_FOUND', message: 'Reservation not found' }, 404);
-      }
-      if (res.status === 'CONFIRMED') {
-        return jsonResponse({ error: 'ALREADY_CONFIRMED', message: 'Reservation is already confirmed' }, 409);
-      }
-      if (res.status !== 'HELD' || res.expires_at_ms <= Date.now()) {
-        return jsonResponse({ error: 'HOLD_EXPIRED', message: 'Reservation hold has expired' }, 410);
-      }
-      const orderId = 'order_mock_' + Math.random().toString(36).substring(2, 12);
-      return jsonResponse({
-        payment_id: 'pay_int_' + Math.random().toString(36).substring(2, 10),
-        razorpay_order_id: orderId,
-        amount: 50000,
-        currency: 'INR',
-        key_id: 'rzp_test_placeholder_key_id',
-        seat_id: res.seat_id,
-        event_id: body.event_id || 'evt1',
-        expires_at_ms: res.expires_at_ms
-      }, 201);
-    }
-
-    if (parsedPath.match(/^\/api\/v1\/payments\/verify$/) && method === 'POST') {
-      let body = {};
-      try { body = init && init.body ? JSON.parse(init.body) : {}; } catch (e) {}
-      const res = reservations[body.reservation_id];
-      if (!res) {
-        return jsonResponse({ error: 'RESERVATION_NOT_FOUND', message: 'Reservation not found' }, 404);
-      }
-      if (res.status === 'CONFIRMED') {
-        return jsonResponse({
-          status: 'CONFIRMED',
-          booking_reference: `BK-${(body.event_id || 'EVT1').toUpperCase()}-${res.seat_id}-${body.reservation_id.substring(0, 8).toUpperCase()}`,
-          event_id: body.event_id || 'evt1',
-          seat_id: res.seat_id,
-          user_id: body.user_id,
-          amount: 50000,
-          currency: 'INR',
-          payment_id: body.razorpay_payment_id || 'pay_test_mock',
-          order_id: body.razorpay_order_id,
-          idempotent: true
-        }, 200);
-      }
-      if (res.status !== 'HELD' || res.expires_at_ms <= Date.now()) {
-        return jsonResponse({
-          error: 'HOLD_EXPIRED',
-          message: 'Reservation hold expired during checkout. Refund initiated.',
-          refund_id: 'rfnd_mock_' + Math.random().toString(36).substring(2, 10)
-        }, 410);
-      }
-
-      // Confirm seat
-      res.status = 'CONFIRMED';
-      seats[res.seat_id] = 'SOLD';
-      soldMap[res.seat_id] = body.reservation_id;
-      delete owners[res.seat_id];
-      pgBookings.add(res.seat_id);
-
-      const bookingRef = `BK-${(body.event_id || 'EVT1').toUpperCase()}-${res.seat_id}-${body.reservation_id.substring(0, 8).toUpperCase()}`;
-      return jsonResponse({
-        status: 'CONFIRMED',
-        booking_reference: bookingRef,
-        event_id: body.event_id || 'evt1',
-        seat_id: res.seat_id,
-        user_id: body.user_id,
-        amount: 50000,
-        currency: 'INR',
-        payment_id: body.razorpay_payment_id || 'pay_test_mock',
-        order_id: body.razorpay_order_id,
-        idempotent: false
-      }, 200);
     }
 
     return jsonResponse({ error: 'NOT_FOUND', message: 'Endpoint not found in mock API' }, 404);

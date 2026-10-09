@@ -1,185 +1,244 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FlashSeat — High-Concurrency Seat Selection Grid (evt1)</title>
-  <link rel="stylesheet" href="style.css?v=2.2">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-  <!-- Official Razorpay Checkout JS -->
-  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <title>CineReserve ΓÇö Select Seats | FlashSeat</title>
+  <link rel="stylesheet" href="style.css?v=2.5">
 </head>
-<body data-page="grid">
+<body data-page="grid" class="cinereserve-body">
 
-  <header class="app-header">
-    <div class="brand-section">
-      <a href="index.html" class="brand-title" style="text-decoration: none;">⚡ FlashSeat</a>
-      <span class="brand-badge">Event: evt1</span>
+  <div class="cinereserve-layout">
+    <!-- Left Sidebar Navigation (Exact Match to Reference Design) -->
+    <aside class="cinereserve-sidebar">
+      <div class="sidebar-brand-wrapper">
+        <a href="index.html" class="sidebar-brand-text">CineReserve</a>
+        <div style="font-size: 0.72rem; color: #64748b; font-weight: 700; margin-top: 0.2rem; letter-spacing: 0.04em;">POWERED BY FLASHSEAT</div>
+      </div>
+      <nav class="sidebar-nav-menu">
+        <a href="dashboard.html" class="sidebar-nav-item" id="nav-dashboard">
+          <span class="nav-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+              <polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+          </span>
+          <span>Dashboard</span>
+        </a>
+        <a href="#" class="sidebar-nav-item" id="btn-my-bookings">
+          <span class="nav-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="20" height="14" x="2" y="5" rx="2"/>
+              <line x1="2" x2="22" y1="10" y2="10"/>
+            </svg>
+          </span>
+          <span>Bookings</span>
+          <span class="sidebar-badge" id="user-tickets-count">0</span>
+        </a>
+        <a href="events.html" class="sidebar-nav-item" id="nav-events">
+          <span class="nav-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="20" height="20" x="2" y="2" rx="2.18" ry="2.18"/>
+              <line x1="7" x2="7" y1="2" y2="22"/>
+              <line x1="17" x2="17" y1="2" y2="22"/>
+              <line x1="2" x2="22" y1="12" y2="12"/>
+              <line x1="2" x2="7" y1="7" y2="7"/>
+              <line x1="2" x2="7" y1="17" y2="17"/>
+              <line x1="17" x2="22" y1="17" y2="17"/>
+              <line x1="17" x2="22" y1="7" y2="7"/>
+            </svg>
+          </span>
+          <span>Movies</span>
+        </a>
+        <a href="index.html" class="sidebar-nav-item active" id="nav-grid">
+          <span class="nav-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+          </span>
+          <span>Showtimes</span>
+        </a>
+      </nav>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="cinereserve-main">
+      <!-- Top Header Navigation with Avatar AU -->
+      <header class="cinereserve-topbar">
+        <div class="system-status-indicator">
+          <span class="status-dot"></span> System Online
+        </div>
+        <div class="user-profile-widget" id="header-user-section">
+          <div class="user-avatar-circle" id="header-user-avatar" title="User Profile">AU</div>
+          <button type="button" class="btn-auth-toggle" id="btn-header-auth-action">Sign In</button>
+        </div>
+      </header>
+
+      <!-- Alert / Message Container -->
+      <div id="alert-container" class="alert-container"></div>
+
+      <div class="cinema-content-container">
+        <h1 class="cinema-heading-title">Select Seats</h1>
+
+        <!-- BookMyShow Quick Movie Switcher & Showtime Bar -->
+        <div class="bms-movie-switch-bar">
+          <div class="bms-switch-left">
+            <label for="event-select-dropdown" class="bms-switch-label">≡ƒÄ¼ Now Showing:</label>
+            <select id="event-select-dropdown" class="bms-event-select" aria-label="Select Movie Event">
+              <option value="evt1">Spider-Man: No Way Home (IMAX 2D)</option>
+              <option value="evt2">Dune: Part Two (IMAX 70mm)</option>
+              <option value="evt3">Deadpool & Wolverine (4DX 3D)</option>
+              <option value="evt4">Oppenheimer (IMAX 70mm)</option>
+              <option value="evt5">Interstellar (10th Anniv. IMAX)</option>
+            </select>
+          </div>
+          <div class="bms-switch-right">
+            <span class="bms-showtime-label">Showtimes:</span>
+            <div class="bms-showtime-pills" id="bms-showtimes-container">
+              <button type="button" class="bms-showtime-pill active" data-time="11:15 AM">11:15 AM</button>
+              <button type="button" class="bms-showtime-pill" data-time="02:30 PM">02:30 PM</button>
+              <button type="button" class="bms-showtime-pill" data-time="06:00 PM">06:00 PM</button>
+              <button type="button" class="bms-showtime-pill" data-time="09:30 PM">09:30 PM</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 1. Movie Showcase Top Card (Exact Match to Reference Design) -->
+        <section class="movie-showcase-card">
+          <div class="movie-poster-thumb">
+            <img id="movie-poster-img" src="spiderman_poster.svg" alt="Spider-Man: No Way Home Poster">
+          </div>
+          <div class="movie-details-info">
+            <div class="movie-title-text" id="movie-title-display">Spider-Man: No Way Home</div>
+            <div class="movie-pill-tags" id="movie-tags-container">
+              <span class="movie-tag-pill">Action</span>
+              <span class="movie-tag-pill">Sci-Fi</span>
+              <span class="movie-tag-pill">Adventure</span>
+              <span class="movie-meta-item">ΓÅ▒∩╕Å 148 min</span>
+              <span class="movie-rating-badge">UA 16+</span>
+            </div>
+            <div class="movie-card-divider"></div>
+            <div class="movie-meta-grid">
+              <div class="movie-meta-box">
+                <div class="movie-meta-icon date">≡ƒôà</div>
+                <div>
+                  <div class="movie-meta-lbl">DATE</div>
+                  <div class="movie-meta-val" id="movie-date-display">January 31, 2026</div>
+                </div>
+              </div>
+              <div class="movie-meta-box">
+                <div class="movie-meta-icon time">≡ƒòÆ</div>
+                <div>
+                  <div class="movie-meta-lbl">START TIME</div>
+                  <div class="movie-meta-val" id="movie-start-display">11:15 AM</div>
+                </div>
+              </div>
+              <div class="movie-meta-box">
+                <div class="movie-meta-icon time">≡ƒòÆ</div>
+                <div>
+                  <div class="movie-meta-lbl">END TIME</div>
+                  <div class="movie-meta-val" id="movie-end-display">1:45 PM</div>
+                </div>
+              </div>
+              <div class="movie-meta-box">
+                <div class="movie-meta-icon theater">≡ƒÅ¢∩╕Å</div>
+                <div>
+                  <div class="movie-meta-lbl">THEATER</div>
+                  <div class="movie-meta-val" id="movie-venue-display">Cinema 3 &bull; Dolby Atmos</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. "Select Your Seats" Card (Exact Match to Reference Design) -->
+        <section class="cinema-seats-card">
+          <div class="seats-card-header-row">
+            <h2 class="cinema-card-header">Select Your Seats</h2>
+            <div class="tier-tabs-bar" id="tier-tabs-bar">
+              <button type="button" class="tier-tab-btn active" data-tier="1">RECLINER: Rows AΓÇôE ($50)</button>
+              <button type="button" class="tier-tab-btn" data-tier="2">PRIME: Rows FΓÇôJ ($35)</button>
+              <button type="button" class="tier-tab-btn" data-tier="3">CLASSIC: Rows KΓÇôO ($20)</button>
+              <button type="button" class="tier-tab-btn" data-tier="all">Full Arena (200 Seats)</button>
+            </div>
+          </div>
+
+          <!-- BookMyShow Screen Direction Indicator -->
+          <div class="bms-screen-cue">
+            <span>All eyes this way please! ≡ƒæü∩╕Å</span>
+          </div>
+
+          <!-- SCREEN Arc Indicator with glowing top curve -->
+          <div class="cinema-screen-container">
+            <div class="cinema-screen-bar">
+              <span class="cinema-screen-label">SCREEN</span>
+            </div>
+          </div>
+
+          <!-- Armchair Seating Grid -->
+          <div class="cinema-grid-scroll">
+            <div id="grid-container" class="cinema-grid-layout">
+              <!-- Armchair rows injected by app.js -->
+            </div>
+          </div>
+
+          <!-- Cinema Legend (Exact match to reference design) -->
+          <div class="cinema-legend-bar">
+            <div class="cinema-legend-item">
+              <span class="cinema-legend-dot available"></span>
+              <span>Available (<span id="count-free">34</span>)</span>
+            </div>
+            <div class="cinema-legend-item">
+              <span class="cinema-legend-dot selected"></span>
+              <span>Selected (<span id="count-held">2</span>)</span>
+            </div>
+            <div class="cinema-legend-item">
+              <span class="cinema-legend-dot booked"></span>
+              <span>Booked (<span id="count-sold">4</span>)</span>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- 3. Sticky Bottom Checkout Bar (Exact Match to Reference Design) -->
+      <div id="cinema-checkout-bar" class="cinema-checkout-bar">
+        <div class="checkout-left-summary">
+          <div class="checkout-price-row">
+            <span class="checkout-price-val" id="checkout-total-price">$ 20.00</span>
+            <span class="checkout-seats-count" id="checkout-seats-label">for 2 seats</span>
+          </div>
+          <div class="checkout-pills-row" id="checkout-pills-row">
+            <span class="seat-pill-chip">≡ƒ¬æ D4</span>
+            <span class="seat-pill-chip">≡ƒ¬æ D5</span>
+            <span class="rate-badge-chip">≡ƒÅ╖∩╕Å $50.00 each</span>
+            <span class="hold-countdown-chip" id="checkout-hold-timer">ΓÅ▒∩╕Å 30s</span>
+          </div>
+        </div>
+
+        <div class="checkout-actions-row">
+          <button type="button" class="btn btn-secondary btn-sm" id="btn-release-hold" style="display: none; padding: 0.65rem 1.15rem; font-weight: 700;">
+            Γ£ò Release
+          </button>
+          <button type="button" class="btn-proceed-booking" id="btn-proceed-booking">
+            Proceed to Booking &rarr;
+          </button>
+        </div>
+      </div>
     </div>
-    <nav class="nav-links">
-      <a href="events.html" class="nav-link" id="nav-events">Explore Events</a>
-      <a href="index.html" class="nav-link active" id="nav-grid">Seat Grid</a>
-      <a href="dashboard.html" class="nav-link" id="nav-dashboard">Live Dashboard</a>
-      
-      <!-- User Profile Header Section -->
-      <div id="header-user-section" class="user-header-profile">
-        <div class="user-avatar" id="header-user-avatar">U</div>
-        <div class="user-header-info">
-          <span class="user-header-name" id="header-username">Guest</span>
-          <span class="user-mfa-tag" id="header-user-mfa">🛡️ MFA Active</span>
-        </div>
-        <button type="button" class="btn btn-secondary btn-sm" id="btn-header-auth-action" style="margin-left: 0.25rem;">
-          Sign In
-        </button>
-      </div>
-
-      <span class="system-status-indicator">
-        <span class="status-dot"></span> System Online
-      </span>
-    </nav>
-  </header>
-
-  <main class="container">
-    <!-- Event Hero Card -->
-    <section class="event-hero-card">
-      <div class="event-hero-info">
-        <span class="event-tagline">High-Availability Flash Reservation &bull; Main Stage Arena</span>
-        <h1 class="event-hero-title">Contention-Free Seat Allocation</h1>
-        <div class="event-hero-meta">
-          <span>📍 Grand Pavilion Arena</span>
-          <span>🎟️ 200 Total Seats</span>
-          <span>⚡ 5,000 Concurrent VUs Tested</span>
-          <span>🔒 Sub-Second Hold Locks</span>
-        </div>
-      </div>
-      <div class="event-hero-actions">
-        <button type="button" class="btn btn-primary" id="btn-quick-pick">
-          🎯 Auto-Select Best Available Seat
-        </button>
-        <button type="button" class="btn btn-secondary" id="btn-my-bookings">
-          🎟️ My Tickets (<span id="user-tickets-count">0</span>)
-        </button>
-      </div>
-    </section>
-
-    <!-- Alert / Message Container -->
-    <div id="alert-container" class="alert-container"></div>
-
-    <!-- Active Reservation Action Panel -->
-    <section id="reservation-panel" class="reservation-panel" style="display: none;">
-      <div class="panel-header">
-        <h2 class="panel-title">Active Reservation Hold</h2>
-        <span id="panel-status-badge" class="mode-badge" style="background: #1e3a8a; color: #93c5fd; border: 1px solid #3b82f6;">HELD</span>
-      </div>
-
-      <div class="reservation-details-grid">
-        <div class="detail-item">
-          <div class="detail-label">Selected Seat</div>
-          <div class="detail-value" id="detail-seat-id">—</div>
-        </div>
-        <div class="detail-item">
-          <div class="detail-label">Reservation ID (rid)</div>
-          <div class="detail-value" id="detail-rid" style="font-family: monospace; font-size: 0.95rem;">—</div>
-        </div>
-        <div class="detail-item">
-          <div class="detail-label">Reserving User</div>
-          <div class="detail-value" id="detail-user-id" style="font-family: monospace; font-size: 0.95rem;">—</div>
-        </div>
-        <div class="detail-item">
-          <div class="detail-label">Seat Price</div>
-          <div class="detail-value" id="detail-price" style="color: #34d399; font-weight: 700;">₹500.00 INR</div>
-        </div>
-        <div class="detail-item">
-          <div class="detail-label">Hold Expiration</div>
-          <div class="detail-value" id="detail-expiry" style="font-size: 0.95rem;">—</div>
-        </div>
-      </div>
-
-      <div class="countdown-container">
-        <div class="countdown-label">Hold Expiry Countdown:</div>
-        <div id="countdown-timer" class="countdown-timer">--:--</div>
-        <div id="countdown-warning" class="countdown-warning-badge" style="display: none;">
-          ⚠️ Warning: Reservation expiring in less than 30 seconds! Confirm or pay now.
-        </div>
-      </div>
-
-      <div class="panel-actions">
-        <button id="btn-pay-razorpay" class="btn btn-primary" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);">
-          💳 Pay with Razorpay (₹500.00)
-        </button>
-        <button id="btn-confirm" class="btn btn-success">
-          ✓ Confirm Reservation
-        </button>
-        <button id="btn-release" class="btn btn-danger">
-          ✕ Release Hold
-        </button>
-      </div>
-
-      <div id="payment-notice" class="notice-msg" style="display: none; margin-top: 0.75rem;"></div>
-    </section>
-
-    <!-- Toolbar: Search & Filters -->
-    <div class="grid-toolbar">
-      <div class="filter-group">
-        <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Filter:</span>
-        <button type="button" class="filter-btn active" data-filter="ALL">All Seats</button>
-        <button type="button" class="filter-btn" data-filter="FREE">🟢 Free Only</button>
-        <button type="button" class="filter-btn" data-filter="HELD">🟡 Held Only</button>
-        <button type="button" class="filter-btn" data-filter="SOLD">🔴 Sold Only</button>
-      </div>
-
-      <div class="search-input-wrapper">
-        <input type="text" id="search-seat" class="search-seat-input" placeholder="Search seat (e.g. S042)">
-      </div>
-    </div>
-
-    <!-- Legend & Counts Bar -->
-    <div class="legend-bar">
-      <span class="legend-title">Live Inventory Status:</span>
-      <div class="legend-items">
-        <div class="legend-chip">
-          <span class="legend-dot free"></span>
-          <span>FREE (<span id="count-free">0</span>)</span>
-        </div>
-        <div class="legend-chip">
-          <span class="legend-dot held"></span>
-          <span>HELD (<span id="count-held">0</span>)</span>
-        </div>
-        <div class="legend-chip">
-          <span class="legend-dot sold"></span>
-          <span>SOLD (<span id="count-sold">0</span>)</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- 200 Seat Grid Container -->
-    <section class="seat-grid-card">
-      <div class="grid-header-meta">
-        <span>Click any <strong>FREE</strong> seat to reserve. Total capacity: 200 seats (S001 – S200).</span>
-        <span id="poll-indicator" style="display: flex; align-items: center; gap: 0.4rem;">
-          <span style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
-          Auto-refreshing 1s
-        </span>
-      </div>
-      <div id="grid-container" class="seat-grid">
-        <!-- 200 seat buttons injected here by app.js -->
-      </div>
-    </section>
-  </main>
+  </div>
 
   <!-- My Tickets / Bookings Modal -->
   <div id="modal-my-bookings" class="modal-overlay" style="display: none;">
     <div class="modal-content">
       <div class="modal-header">
-        <h2 class="modal-title">🎟️ My Confirmed Tickets</h2>
+        <h2 class="modal-title">≡ƒÄƒ∩╕Å My Confirmed Tickets</h2>
         <button type="button" class="alert-close" id="btn-close-bookings-modal">&times;</button>
       </div>
       <div id="bookings-modal-body">
         <div style="color: var(--text-muted); font-size: 0.95rem;">No tickets booked in this session yet. Reserve and confirm a seat from the grid!</div>
       </div>
-      <div style="display: flex; justify-content: flex-end;">
+      <div style="display: flex; justify-content: flex-end; margin-top: 1.25rem;">
         <button type="button" class="btn btn-secondary" id="btn-close-bookings-bottom">Close</button>
       </div>
     </div>
@@ -189,108 +248,31 @@
   <div id="modal-waiting-room" class="modal-overlay" style="display: none;">
     <div class="modal-content" style="max-width: 480px; text-align: center;">
       <div class="modal-header" style="justify-content: center;">
-        <h2 class="modal-title">⚡ High-Demand Waiting Room</h2>
+        <h2 class="modal-title">ΓÜí High-Demand Waiting Room</h2>
       </div>
       <div style="margin: 1.5rem 0;">
-        <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">⏳</div>
+        <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">ΓÅ│</div>
         <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
-          This event is experiencing extreme traffic. You are in line to access the reservation grid.
+          This screening is experiencing extreme traffic. You are in line to access the reservation grid.
         </p>
         <div class="waiting-room-queue-card">
           <div style="font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase;">Your Current Position</div>
-          <div style="font-size: 3rem; font-weight: 800; color: #38bdf8;" id="wr-queue-position">—</div>
+          <div style="font-size: 3rem; font-weight: 800; color: #38bdf8;" id="wr-queue-position">ΓÇö</div>
           <div style="font-size: 0.9rem; color: var(--text-muted); margin-top: 0.5rem;" id="wr-est-wait">Estimated wait: calculating...</div>
         </div>
       </div>
       <div style="display: flex; gap: 0.75rem; justify-content: center;">
         <button type="button" class="btn btn-secondary" id="btn-leave-queue">Leave Line</button>
       </div>
-  <!-- Interactive Razorpay Test Checkout Modal (Test Mode & Placeholder Simulator) -->
-  <div id="modal-razorpay-checkout" class="modal-overlay" style="display: none;">
-    <div class="modal-content" style="max-width: 440px; padding: 0; overflow: hidden; border: 1px solid rgba(99, 102, 241, 0.4); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 30px rgba(99, 102, 241, 0.25);">
-      <!-- Razorpay Modal Header -->
-      <div style="background: linear-gradient(135deg, #0b1329 0%, #172554 100%); padding: 1.25rem 1.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1); display: flex; justify-content: space-between; align-items: center;">
-        <div style="display: flex; align-items: center; gap: 0.6rem;">
-          <div style="width: 32px; height: 32px; border-radius: 8px; background: #6366f1; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.1rem; color: #fff;">₹</div>
-          <div>
-            <div style="font-weight: 700; font-size: 1rem; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
-              Razorpay
-              <span style="background: #3b82f6; color: #fff; font-size: 0.65rem; font-weight: 800; padding: 0.15rem 0.4rem; border-radius: 4px; letter-spacing: 0.05em;">TEST MODE</span>
-            </div>
-            <div style="font-size: 0.75rem; color: #94a3b8;">FlashSeat Arena Live Ticketing</div>
-          </div>
-        </div>
-        <button type="button" id="btn-close-rzp-modal" style="background: transparent; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer; line-height: 1;">&times;</button>
-      </div>
-
-      <!-- Order Summary Card -->
-      <div style="padding: 1.25rem 1.5rem; background: rgba(15, 23, 42, 0.6); border-bottom: 1px solid rgba(255, 255, 255, 0.06);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-          <span style="font-size: 0.85rem; color: #94a3b8;">Seat Allocation:</span>
-          <span style="font-weight: 700; color: #38bdf8; font-family: monospace;" id="rzp-modal-seat">S001</span>
-        </div>
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-          <span style="font-size: 0.85rem; color: #94a3b8;">Order ID:</span>
-          <span style="font-size: 0.75rem; color: #94a3b8; font-family: monospace;" id="rzp-modal-order-id">order_xxxx</span>
-        </div>
-        <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 0.5rem; border-top: 1px dashed rgba(255, 255, 255, 0.1);">
-          <span style="font-size: 0.95rem; font-weight: 600; color: #fff;">Amount Payable:</span>
-          <span style="font-size: 1.35rem; font-weight: 800; color: #10b981;" id="rzp-modal-amount">₹500.00</span>
-        </div>
-      </div>
-
-      <!-- Payment Simulation Body -->
-      <div style="padding: 1.5rem;">
-        <div style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; margin-bottom: 0.75rem; font-weight: 700;">
-          Select Test Payment Method
-        </div>
-
-        <!-- Method Tabs / Inputs -->
-        <div style="background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 1rem; margin-bottom: 1.25rem;">
-          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
-            <input type="radio" id="rzp-pay-method-card" name="rzp_method" checked style="accent-color: #6366f1;">
-            <label for="rzp-pay-method-card" style="font-size: 0.9rem; font-weight: 600; color: #f8fafc; cursor: pointer;">
-              💳 Test Card (Instant Approval)
-            </label>
-          </div>
-          <div style="font-size: 0.8rem; color: #94a3b8; line-height: 1.4; padding-left: 1.5rem;">
-            <div>Number: <code style="color: #cbd5e1; background: rgba(0,0,0,0.3); padding: 0.1rem 0.3rem; border-radius: 3px;">4111 1111 1111 1111</code></div>
-            <div>Expiry: <code style="color: #cbd5e1; background: rgba(0,0,0,0.3); padding: 0.1rem 0.3rem; border-radius: 3px;">12/30</code> &bull; CVV: <code style="color: #cbd5e1; background: rgba(0,0,0,0.3); padding: 0.1rem 0.3rem; border-radius: 3px;">123</code></div>
-          </div>
-        </div>
-
-        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.5rem; background: rgba(30, 41, 59, 0.3); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 8px; padding: 0.75rem 1rem;">
-          <input type="radio" id="rzp-pay-method-upi" name="rzp_method" style="accent-color: #6366f1;">
-          <label for="rzp-pay-method-upi" style="font-size: 0.9rem; color: #94a3b8; cursor: pointer;">
-            📱 UPI / QR Code (<code style="color: #94a3b8;">success@razorpay</code>)
-          </label>
-        </div>
-
-        <!-- Simulation Buttons -->
-        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-          <button type="button" id="btn-rzp-test-success" class="btn btn-primary btn-block" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); font-weight: 700; padding: 0.85rem; font-size: 1rem; border-radius: 8px; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);">
-            ✓ Authorize & Confirm (₹500.00)
-          </button>
-          <button type="button" id="btn-rzp-test-fail" class="btn btn-secondary btn-block" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5; padding: 0.65rem; font-size: 0.85rem; border-radius: 8px;">
-            ✕ Simulate Payment Failure (Test Bank Decline)
-          </button>
-        </div>
-      </div>
     </div>
   </div>
 
-  <footer class="app-footer">
-    FlashSeat High-Contention Ticketing Engine &bull; Ready for Vercel Static Hosting &bull; Zero Dependencies
-  </footer>
-
-  <!-- Conditional Mock Loader (?mock=1 or automatic on Vercel preview without custom backend) -->
+  <!-- Conditional Mock Loader (?mock=1) -->
   <script>
-    const isVercelHost = window.location.hostname.endsWith('vercel.app');
-    const hasConfiguredApi = Boolean(localStorage.getItem('flashseat_api_base') || window.__API_BASE__);
-    if (new URLSearchParams(window.location.search).get('mock') === '1' || (isVercelHost && !hasConfiguredApi)) {
-      document.write('<script src="mock.js?v=2.3"><\/script>');
+    if (new URLSearchParams(window.location.search).get('mock') === '1') {
+      document.write('<script src="mock.js?v=2.5"><\/script>');
     }
   </script>
-  <script src="app.js?v=2.3"></script>
+  <script src="app.js?v=2.5"></script>
 </body>
 </html>
