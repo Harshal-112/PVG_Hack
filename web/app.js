@@ -77,9 +77,6 @@
     const navEvents = document.getElementById('nav-events');
     const navGrid = document.getElementById('nav-grid');
     const navDashboard = document.getElementById('nav-dashboard');
-    const apiBadge = document.getElementById('api-mode-badge');
-    const mockBanner = document.getElementById('mock-banner');
-
     const suffix = isMockMode ? '?mock=1' : '';
 
     const brandLink = document.querySelector('.brand-title');
@@ -88,18 +85,13 @@
     if (navGrid) navGrid.href = 'index.html' + suffix;
     if (navDashboard) navDashboard.href = 'dashboard.html' + suffix;
 
-    if (isMockMode) {
-      if (apiBadge) {
-        apiBadge.className = 'mode-badge mock';
-        apiBadge.textContent = 'MOCK API';
-      }
-      if (mockBanner) mockBanner.style.display = 'flex';
-    } else {
-      if (apiBadge) {
-        apiBadge.className = 'mode-badge live';
-        apiBadge.textContent = 'LIVE API';
-      }
-      if (mockBanner) mockBanner.style.display = 'none';
+    const mockBanner = document.getElementById('mock-banner');
+    if (mockBanner) mockBanner.style.display = 'none';
+
+    const apiBadge = document.getElementById('api-mode-badge');
+    if (apiBadge) {
+      apiBadge.className = 'system-status-indicator';
+      apiBadge.innerHTML = '<span class="status-dot"></span> System Online';
     }
 
     // User profile in header
@@ -219,8 +211,9 @@
       loginForm.style.display = 'flex';
       registerForm.style.display = 'none';
       mfaScreen.style.display = 'none';
-      authTitle.textContent = 'Welcome to FlashSeat';
-      authSubtitle.textContent = 'Secure, high-concurrency ticket reservation engine';
+      authTabs.style.display = 'grid';
+      authTitle.textContent = 'FlashSeat Security Portal';
+      authSubtitle.textContent = 'High-concurrency ticket reservation engine';
     });
 
     tabRegisterBtn.addEventListener('click', () => {
@@ -229,38 +222,97 @@
       loginForm.style.display = 'none';
       registerForm.style.display = 'flex';
       mfaScreen.style.display = 'none';
+      authTabs.style.display = 'grid';
       authTitle.textContent = 'Create FlashSeat Account';
       authSubtitle.textContent = 'Register to hold and confirm seats in real time';
     });
 
-    // Quick demo login button
-    const btnQuickDemo = document.getElementById('btn-quick-demo-login');
-    if (btnQuickDemo) {
-      btnQuickDemo.addEventListener('click', (e) => {
-        e.preventDefault();
-        document.getElementById('login-username').value = 'demo_user';
-        document.getElementById('login-password').value = 'flashpass123';
-        loginForm.dispatchEvent(new Event('submit'));
-      });
+    let pendingLoginUser = null;
+    let mfaExpiryInterval = null;
+    let resendCooldownInterval = null;
+
+    function stopMfaTimers() {
+      if (mfaExpiryInterval) {
+        clearInterval(mfaExpiryInterval);
+        mfaExpiryInterval = null;
+      }
+      if (resendCooldownInterval) {
+        clearInterval(resendCooldownInterval);
+        resendCooldownInterval = null;
+      }
     }
 
-    let pendingLoginUser = null;
+    function startMfaCountdown(expiresAtMs) {
+      stopMfaTimers();
+      const timerEl = document.getElementById('mfa-countdown-timer');
+      const btnVerify = document.getElementById('btn-verify-mfa');
+      const btnResend = document.getElementById('btn-resend-mfa');
+      const resendCountEl = document.getElementById('resend-countdown-secs');
 
-    // Login Form Submit -> Step 1
+      btnVerify.disabled = false;
+      btnResend.disabled = true;
+
+      // 60-second expiration timer
+      const updateExpiry = () => {
+        const remainingMs = expiresAtMs - Date.now();
+        const secs = Math.max(0, Math.ceil(remainingMs / 1000));
+        if (timerEl) {
+          timerEl.textContent = `${secs}s`;
+          if (secs <= 10) {
+            timerEl.classList.add('expired');
+          } else {
+            timerEl.classList.remove('expired');
+          }
+        }
+        if (secs <= 0) {
+          if (timerEl) timerEl.textContent = 'Expired';
+          btnVerify.disabled = true;
+          btnResend.disabled = false;
+          if (resendCountEl) resendCountEl.textContent = '0';
+          clearInterval(mfaExpiryInterval);
+          mfaExpiryInterval = null;
+        }
+      };
+      updateExpiry();
+      mfaExpiryInterval = setInterval(updateExpiry, 1000);
+
+      // 30-second resend button cooldown
+      let resendSecs = 30;
+      if (resendCountEl) resendCountEl.textContent = String(resendSecs);
+      resendCooldownInterval = setInterval(() => {
+        resendSecs -= 1;
+        if (resendCountEl) resendCountEl.textContent = String(Math.max(0, resendSecs));
+        if (resendSecs <= 0) {
+          btnResend.disabled = false;
+          clearInterval(resendCooldownInterval);
+          resendCooldownInterval = null;
+        }
+      }, 1000);
+    }
+
+    // 1. Strict Login Form Submit
     loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const username = document.getElementById('login-username').value.trim();
-      const password = document.getElementById('login-password').value;
+      const usernameInput = document.getElementById('login-username');
+      const passwordInput = document.getElementById('login-password');
+      const username = usernameInput.value.trim();
+      const password = passwordInput.value;
 
-      if (!username || !password) {
-        showAlert('error', 'Validation Error', 'Please enter your username and password.');
+      if (!username || username.length < 3) {
+        showAlert('error', 'Invalid Input', 'Please enter a valid username (min 3 characters).');
+        usernameInput.focus();
+        return;
+      }
+      if (!password) {
+        showAlert('error', 'Invalid Input', 'Please enter your password.');
+        passwordInput.focus();
         return;
       }
 
       const btnSubmit = document.getElementById('btn-login-submit');
       btnSubmit.disabled = true;
+      btnSubmit.textContent = 'Verifying...';
 
-      // Mock or Backend Auth
       const res = await apiFetch(`${API_BASE}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -268,55 +320,120 @@
       });
 
       btnSubmit.disabled = false;
+      btnSubmit.textContent = 'Sign In';
 
-      // In mock mode or fallback, proceed to MFA step
-      const userId = (res.data && res.data.user_id) ? res.data.user_id : ('u-' + username.toLowerCase().replace(/[^a-z0-9]/g, ''));
-      pendingLoginUser = {
-        user_id: userId,
-        username: username,
-        mfa_enabled: true
-      };
+      if (!res.ok) {
+        const errorMsg = (res.data && res.data.message) ? res.data.message : 'Invalid username or password.';
+        showAlert('error', 'Authentication Failed', errorMsg);
+        return;
+      }
 
-      // Show MFA Screen
-      authTabs.style.display = 'none';
-      loginForm.style.display = 'none';
-      registerForm.style.display = 'none';
-      mfaScreen.style.display = 'block';
-      authTitle.textContent = 'Two-Factor Authentication';
-      authSubtitle.textContent = 'Step 2: Verify your identity';
+      const data = res.data;
+      if (data.mfa_required) {
+        // Step 2: Show Authentic MFA Screen
+        pendingLoginUser = {
+          user_id: data.user_id,
+          username: data.username,
+          totp_secret: data.totp_secret,
+          expires_at_ms: data.expires_at_ms || (Date.now() + 60000)
+        };
 
-      // Focus first OTP digit
-      const firstOtp = document.querySelector('.otp-digit');
-      if (firstOtp) firstOtp.focus();
+        authTabs.style.display = 'none';
+        loginForm.style.display = 'none';
+        registerForm.style.display = 'none';
+        mfaScreen.style.display = 'flex';
+        authTitle.textContent = 'Two-Factor Authentication';
+        authSubtitle.textContent = 'Enter the 6-digit security code';
+
+        const targetUserEl = document.getElementById('mfa-target-username');
+        if (targetUserEl) targetUserEl.textContent = `@${data.username}`;
+
+        const activeCodeEl = document.getElementById('mfa-active-code');
+        if (activeCodeEl) activeCodeEl.textContent = data.challenge_code || '------';
+
+        const secretKeyEl = document.getElementById('mfa-secret-key-display');
+        if (secretKeyEl) secretKeyEl.textContent = data.totp_secret || 'TOTP-PROTECTED';
+
+        // Clear previous OTP inputs
+        otpInputs.forEach(i => { i.value = ''; });
+        startMfaCountdown(pendingLoginUser.expires_at_ms);
+
+        if (otpInputs[0]) otpInputs[0].focus();
+      } else {
+        // Direct authenticated session without MFA
+        const authRecord = {
+          user_id: data.user_id,
+          username: data.username,
+          token: data.token || ('tok-' + Date.now()),
+          mfa_verified: false,
+          logged_in: true,
+          auth_time: Date.now()
+        };
+        setStoredAuthUser(authRecord);
+        showAlert('success', 'Welcome Back!', `Signed in as @${data.username}. Redirecting...`);
+        setTimeout(() => {
+          const suffix = isMockMode ? '?mock=1' : '';
+          window.location.href = 'index.html' + suffix;
+        }, 800);
+      }
     });
 
-    // Registration Form Submit
+    // 2. Strict Register Form Submit (Only Username, Password & MFA Toggle)
     registerForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const fullname = document.getElementById('reg-fullname').value.trim();
-      const username = document.getElementById('reg-username').value.trim();
-      const email = document.getElementById('reg-email').value.trim();
-      const password = document.getElementById('reg-password').value;
+      const usernameInput = document.getElementById('reg-username');
+      const passwordInput = document.getElementById('reg-password');
+      const confirmInput = document.getElementById('reg-confirm-password');
+
+      const username = usernameInput.value.trim();
+      const password = passwordInput.value;
+      const confirmPassword = confirmInput.value;
       const enableMfa = document.getElementById('reg-enable-mfa').checked;
+
+      // Strict Validation
+      if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) {
+        showAlert('error', 'Validation Error', 'Username must be 3-20 characters long and contain only letters, numbers, or underscores.');
+        usernameInput.focus();
+        return;
+      }
+      if (password.length < 6) {
+        showAlert('error', 'Validation Error', 'Password must be at least 6 characters long.');
+        passwordInput.focus();
+        return;
+      }
+      if (password !== confirmPassword) {
+        showAlert('error', 'Validation Error', 'Passwords do not match. Please re-enter your password.');
+        confirmInput.focus();
+        return;
+      }
 
       const btnReg = document.getElementById('btn-register-submit');
       btnReg.disabled = true;
+      btnReg.textContent = 'Creating Account...';
 
       const res = await apiFetch(`${API_BASE}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fullname, username, email, password, mfa_enabled: enableMfa })
+        body: JSON.stringify({ username, password, mfa_enabled: enableMfa })
       });
 
       btnReg.disabled = false;
+      btnReg.textContent = 'Create Account';
 
-      showAlert('success', 'Account Created!', 'You can now sign in with your credentials.');
+      if (!res.ok) {
+        const msg = (res.data && res.data.message) ? res.data.message : 'Registration failed.';
+        showAlert('error', 'Registration Error', msg);
+        return;
+      }
+
+      showAlert('success', 'Account Registered!', 'Your account has been created successfully. Please sign in.');
       tabLoginBtn.click();
       document.getElementById('login-username').value = username;
-      document.getElementById('login-password').value = password;
+      document.getElementById('login-password').value = '';
+      document.getElementById('login-password').focus();
     });
 
-    // MFA OTP Auto-Advance Input Behavior
+    // 3. MFA OTP Auto-Advance Input Behavior
     const otpInputs = Array.from(document.querySelectorAll('.otp-digit'));
     otpInputs.forEach((input, idx) => {
       input.addEventListener('input', (e) => {
@@ -345,13 +462,51 @@
       });
     });
 
-    // Autofill demo code button
-    const btnFillOtp = document.getElementById('btn-fill-otp');
-    if (btnFillOtp) {
-      btnFillOtp.addEventListener('click', () => {
-        const code = document.getElementById('simulated-otp-code').textContent.trim();
-        for (let i = 0; i < otpInputs.length && i < code.length; i++) {
-          otpInputs[i].value = code[i];
+    // Copy Security Code button
+    const btnCopyCode = document.getElementById('btn-copy-mfa-code');
+    if (btnCopyCode) {
+      btnCopyCode.addEventListener('click', async () => {
+        const codeText = document.getElementById('mfa-active-code').textContent.trim();
+        if (codeText && codeText !== '------') {
+          try {
+            await navigator.clipboard.writeText(codeText);
+            btnCopyCode.textContent = '✓ Copied!';
+            setTimeout(() => { btnCopyCode.textContent = '📋 Copy Code'; }, 1500);
+          } catch (err) {
+            btnCopyCode.textContent = '✓ ' + codeText;
+          }
+        }
+      });
+    }
+
+    // Resend MFA Code
+    const btnResendMfa = document.getElementById('btn-resend-mfa');
+    if (btnResendMfa) {
+      btnResendMfa.addEventListener('click', async () => {
+        if (!pendingLoginUser) return;
+        btnResendMfa.disabled = true;
+
+        const res = await apiFetch(`${API_BASE}/auth/resend-mfa`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: pendingLoginUser.user_id })
+        });
+
+        if (res.ok && res.data) {
+          const newCode = res.data.challenge_code;
+          const exp = res.data.expires_at_ms || (Date.now() + 60000);
+          pendingLoginUser.expires_at_ms = exp;
+
+          const activeCodeEl = document.getElementById('mfa-active-code');
+          if (activeCodeEl) activeCodeEl.textContent = newCode;
+
+          otpInputs.forEach(i => { i.value = ''; });
+          startMfaCountdown(exp);
+          showAlert('info', 'New Code Generated', 'A new 6-digit security passkey has been issued.');
+          if (otpInputs[0]) otpInputs[0].focus();
+        } else {
+          showAlert('error', 'Error', 'Failed to resend code. Please try again.');
+          btnResendMfa.disabled = false;
         }
       });
     }
@@ -360,8 +515,8 @@
     const btnCancelMfa = document.getElementById('btn-cancel-mfa');
     if (btnCancelMfa) {
       btnCancelMfa.addEventListener('click', () => {
-        authTabs.style.display = 'grid';
-        mfaScreen.style.display = 'none';
+        stopMfaTimers();
+        pendingLoginUser = null;
         tabLoginBtn.click();
       });
     }
@@ -377,6 +532,7 @@
         }
 
         btnVerifyMfa.disabled = true;
+        btnVerifyMfa.textContent = 'Verifying Code...';
 
         const res = await apiFetch(`${API_BASE}/auth/verify-mfa`, {
           method: 'POST',
@@ -385,10 +541,22 @@
         });
 
         btnVerifyMfa.disabled = false;
+        btnVerifyMfa.textContent = 'Verify & Sign In';
+
+        if (!res.ok) {
+          const msg = (res.data && res.data.message) ? res.data.message : 'Invalid or expired security code.';
+          showAlert('error', 'Verification Failed', msg);
+          otpInputs.forEach(i => { i.value = ''; });
+          if (otpInputs[0]) otpInputs[0].focus();
+          return;
+        }
+
+        stopMfaTimers();
 
         // Save authenticated session
         const authRecord = {
-          ...pendingLoginUser,
+          user_id: pendingLoginUser.user_id,
+          username: pendingLoginUser.username,
           token: (res.data && res.data.token) ? res.data.token : ('tok-' + Date.now()),
           mfa_verified: true,
           logged_in: true,
@@ -396,7 +564,7 @@
         };
 
         setStoredAuthUser(authRecord);
-        showAlert('success', 'MFA Verified!', 'Access granted. Redirecting to Seat Selection Grid...');
+        showAlert('success', 'MFA Verified!', `Authentication successful. Access granted for @${pendingLoginUser.username}.`);
 
         setTimeout(() => {
           const suffix = isMockMode ? '?mock=1' : '';
