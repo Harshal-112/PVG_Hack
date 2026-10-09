@@ -114,7 +114,7 @@ export default function LoginView({ onLoginSuccess, onCancel }) {
         return;
       }
 
-      // 2. Test if Google provider is enabled in Supabase without causing a broken browser 400 redirect
+      // 2. Authoritative Supabase Google OAuth flow
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -122,29 +122,17 @@ export default function LoginView({ onLoginSuccess, onCancel }) {
         },
       });
 
-      if (!error && data?.url) {
-        const check = await fetch(data.url).catch(() => null);
-        if (check && !check.ok) {
-          // Provider is not enabled in Supabase project dashboard (400 Bad Request)
-          // Seamlessly transition to Google Account Sign-In view:
-          setLoading(false);
-          setGoogleEmail('');
-          setGoogleName('');
-          setStep('google_input');
-          return;
-        } else if (check && check.ok) {
-          window.location.href = data.url;
-          return;
-        }
+      if (error) {
+        throw error;
       }
-    } catch {
-      // Fallback to Google Account input
-    }
 
-    setLoading(false);
-    setGoogleEmail('');
-    setGoogleName('');
-    setStep('google_input');
+      if (data?.url) {
+        window.location.href = data.url;
+      }
+    } catch (err) {
+      setLoading(false);
+      setErrorMessage(err.message || 'Unable to initiate Google sign-in. Please use Email verification below.');
+    }
   };
 
   // Google Account Form Submit (when Google OAuth is not yet toggled in Supabase dashboard)
