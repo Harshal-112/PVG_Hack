@@ -8,11 +8,11 @@ import {
   CheckCircle2,
   ArrowLeft,
   RefreshCw,
-  Check,
   AlertCircle,
   Clock,
   Sparkles
 } from 'lucide-react';
+import { supabase } from '../services/supabaseClient';
 
 export default function LoginView({ onLoginSuccess, onCancel }) {
   // Step state: 'initial' (Google + Email input) | 'otp_verify' | 'success'
@@ -22,6 +22,7 @@ export default function LoginView({ onLoginSuccess, onCancel }) {
   const [email, setEmail] = useState('');
   const [challengeId, setChallengeId] = useState('');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [authProvider, setAuthProvider] = useState('supabase'); // 'supabase' | 'backend'
   
   // UI / request states
   const [loading, setLoading] = useState(false);
@@ -103,22 +104,42 @@ export default function LoginView({ onLoginSuccess, onCancel }) {
     setSuccessMessage('');
 
     try {
-      // In web app, we initiate Google OAuth redirection via backend
-      const loginUrl = getApiUrl('api/v1/auth/google/login?mode=json');
-      const res = await fetch(loginUrl, { credentials: 'include' });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.auth_url) {
-          window.location.href = data.auth_url;
-          return;
-        }
-      }
-    } catch {
-      // If backend not directly accessible from preview client, fallback to Google login route
-    }
+      // 1. Try Supabase Google OAuth
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin,
+        },
+      });
 
-    // Direct redirect to Google OAuth login endpoint
-    window.location.href = getApiUrl('api/v1/auth/google/login');
+      if (!error && data?.url) {
+        window.location.href = data.url;
+        return;
+      }
+
+      // If Google provider is not enabled in Supabase project yet, show clean guidance
+      if (error && error.message?.toLowerCase().includes('not enabled')) {
+        setErrorMessage(
+          'Google Cloud OAuth is not configured in this Supabase project yet. Please use "Continue with Email" below to receive a secure 6-digit OTP code!'
+        );
+        return;
+      }
+
+      // 2. Try backend redirect if custom API base configured
+      const customApi = localStorage.getItem('flashseat_api_base');
+      if (customApi) {
+        window.location.href = `${customApi}/api/v1/auth/google/login`;
+        return;
+      }
+
+      if (error) {
+        throw error;
+      }
+    } catch (err) {
+      setErrorMessage(err.message || 'Unable to initiate Google sign in. Please use email verification.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -138,28 +159,55 @@ export default function LoginView({ onLoginSuccess, onCancel }) {
     setLoading(true);
 
     try {
-      const endpoint = getApiUrl('api/v1/auth/email/send-otp');
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: cleanEmail }),
-        credentials: 'include',
-      });
+      // Check if custom backend API is explicitly configured
+      const customApi = localStorage.getItem('flashseat_api_base') || window.__API_BASE__;
+      
+      if (customApi) {
+        const endpoint = getApiUrl('api/v1/auth/email/send-otp');
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: cleanEmail }),
+        });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || data.error || 'Failed to send verification code.');
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          const data = await response.json();
+          if (!response.ok) {
+            throw new Error(data.message || data.error || 'Failed to send verification code.');
+          }
+          setChallengeId(data.challenge_id);
+          setAuthProvider('backend');
+          setExpiresInSeconds(data.expires_in_seconds || 300);
+          setCooldownSeconds(data.cooldown_seconds || 60);
+          setOtp(['', '', '', '', '', '']);
+          setStep('otp_verify');
+          setSuccessMessage(`Verification code sent to ${cleanEmail}`);
+          return;
+        }
       }
 
-      setChallengeId(data.challenge_id);
-      setExpiresInSeconds(data.expires_in_seconds || 300);
-      setCooldownSeconds(data.cooldown_seconds || 60);
+      // Authoritative Supabase Email OTP (works natively on Vercel without a backend server)
+      const { data: supaData, error: supaError } = await supabase.auth.signInWithOtp({
+        email: cleanEmail,
+        options: {
+          shouldCreateUser: true,
+        },
+      });
+
+      if (supaError) {
+        // If rate limited or domain issue
+        throw new Error(supaError.message || 'Failed to dispatch verification code.');
+      }
+
+      setAuthProvider('supabase');
+      setExpiresInSeconds(300);
+      setCooldownSeconds(60);
       setOtp(['', '', '', '', '', '']);
       setStep('otp_verify');
       setSuccessMessage(`Verification code sent to ${cleanEmail}`);
     } catch (err) {
-      setErrorMessage(err.message || 'Unable to connect to authentication service.');
+      setErrorMessage(err.message || 'Unable to deliver verification code. Please check your email address.');
     } finally {
       setLoading(false);
     }
@@ -174,26 +222,34 @@ export default function LoginView({ onLoginSuccess, onCancel }) {
     setSuccessMessage('');
     setResending(true);
 
+    const cleanEmail = email.trim().toLowerCase();
+
     try {
-      const endpoint = getApiUrl('api/v1/auth/email/send-otp');
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim().toLowerCase() }),
-        credentials: 'include',
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || data.error || 'Failed to resend code.');
+      if (authProvider === 'backend') {
+        const endpoint = getApiUrl('api/v1/auth/email/send-otp');
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: cleanEmail }),
+        });
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.message || 'Failed to resend code.');
+          setChallengeId(data.challenge_id);
+        }
+      } else {
+        const { error: supaError } = await supabase.auth.signInWithOtp({
+          email: cleanEmail,
+          options: { shouldCreateUser: true },
+        });
+        if (supaError) throw new Error(supaError.message);
       }
 
-      setChallengeId(data.challenge_id);
-      setExpiresInSeconds(data.expires_in_seconds || 300);
-      setCooldownSeconds(data.cooldown_seconds || 60);
+      setExpiresInSeconds(300);
+      setCooldownSeconds(60);
       setOtp(['', '', '', '', '', '']);
-      setSuccessMessage('A fresh verification code has been sent to your email.');
+      setSuccessMessage('A fresh verification code has been dispatched to your email.');
     } catch (err) {
       setErrorMessage(err.message || 'Failed to resend code.');
     } finally {
@@ -253,34 +309,69 @@ export default function LoginView({ onLoginSuccess, onCancel }) {
     }
 
     setLoading(true);
+    const cleanEmail = email.trim().toLowerCase();
 
     try {
+      if (authProvider === 'supabase') {
+        const { data, error } = await supabase.auth.verifyOtp({
+          email: cleanEmail,
+          token: fullOtp,
+          type: 'email',
+        });
+
+        if (error) {
+          throw new Error(error.message || 'Incorrect verification code. Please check and try again.');
+        }
+
+        setStep('success');
+
+        const verifiedUser = {
+          id: data.user?.id || `usr_${Date.now()}`,
+          name: data.user?.user_metadata?.full_name || cleanEmail.split('@')[0],
+          email: data.user?.email || cleanEmail,
+          initials: cleanEmail.substring(0, 2).toUpperCase(),
+          provider: 'email_otp',
+          sessionToken: data.session?.access_token || `tok_${Date.now()}`,
+          isVerified: true,
+          verifiedAt: new Date().toISOString(),
+        };
+
+        setTimeout(() => {
+          onLoginSuccess(verifiedUser);
+        }, 700);
+        return;
+      }
+
+      // Backend API verification
       const endpoint = getApiUrl('api/v1/auth/email/verify-otp');
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           challenge_id: challengeId,
-          email: email.trim().toLowerCase(),
+          email: cleanEmail,
           otp: fullOtp,
         }),
         credentials: 'include',
       });
 
-      const data = await response.json();
+      const contentType = response.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        throw new Error('Server returned unexpected response. Please try again.');
+      }
 
+      const data = await response.json();
       if (!response.ok) {
         throw new Error(data.message || data.error || 'Verification failed.');
       }
 
       setStep('success');
 
-      // Prepare verified user profile
       const verifiedUser = {
         id: data.user?.id || `usr_${Date.now()}`,
-        name: data.user?.display_name || email.split('@')[0],
-        email: data.user?.email || email,
-        initials: (data.user?.display_name || email).substring(0, 2).toUpperCase(),
+        name: data.user?.display_name || cleanEmail.split('@')[0],
+        email: data.user?.email || cleanEmail,
+        initials: cleanEmail.substring(0, 2).toUpperCase(),
         provider: 'email_otp',
         sessionToken: data.session_token,
         isVerified: true,
