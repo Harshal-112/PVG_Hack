@@ -1,4 +1,4 @@
-// FlashSeat Web UI - Seat Grid + Live Dashboard
+// FlashSeat Web UI - Seat Grid, Live Dashboard & Security Hub
 // Owned by [P5]. Built with vanilla JavaScript, zero dependencies.
 
 (function () {
@@ -7,55 +7,134 @@
   const EVENT_ID = 'evt1';
   const API_BASE = '/api/v1';
 
-  // 1. Session & User ID Management
-  function getOrCreateUserId() {
-    let uid = sessionStorage.getItem('flashseat_user_id');
-    if (!uid) {
-      uid = 'u-' + Math.random().toString(36).substring(2, 8);
-      sessionStorage.setItem('flashseat_user_id', uid);
+  // 1. Auth & Session State Management
+  function getStoredAuthUser() {
+    try {
+      const data = localStorage.getItem('flashseat_auth_user');
+      return data ? JSON.parse(data) : null;
+    } catch (e) {
+      return null;
     }
-    return uid;
   }
 
-  const currentUserId = getOrCreateUserId();
+  function setStoredAuthUser(user) {
+    if (user) {
+      localStorage.setItem('flashseat_auth_user', JSON.stringify(user));
+      sessionStorage.setItem('flashseat_user_id', user.user_id || user.id);
+    } else {
+      localStorage.removeItem('flashseat_auth_user');
+    }
+  }
 
-  // 2. Query Param & Mock Mode Handling
+  function getEffectiveUserId() {
+    const authUser = getStoredAuthUser();
+    if (authUser && (authUser.user_id || authUser.id)) {
+      return authUser.user_id || authUser.id;
+    }
+    let guestId = sessionStorage.getItem('flashseat_user_id');
+    if (!guestId) {
+      guestId = 'u-' + Math.random().toString(36).substring(2, 8);
+      sessionStorage.setItem('flashseat_user_id', guestId);
+    }
+    return guestId;
+  }
+
+  let currentUserId = getEffectiveUserId();
+
+  // Bookings list for current session
+  function getUserBookings() {
+    try {
+      const data = localStorage.getItem(`flashseat_bookings_${currentUserId}`);
+      return data ? JSON.parse(data) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function recordUserBooking(seatId, reservationId) {
+    const list = getUserBookings();
+    list.unshift({
+      seat_id: seatId,
+      reservation_id: reservationId,
+      time: new Date().toLocaleTimeString(),
+      event_id: EVENT_ID
+    });
+    localStorage.setItem(`flashseat_bookings_${currentUserId}`, JSON.stringify(list));
+    updateUserTicketsBadge();
+  }
+
+  function updateUserTicketsBadge() {
+    const badge = document.getElementById('user-tickets-count');
+    if (badge) {
+      badge.textContent = getUserBookings().length;
+    }
+  }
+
+  // 2. Query Param & Navigation Handling
   const urlParams = new URLSearchParams(window.location.search);
   const isMockMode = urlParams.get('mock') === '1';
 
-  // Preserve ?mock=1 across navigation links
-  function initNavigation() {
+  function initHeaderAndNavigation() {
     const navGrid = document.getElementById('nav-grid');
     const navDashboard = document.getElementById('nav-dashboard');
     const apiBadge = document.getElementById('api-mode-badge');
     const mockBanner = document.getElementById('mock-banner');
 
+    const suffix = isMockMode ? '?mock=1' : '';
+
+    const brandLink = document.querySelector('.brand-title');
+    if (brandLink) brandLink.href = 'index.html' + suffix;
+    if (navGrid) navGrid.href = 'index.html' + suffix;
+    if (navDashboard) navDashboard.href = 'dashboard.html' + suffix;
+
     if (isMockMode) {
-      if (navGrid) navGrid.href = 'index.html?mock=1';
-      if (navDashboard) navDashboard.href = 'dashboard.html?mock=1';
       if (apiBadge) {
         apiBadge.className = 'mode-badge mock';
         apiBadge.textContent = 'MOCK API';
       }
-      if (mockBanner) {
-        mockBanner.style.display = 'flex';
-      }
+      if (mockBanner) mockBanner.style.display = 'flex';
     } else {
-      if (navGrid) navGrid.href = 'index.html';
-      if (navDashboard) navDashboard.href = 'dashboard.html';
       if (apiBadge) {
         apiBadge.className = 'mode-badge live';
         apiBadge.textContent = 'LIVE API';
       }
-      if (mockBanner) {
-        mockBanner.style.display = 'none';
+      if (mockBanner) mockBanner.style.display = 'none';
+    }
+
+    // User profile in header
+    const authUser = getStoredAuthUser();
+    const avatarEl = document.getElementById('header-user-avatar');
+    const usernameEl = document.getElementById('header-username');
+    const mfaTagEl = document.getElementById('header-user-mfa');
+    const authActionBtn = document.getElementById('btn-header-auth-action');
+
+    if (authUser && authUser.logged_in) {
+      if (avatarEl) avatarEl.textContent = (authUser.username || 'U')[0].toUpperCase();
+      if (usernameEl) usernameEl.textContent = authUser.username;
+      if (mfaTagEl) {
+        mfaTagEl.style.display = 'flex';
+        mfaTagEl.textContent = authUser.mfa_enabled ? '🛡️ MFA Verified' : 'Standard Session';
+      }
+      if (authActionBtn) {
+        authActionBtn.textContent = 'Sign Out';
+        authActionBtn.onclick = () => {
+          setStoredAuthUser(null);
+          window.location.reload();
+        };
+      }
+    } else {
+      if (avatarEl) avatarEl.textContent = 'G';
+      if (usernameEl) usernameEl.textContent = 'Guest (' + currentUserId.substring(0, 6) + ')';
+      if (mfaTagEl) mfaTagEl.style.display = 'none';
+      if (authActionBtn) {
+        authActionBtn.textContent = 'Sign In';
+        authActionBtn.onclick = () => {
+          window.location.href = 'login.html' + suffix;
+        };
       }
     }
 
-    const userIdDisplay = document.getElementById('current-user-id');
-    if (userIdDisplay) {
-      userIdDisplay.textContent = currentUserId;
-    }
+    updateUserTicketsBadge();
   }
 
   // 3. Alerts & Error Display
@@ -63,7 +142,6 @@
     const container = document.getElementById('alert-container');
     if (!container) return;
 
-    // Remove any previous alert of same type to avoid alert clutter
     const alertEl = document.createElement('div');
     alertEl.className = `alert alert-${type}`;
 
@@ -80,17 +158,11 @@
     alertEl.appendChild(closeBtn);
     container.prepend(alertEl);
 
-    // Auto-dismiss success/info alerts after 7 seconds
     if (type === 'success' || type === 'info') {
       setTimeout(() => {
         if (alertEl.parentElement) alertEl.remove();
       }, 7000);
     }
-  }
-
-  function clearAlerts() {
-    const container = document.getElementById('alert-container');
-    if (container) container.innerHTML = '';
   }
 
   // Safe API Fetch Wrapper
@@ -119,7 +191,216 @@
   }
 
   // =========================================================================
-  // TASK A: Seat Grid (index.html)
+  // AUTH HUB: Login, Register, MFA (web/login.html)
+  // =========================================================================
+  function initAuthPage() {
+    const tabLoginBtn = document.getElementById('tab-login-btn');
+    const tabRegisterBtn = document.getElementById('tab-register-btn');
+    const loginForm = document.getElementById('login-form');
+    const registerForm = document.getElementById('register-form');
+    const mfaScreen = document.getElementById('mfa-screen');
+    const authTabs = document.getElementById('auth-tabs');
+    const authTitle = document.getElementById('auth-title');
+    const authSubtitle = document.getElementById('auth-subtitle');
+
+    if (!loginForm) return;
+
+    // Tabs switching
+    tabLoginBtn.addEventListener('click', () => {
+      tabLoginBtn.classList.add('active');
+      tabRegisterBtn.classList.remove('active');
+      loginForm.style.display = 'flex';
+      registerForm.style.display = 'none';
+      mfaScreen.style.display = 'none';
+      authTitle.textContent = 'Welcome to FlashSeat';
+      authSubtitle.textContent = 'Secure, high-concurrency ticket reservation engine';
+    });
+
+    tabRegisterBtn.addEventListener('click', () => {
+      tabRegisterBtn.classList.add('active');
+      tabLoginBtn.classList.remove('active');
+      loginForm.style.display = 'none';
+      registerForm.style.display = 'flex';
+      mfaScreen.style.display = 'none';
+      authTitle.textContent = 'Create FlashSeat Account';
+      authSubtitle.textContent = 'Register to hold and confirm seats in real time';
+    });
+
+    // Quick demo login button
+    const btnQuickDemo = document.getElementById('btn-quick-demo-login');
+    if (btnQuickDemo) {
+      btnQuickDemo.addEventListener('click', (e) => {
+        e.preventDefault();
+        document.getElementById('login-username').value = 'demo_user';
+        document.getElementById('login-password').value = 'flashpass123';
+        loginForm.dispatchEvent(new Event('submit'));
+      });
+    }
+
+    let pendingLoginUser = null;
+
+    // Login Form Submit -> Step 1
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const username = document.getElementById('login-username').value.trim();
+      const password = document.getElementById('login-password').value;
+
+      if (!username || !password) {
+        showAlert('error', 'Validation Error', 'Please enter your username and password.');
+        return;
+      }
+
+      const btnSubmit = document.getElementById('btn-login-submit');
+      btnSubmit.disabled = true;
+
+      // Mock or Backend Auth
+      const res = await apiFetch(`${API_BASE}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+
+      btnSubmit.disabled = false;
+
+      // In mock mode or fallback, proceed to MFA step
+      const userId = (res.data && res.data.user_id) ? res.data.user_id : ('u-' + username.toLowerCase().replace(/[^a-z0-9]/g, ''));
+      pendingLoginUser = {
+        user_id: userId,
+        username: username,
+        mfa_enabled: true
+      };
+
+      // Show MFA Screen
+      authTabs.style.display = 'none';
+      loginForm.style.display = 'none';
+      registerForm.style.display = 'none';
+      mfaScreen.style.display = 'block';
+      authTitle.textContent = 'Two-Factor Authentication';
+      authSubtitle.textContent = 'Step 2: Verify your identity';
+
+      // Focus first OTP digit
+      const firstOtp = document.querySelector('.otp-digit');
+      if (firstOtp) firstOtp.focus();
+    });
+
+    // Registration Form Submit
+    registerForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fullname = document.getElementById('reg-fullname').value.trim();
+      const username = document.getElementById('reg-username').value.trim();
+      const email = document.getElementById('reg-email').value.trim();
+      const password = document.getElementById('reg-password').value;
+      const enableMfa = document.getElementById('reg-enable-mfa').checked;
+
+      const btnReg = document.getElementById('btn-register-submit');
+      btnReg.disabled = true;
+
+      const res = await apiFetch(`${API_BASE}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fullname, username, email, password, mfa_enabled: enableMfa })
+      });
+
+      btnReg.disabled = false;
+
+      showAlert('success', 'Account Created!', 'You can now sign in with your credentials.');
+      tabLoginBtn.click();
+      document.getElementById('login-username').value = username;
+      document.getElementById('login-password').value = password;
+    });
+
+    // MFA OTP Auto-Advance Input Behavior
+    const otpInputs = Array.from(document.querySelectorAll('.otp-digit'));
+    otpInputs.forEach((input, idx) => {
+      input.addEventListener('input', (e) => {
+        const val = e.target.value.replace(/[^0-9]/g, '');
+        e.target.value = val ? val[0] : '';
+        if (val && idx < otpInputs.length - 1) {
+          otpInputs[idx + 1].focus();
+        }
+      });
+
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Backspace' && !input.value && idx > 0) {
+          otpInputs[idx - 1].focus();
+        }
+      });
+
+      input.addEventListener('paste', (e) => {
+        e.preventDefault();
+        const pasted = (e.clipboardData || window.clipboardData).getData('text').replace(/[^0-9]/g, '');
+        for (let i = 0; i < otpInputs.length && i < pasted.length; i++) {
+          otpInputs[i].value = pasted[i];
+        }
+        if (pasted.length >= otpInputs.length) {
+          otpInputs[otpInputs.length - 1].focus();
+        }
+      });
+    });
+
+    // Autofill demo code button
+    const btnFillOtp = document.getElementById('btn-fill-otp');
+    if (btnFillOtp) {
+      btnFillOtp.addEventListener('click', () => {
+        const code = document.getElementById('simulated-otp-code').textContent.trim();
+        for (let i = 0; i < otpInputs.length && i < code.length; i++) {
+          otpInputs[i].value = code[i];
+        }
+      });
+    }
+
+    // Cancel MFA -> Back to Login
+    const btnCancelMfa = document.getElementById('btn-cancel-mfa');
+    if (btnCancelMfa) {
+      btnCancelMfa.addEventListener('click', () => {
+        authTabs.style.display = 'grid';
+        mfaScreen.style.display = 'none';
+        tabLoginBtn.click();
+      });
+    }
+
+    // Verify MFA Submit
+    const btnVerifyMfa = document.getElementById('btn-verify-mfa');
+    if (btnVerifyMfa) {
+      btnVerifyMfa.addEventListener('click', async () => {
+        const otpCode = otpInputs.map(i => i.value).join('');
+        if (otpCode.length !== 6) {
+          showAlert('error', 'Incomplete Code', 'Please enter all 6 digits of your security code.');
+          return;
+        }
+
+        btnVerifyMfa.disabled = true;
+
+        const res = await apiFetch(`${API_BASE}/auth/verify-mfa`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ otp: otpCode, user_id: pendingLoginUser.user_id })
+        });
+
+        btnVerifyMfa.disabled = false;
+
+        // Save authenticated session
+        const authRecord = {
+          ...pendingLoginUser,
+          token: (res.data && res.data.token) ? res.data.token : ('tok-' + Date.now()),
+          mfa_verified: true,
+          logged_in: true,
+          auth_time: Date.now()
+        };
+
+        setStoredAuthUser(authRecord);
+        showAlert('success', 'MFA Verified!', 'Access granted. Redirecting to Seat Selection Grid...');
+
+        setTimeout(() => {
+          const suffix = isMockMode ? '?mock=1' : '';
+          window.location.href = 'index.html' + suffix;
+        }, 1000);
+      });
+    }
+  }
+
+  // =========================================================================
+  // TASK A: Seat Grid (web/index.html)
   // =========================================================================
   function initSeatGrid() {
     const gridContainer = document.getElementById('grid-container');
@@ -128,7 +409,7 @@
     const TOTAL_SEATS = 200;
     const seatElements = {};
 
-    // Build the 200 seat grid buttons (S001 - S200)
+    // 200 seat grid buttons (S001 - S200)
     const fragment = document.createDocumentFragment();
     for (let i = 1; i <= TOTAL_SEATS; i++) {
       const seatId = 'S' + String(i).padStart(3, '0');
@@ -209,7 +490,6 @@
       detailUserId.textContent = currentUserId;
       detailExpiry.textContent = new Date(res.expires_at_ms).toLocaleTimeString();
 
-      // Highlight selected seat
       for (const sId of Object.keys(seatElements)) {
         if (sId === res.seat_id) {
           seatElements[sId].element.classList.add('is-selected');
@@ -246,14 +526,12 @@
       }
 
       if (current.state === 'HELD') {
-        // If it's already our active reservation, re-focus it
         if (activeReservation && activeReservation.seat_id === seatId) {
           showAlert('info', 'Active Reservation', `Seat ${seatId} is currently reserved by you.`);
           return;
         }
       }
 
-      // Call Reserve endpoint: POST /api/v1/events/{e}/reserve
       const payload = {
         user_id: currentUserId,
         seat_id: seatId
@@ -274,10 +552,38 @@
           ttl_ms: data.ttl_ms
         });
         showAlert('success', 'Seat Reserved', `Seat ${data.seat_id} successfully reserved! Confirm before the hold timer expires.`);
-        fetchSeats(); // Immediate refresh
+        fetchSeats();
       } else {
         handleApiError(result, `Failed to reserve seat ${seatId}`);
       }
+    }
+
+    // Quick Pick: Any seat (SPOP)
+    const btnQuickPick = document.getElementById('btn-quick-pick');
+    if (btnQuickPick) {
+      btnQuickPick.addEventListener('click', async () => {
+        btnQuickPick.disabled = true;
+        const result = await apiFetch(`${API_BASE}/events/${EVENT_ID}/reserve`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: currentUserId, seat_id: null })
+        });
+        btnQuickPick.disabled = false;
+
+        if (result.ok && result.status === 201) {
+          const data = result.data;
+          showActiveReservation({
+            reservation_id: data.reservation_id,
+            seat_id: data.seat_id,
+            expires_at_ms: data.expires_at_ms,
+            ttl_ms: data.ttl_ms
+          });
+          showAlert('success', 'Instant Allocation', `System allocated free seat ${data.seat_id} for you!`);
+          fetchSeats();
+        } else {
+          handleApiError(result, 'Quick Pick allocation failed');
+        }
+      });
     }
 
     // Confirm Action: POST /api/v1/events/{e}/reservations/{rid}/confirm
@@ -296,6 +602,7 @@
       if (result.ok && result.status === 200) {
         const seatId = activeReservation.seat_id;
         const isIdempotent = result.data && result.data.idempotent;
+        recordUserBooking(seatId, activeReservation.reservation_id);
         showAlert('success', 'Booking Confirmed!', `Seat ${seatId} confirmed successfully! ${isIdempotent ? '(Idempotent retry)' : ''}`);
         hideActiveReservation();
         fetchSeats();
@@ -317,7 +624,7 @@
 
       if (result.ok && result.status === 200) {
         const seatId = activeReservation.seat_id;
-        showAlert('info', 'Hold Released', `Seat ${seatId} has been released and is now FREE for other users.`);
+        showAlert('info', 'Hold Released', `Seat ${seatId} has been released and returned to FREE inventory.`);
         hideActiveReservation();
         fetchSeats();
       } else {
@@ -393,7 +700,89 @@
       }
     }
 
-    // Initial fetch and 1-second interval loop
+    // Search and Filters
+    let currentFilter = 'ALL';
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    filterButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        filterButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentFilter = btn.dataset.filter;
+        applyFiltersAndSearch();
+      });
+    });
+
+    const searchInput = document.getElementById('search-seat');
+    if (searchInput) {
+      searchInput.addEventListener('input', () => {
+        applyFiltersAndSearch();
+      });
+    }
+
+    function applyFiltersAndSearch() {
+      const query = (searchInput ? searchInput.value.trim().toUpperCase() : '');
+      for (const sId of Object.keys(seatElements)) {
+        const item = seatElements[sId];
+        let matchesFilter = true;
+        if (currentFilter === 'FREE' && item.state !== 'FREE') matchesFilter = false;
+        if (currentFilter === 'HELD' && item.state !== 'HELD') matchesFilter = false;
+        if (currentFilter === 'SOLD' && item.state !== 'SOLD') matchesFilter = false;
+
+        let matchesSearch = true;
+        if (query && !sId.includes(query)) matchesSearch = false;
+
+        if (matchesFilter && matchesSearch) {
+          item.element.classList.remove('filtered-out');
+          if (query && sId === query) {
+            item.element.classList.add('search-highlight');
+          } else {
+            item.element.classList.remove('search-highlight');
+          }
+        } else {
+          item.element.classList.add('filtered-out');
+          item.element.classList.remove('search-highlight');
+        }
+      }
+    }
+
+    // My Bookings Modal
+    const btnMyBookings = document.getElementById('btn-my-bookings');
+    const bookingsModal = document.getElementById('modal-my-bookings');
+    const btnCloseModal = document.getElementById('btn-close-bookings-modal');
+    const btnCloseBottom = document.getElementById('btn-close-bookings-bottom');
+    const bookingsModalBody = document.getElementById('bookings-modal-body');
+
+    if (btnMyBookings && bookingsModal) {
+      btnMyBookings.addEventListener('click', () => {
+        const bookings = getUserBookings();
+        if (bookings.length === 0) {
+          bookingsModalBody.innerHTML = '<div style="color: var(--text-muted); padding: 1.5rem; text-align: center;">No tickets booked yet. Reserve a seat from the grid!</div>';
+        } else {
+          bookingsModalBody.innerHTML = bookings.map(b => `
+            <div style="background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; margin-bottom: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <div style="font-weight: 800; font-size: 1.2rem; color: #a7f3d0;">Seat ${b.seat_id}</div>
+                <div style="font-size: 0.8rem; color: var(--text-muted); font-family: monospace;">RID: ${b.reservation_id}</div>
+                <div style="font-size: 0.8rem; color: var(--text-dim);">Confirmed at: ${b.time}</div>
+              </div>
+              <div style="text-align: right;">
+                <span class="verify-badge pass">VALID PASS</span>
+              </div>
+            </div>
+          `).join('');
+        }
+        bookingsModal.style.display = 'flex';
+      });
+
+      const closeFunc = () => { bookingsModal.style.display = 'none'; };
+      if (btnCloseModal) btnCloseModal.addEventListener('click', closeFunc);
+      if (btnCloseBottom) btnCloseBottom.addEventListener('click', closeFunc);
+      bookingsModal.addEventListener('click', (e) => {
+        if (e.target === bookingsModal) closeFunc();
+      });
+    }
+
+    // Initial fetch and 1s interval loop
     fetchSeats();
     const pollInterval = setInterval(fetchSeats, 1000);
 
@@ -404,13 +793,12 @@
   }
 
   // =========================================================================
-  // TASK B, C, D: Live Dashboard (dashboard.html)
+  // TASK B, C, D: Live Dashboard (web/dashboard.html)
   // =========================================================================
   function initDashboard() {
     const statsContainer = document.getElementById('stats');
     if (!statsContainer) return;
 
-    // Elements
     const statTotal = document.getElementById('stat-total');
     const statFree = document.getElementById('stat-free');
     const statHeld = document.getElementById('stat-held');
@@ -424,11 +812,9 @@
     const consistencyIcon = document.getElementById('consistency-icon');
     const consistencyTag = document.getElementById('consistency-tag');
 
-    // Canvas line chart setup (Task C)
     const canvas = document.getElementById('chart');
     const ctx = canvas ? canvas.getContext('2d') : null;
 
-    // Rolling history for 60 seconds: [{ time, free, held, sold }]
     const historyData = [];
     const ROLLING_WINDOW_MS = 60000;
 
@@ -453,7 +839,6 @@
       ctx.scale(dpr, dpr);
       ctx.clearRect(0, 0, w, h);
 
-      // Margins
       const padLeft = 45;
       const padRight = 20;
       const padTop = 20;
@@ -462,11 +847,11 @@
       const plotW = w - padLeft - padRight;
       const plotH = h - padTop - padBottom;
 
-      const maxVal = 200; // Total seats
+      const maxVal = 200;
       const now = Date.now();
       const windowStart = now - ROLLING_WINDOW_MS;
 
-      // Draw Grid Lines & Y-Axis Labels
+      // Grid Lines & Y Ticks
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
       ctx.lineWidth = 1;
       ctx.fillStyle = '#64748b';
@@ -484,7 +869,7 @@
         ctx.fillText(String(val), padLeft - 8, y);
       }
 
-      // Draw X-Axis Ticks & Time Labels (-60s, -45s, -30s, -15s, Now)
+      // X Ticks
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
       const xTicks = [
@@ -504,7 +889,6 @@
         ctx.fillText(tick.label, x, padTop + plotH + 8);
       }
 
-      // If history is empty, show helpful message
       if (historyData.length === 0) {
         ctx.fillStyle = '#94a3b8';
         ctx.font = '14px system-ui, sans-serif';
@@ -515,7 +899,6 @@
         return;
       }
 
-      // Helper to map (time, value) to (x, y)
       function getCoords(time, val) {
         const clampedTime = Math.max(windowStart, Math.min(now, time));
         const x = padLeft + ((clampedTime - windowStart) / ROLLING_WINDOW_MS) * plotW;
@@ -524,7 +907,6 @@
         return { x, y };
       }
 
-      // Function to draw line series
       function drawSeries(key, color) {
         ctx.beginPath();
         ctx.strokeStyle = color;
@@ -545,7 +927,6 @@
         }
         ctx.stroke();
 
-        // Draw small dot on the latest point
         if (historyData.length > 0) {
           const latest = historyData[historyData.length - 1];
           const latestCoords = getCoords(latest.time, latest[key]);
@@ -556,15 +937,13 @@
         }
       }
 
-      // Draw 3 series: Free, Held, Sold
-      drawSeries('free', '#10b981'); // Free: Green
-      drawSeries('held', '#f59e0b'); // Held: Amber
-      drawSeries('sold', '#ef4444'); // Sold: Red
+      drawSeries('free', '#10b981');
+      drawSeries('held', '#f59e0b');
+      drawSeries('sold', '#ef4444');
 
       ctx.restore();
     }
 
-    // Polling GET /api/v1/events/evt1/stats every 1s (Task B)
     let isStatsPolling = false;
     async function fetchStats() {
       if (isStatsPolling) return;
@@ -589,14 +968,12 @@
         statPersisted.textContent = persisted;
         statBacklog.textContent = backlog;
 
-        // Backlog Highlighting
         if (backlog > 0) {
           cardBacklog.classList.add('backlog-warning');
         } else {
           cardBacklog.classList.remove('backlog-warning');
         }
 
-        // Consistency Status: Consistent only if backlog === 0 AND sold === persisted
         const isConsistent = backlog === 0 && sold === persisted;
         if (isConsistent) {
           consistencyBanner.className = 'consistency-banner consistent';
@@ -615,11 +992,9 @@
           }
         }
 
-        // Add to historical rolling data (Task C)
         const now = Date.now();
         historyData.push({ time: now, free, held, sold });
 
-        // Retain only samples within the last 60 seconds
         const cutoff = now - ROLLING_WINDOW_MS;
         while (historyData.length > 0 && historyData[0].time < cutoff) {
           historyData.shift();
@@ -629,14 +1004,11 @@
       }
     }
 
-    // Initial resize & poll
     resizeCanvas();
     fetchStats();
     const statsInterval = setInterval(fetchStats, 1000);
 
-    // =========================================================================
-    // TASK D: Verify Button (dashboard.html)
-    // =========================================================================
+    // Verify Button
     const btnVerify = document.getElementById('btn-verify');
     const verifyLoading = document.getElementById('verify-loading');
     const verifyContainer = document.getElementById('verify-results-container');
@@ -668,11 +1040,6 @@
     function renderVerificationResults(data) {
       if (!verifyTbody || !verifyContainer) return;
       verifyTbody.innerHTML = '';
-
-      // Required fields from SPEC.md Section 9:
-      // event_id, redis_sold, pg_bookings, drained, duplicate_seat_rows,
-      // missing_in_pg, extra_in_pg, consistent, no_double_booking
-      // Plus display any additional fields dynamically.
 
       const fieldEvaluators = {
         event_id: (val) => ({ pass: true, info: true, text: String(val) }),
@@ -710,7 +1077,6 @@
         })
       };
 
-      // Ensure standard keys are listed in logical order first
       const orderedKeys = [
         'event_id',
         'consistent',
@@ -723,7 +1089,6 @@
         'extra_in_pg'
       ];
 
-      // Add any extra keys returned by the API
       for (const k of Object.keys(data)) {
         if (!orderedKeys.includes(k)) orderedKeys.push(k);
       }
@@ -744,7 +1109,6 @@
         }
 
         const tr = document.createElement('tr');
-
         const tdKey = document.createElement('td');
         tdKey.innerHTML = `<code>${key}</code>`;
 
@@ -783,12 +1147,14 @@
 
   // 4. Page Routing & Initialization
   document.addEventListener('DOMContentLoaded', () => {
-    initNavigation();
+    initHeaderAndNavigation();
     const pageType = document.body.dataset.page;
     if (pageType === 'grid') {
       initSeatGrid();
     } else if (pageType === 'dashboard') {
       initDashboard();
+    } else if (pageType === 'login') {
+      initAuthPage();
     }
   });
 })();

@@ -251,7 +251,6 @@
       delete owners[res.seat_id];
 
       // Simulate async writer worker: persisted lands in Postgres
-      // We simulate a small 1-second writer lag to show backlog > 0 in dashboard, then drain
       setTimeout(() => {
         pgBookings.add(res.seat_id);
       }, 1200);
@@ -323,13 +322,11 @@
     if (verifyMatch && method === 'GET') {
       const eId = verifyMatch[1];
 
-      // Verification waits up to 5s for backlog to drain to 0
       let sold = 0;
       for (const s of Object.values(seats)) {
         if (s === 'SOLD') sold++;
       }
 
-      // Drain any lagging writes to PG
       for (const sId of Object.keys(soldMap)) {
         pgBookings.add(sId);
       }
@@ -350,7 +347,43 @@
       }, 200);
     }
 
-    // 7. Admin Reset
+    // 7. Auth Mock Endpoints
+    if (parsedPath === '/api/v1/auth/login' && method === 'POST') {
+      let body = {};
+      try { body = init && init.body ? JSON.parse(init.body) : {}; } catch (e) {}
+      const username = body.username || 'demo_user';
+      return jsonResponse({
+        ok: true,
+        user_id: 'u-' + username.toLowerCase().replace(/[^a-z0-9]/g, ''),
+        username: username,
+        mfa_required: true,
+        demo_otp: '749102'
+      }, 200);
+    }
+
+    if (parsedPath === '/api/v1/auth/register' && method === 'POST') {
+      let body = {};
+      try { body = init && init.body ? JSON.parse(init.body) : {}; } catch (e) {}
+      const username = body.username || 'new_user';
+      return jsonResponse({
+        ok: true,
+        user_id: 'u-' + username.toLowerCase().replace(/[^a-z0-9]/g, ''),
+        username: username,
+        email: body.email,
+        mfa_enabled: body.mfa_enabled !== false
+      }, 201);
+    }
+
+    if (parsedPath === '/api/v1/auth/verify-mfa' && method === 'POST') {
+      let body = {};
+      try { body = init && init.body ? JSON.parse(init.body) : {}; } catch (e) {}
+      if (body.otp === '749102' || body.otp === '123456') {
+        return jsonResponse({ ok: true, verified: true, token: 'mock-jwt-token-' + Date.now() }, 200);
+      }
+      return jsonResponse({ error: 'INVALID_OTP', message: 'Security code is invalid or expired' }, 401);
+    }
+
+    // 8. Admin Reset
     if (parsedPath.match(/^\/api\/v1\/admin\/events(\/[^/]+\/reset)?$/) && method === 'POST') {
       for (let i = 1; i <= TOTAL_SEATS; i++) {
         const sId = 'S' + String(i).padStart(3, '0');

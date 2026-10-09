@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FlashSeat — Sign In & Multi-Factor Authentication</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body data-page="login" class="auth-page">
+  <!-- Mock Mode Banner -->
+  <div id="mock-banner" class="mock-banner" style="display: none;">
+    <div class="mock-banner-text">
+      <span>⚠️ <strong>MOCK DEMO MODE ACTIVE</strong> (?mock=1)</span>
+      <span>— Simulating FlashSeat auth & engine in-browser</span>
+    </div>
+    <span class="mode-badge mock">MOCK API</span>
+  </div>
+
+  <header class="app-header">
+    <div class="brand-section">
+      <a href="index.html" class="brand-title" style="text-decoration: none;">⚡ FlashSeat</a>
+      <span class="brand-badge">Security Hub</span>
+    </div>
+    <nav class="nav-links">
+      <a href="index.html" class="nav-link" id="nav-grid">Seat Grid</a>
+      <a href="dashboard.html" class="nav-link" id="nav-dashboard">Live Dashboard</a>
+      <span id="api-mode-badge" class="mode-badge live">LIVE API</span>
+    </nav>
+  </header>
+
+  <main class="auth-container">
+    <div class="auth-card">
+      <div class="auth-header">
+        <div class="auth-logo-badge">🛡️</div>
+        <h1 class="auth-title" id="auth-title">Welcome to FlashSeat</h1>
+        <p class="auth-subtitle" id="auth-subtitle">Secure, high-concurrency ticket reservation engine</p>
+      </div>
+
+      <!-- Alert Container -->
+      <div id="alert-container" class="alert-container"></div>
+
+      <!-- Tab Buttons (hidden when on MFA step) -->
+      <div class="auth-tabs" id="auth-tabs">
+        <button type="button" class="auth-tab-btn active" id="tab-login-btn">Sign In</button>
+        <button type="button" class="auth-tab-btn" id="tab-register-btn">Create Account</button>
+      </div>
+
+      <!-- 1. LOGIN FORM -->
+      <form id="login-form" class="auth-form">
+        <div class="form-group">
+          <label for="login-username" class="form-label">Username or Email</label>
+          <input type="text" id="login-username" class="form-input" placeholder="e.g. demo_user" required autocomplete="username">
+        </div>
+
+        <div class="form-group">
+          <label for="login-password" class="form-label">Password</label>
+          <input type="password" id="login-password" class="form-input" placeholder="••••••••" required autocomplete="current-password">
+        </div>
+
+        <div class="form-options">
+          <label class="remember-label">
+            <input type="checkbox" id="login-remember" checked>
+            <span>Stay signed in</span>
+          </label>
+          <a href="#" class="forgot-link" id="btn-quick-demo-login">⚡ Use Demo Account</a>
+        </div>
+
+        <button type="submit" class="btn btn-primary auth-submit-btn" id="btn-login-submit">
+          Sign In with FlashSeat
+        </button>
+      </form>
+
+      <!-- 2. REGISTER FORM -->
+      <form id="register-form" class="auth-form" style="display: none;">
+        <div class="form-group">
+          <label for="reg-fullname" class="form-label">Full Name</label>
+          <input type="text" id="reg-fullname" class="form-input" placeholder="e.g. Alex Mercer" required>
+        </div>
+
+        <div class="form-group">
+          <label for="reg-username" class="form-label">Username</label>
+          <input type="text" id="reg-username" class="form-input" placeholder="e.g. alex_vip" required autocomplete="username">
+        </div>
+
+        <div class="form-group">
+          <label for="reg-email" class="form-label">Email Address</label>
+          <input type="email" id="reg-email" class="form-input" placeholder="alex@example.com" required autocomplete="email">
+        </div>
+
+        <div class="form-group">
+          <label for="reg-password" class="form-label">Password</label>
+          <input type="password" id="reg-password" class="form-input" placeholder="At least 6 characters" minlength="6" required autocomplete="new-password">
+        </div>
+
+        <div class="form-group mfa-toggle-group">
+          <label class="mfa-toggle-label">
+            <input type="checkbox" id="reg-enable-mfa" checked>
+            <div>
+              <strong>Enable Multi-Factor Authentication (MFA)</strong>
+              <div class="mfa-hint">Protects your account during high-speed flash ticket drops</div>
+            </div>
+          </label>
+        </div>
+
+        <button type="submit" class="btn btn-success auth-submit-btn" id="btn-register-submit">
+          Create Secure Account
+        </button>
+      </form>
+
+      <!-- 3. MFA VERIFICATION STEP -->
+      <div id="mfa-screen" class="auth-form" style="display: none;">
+        <div class="mfa-banner">
+          <div class="mfa-icon">📲</div>
+          <div>
+            <h3 class="mfa-banner-title">Two-Factor Authentication Required</h3>
+            <p class="mfa-banner-desc">Enter the 6-digit security code from your authenticator app or the demo code below.</p>
+          </div>
+        </div>
+
+        <div class="form-group" style="text-align: center; margin: 1.5rem 0 1rem;">
+          <label class="form-label" style="margin-bottom: 0.75rem;">6-Digit Security Code</label>
+          <div class="otp-inputs-wrapper" id="otp-inputs-wrapper">
+            <input type="text" maxlength="1" class="otp-digit" inputmode="numeric" pattern="[0-9]*" autofocus>
+            <input type="text" maxlength="1" class="otp-digit" inputmode="numeric" pattern="[0-9]*">
+            <input type="text" maxlength="1" class="otp-digit" inputmode="numeric" pattern="[0-9]*">
+            <input type="text" maxlength="1" class="otp-digit" inputmode="numeric" pattern="[0-9]*">
+            <input type="text" maxlength="1" class="otp-digit" inputmode="numeric" pattern="[0-9]*">
+            <input type="text" maxlength="1" class="otp-digit" inputmode="numeric" pattern="[0-9]*">
+          </div>
+        </div>
+
+        <!-- Demo OTP Helper for rapid testing -->
+        <div class="demo-otp-helper">
+          <span>Simulated OTP Code: <strong id="simulated-otp-code">749102</strong></span>
+          <button type="button" class="btn btn-secondary btn-sm" id="btn-fill-otp">⚡ Autofill Code</button>
+        </div>
+
+        <button type="button" class="btn btn-primary auth-submit-btn" id="btn-verify-mfa">
+          Verify MFA & Continue
+        </button>
+
+        <button type="button" class="btn btn-secondary auth-submit-btn" id="btn-cancel-mfa" style="margin-top: 0.5rem;">
+          Back to Login
+        </button>
+      </div>
+
+      <div class="auth-footer-notice">
+        <span>🔒 Protected by FlashSeat Token Bucket Rate Limiting &amp; In-Memory Session Locks</span>
+      </div>
+    </div>
+  </main>
+
+  <footer class="app-footer">
+    FlashSeat High-Contention Ticketing Engine &bull; Ready for Vercel Static Hosting &bull; Zero Dependencies
+  </footer>
+
+  <!-- Conditional Mock Loader (?mock=1) -->
+  <script>
+    if (new URLSearchParams(window.location.search).get('mock') === '1') {
+      document.write('<script src="mock.js"><\/script>');
+    }
+  </script>
+  <script src="app.js"></script>
+</body>
+</html>
