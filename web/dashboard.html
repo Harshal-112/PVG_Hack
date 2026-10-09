@@ -2,13 +2,188 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>FlashSeat - Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FlashSeat — Live Dashboard (evt1)</title>
   <link rel="stylesheet" href="style.css">
 </head>
-<body>
-  <h1>FlashSeat Live Dashboard</h1>
-  <div id="stats"></div>
-  <canvas id="chart"></canvas>
+<body data-page="dashboard">
+  <!-- Mock Mode Banner (shown dynamically if ?mock=1) -->
+  <div id="mock-banner" class="mock-banner" style="display: none;">
+    <div class="mock-banner-text">
+      <span>⚠️ <strong>MOCK MODE ACTIVE</strong> (?mock=1)</span>
+      <span>— Simulating FlashSeat backend API in-browser</span>
+    </div>
+    <span class="mode-badge mock">MOCK API</span>
+  </div>
+
+  <header class="app-header">
+    <div class="brand-section">
+      <div class="brand-title">⚡ FlashSeat</div>
+      <span class="brand-badge">Event: evt1</span>
+    </div>
+    <nav class="nav-links">
+      <a href="index.html" class="nav-link" id="nav-grid">Seat Grid</a>
+      <a href="dashboard.html" class="nav-link active" id="nav-dashboard">Live Dashboard</a>
+      <span id="api-mode-badge" class="mode-badge live">LIVE API</span>
+    </nav>
+  </header>
+
+  <main class="container">
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Live Monitoring Dashboard</h1>
+        <p class="page-subtitle">Real-time inventory metrics, asynchronous write backlog & engine consistency</p>
+      </div>
+      <div id="poll-indicator" style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.95rem; color: var(--text-muted); font-weight: 600;">
+        <span style="width: 10px; height: 10px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
+        Polling stats (1s)
+      </div>
+    </div>
+
+    <!-- Alert / Message Container -->
+    <div id="alert-container" class="alert-container"></div>
+
+    <!-- Consistency Status Banner (Task B) -->
+    <section id="consistency-banner" class="consistency-banner consistent">
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <span id="consistency-icon" style="font-size: 1.5rem;">✓</span>
+        <div>
+          <strong id="consistency-text">CONSISTENT</strong>
+          <span style="font-size: 0.95rem; font-weight: 600; opacity: 0.85; margin-left: 0.5rem;">(Backlog: 0 & Sold == Persisted)</span>
+        </div>
+      </div>
+      <span id="consistency-tag" class="consistency-status-tag">Postgres in Sync</span>
+    </section>
+
+    <!-- 6 Core Metrics Grid (Task B) -->
+    <section id="stats" class="stats-grid">
+      <!-- Total -->
+      <div class="stat-card stat-total">
+        <div class="stat-label">
+          <span>Total Capacity</span>
+          <span>🎟️</span>
+        </div>
+        <div class="stat-value" id="stat-total">200</div>
+      </div>
+
+      <!-- Free -->
+      <div class="stat-card stat-free">
+        <div class="stat-label">
+          <span>Free Seats</span>
+          <span>🟢</span>
+        </div>
+        <div class="stat-value" id="stat-free">—</div>
+      </div>
+
+      <!-- Held -->
+      <div class="stat-card stat-held">
+        <div class="stat-label">
+          <span>Held (TTL)</span>
+          <span>🟡</span>
+        </div>
+        <div class="stat-value" id="stat-held">—</div>
+      </div>
+
+      <!-- Sold -->
+      <div class="stat-card stat-sold">
+        <div class="stat-label">
+          <span>Sold (Redis)</span>
+          <span>🔴</span>
+        </div>
+        <div class="stat-value" id="stat-sold">—</div>
+      </div>
+
+      <!-- Persisted -->
+      <div class="stat-card stat-persisted">
+        <div class="stat-label">
+          <span>Persisted (DB)</span>
+          <span>💾</span>
+        </div>
+        <div class="stat-value" id="stat-persisted">—</div>
+      </div>
+
+      <!-- Backlog -->
+      <div class="stat-card stat-backlog" id="card-backlog">
+        <div class="stat-label">
+          <span>Stream Backlog</span>
+          <span>⚡</span>
+        </div>
+        <div class="stat-value" id="stat-backlog">—</div>
+      </div>
+    </section>
+
+    <!-- Historical Rolling Line Chart (Task C) -->
+    <section class="chart-card">
+      <div class="chart-header">
+        <div>
+          <h2 class="chart-title">Seat Inventory History (Rolling 60 Seconds)</h2>
+          <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 2px;">
+            Native HTML5 &lt;canvas&gt; telemetry graph (1 sample/sec, zero dependencies)
+          </p>
+        </div>
+        <div class="chart-legend">
+          <div class="chart-legend-item">
+            <span class="chart-legend-line" style="background: #10b981;"></span>
+            <span style="color: #a7f3d0;">Free Seats</span>
+          </div>
+          <div class="chart-legend-item">
+            <span class="chart-legend-line" style="background: #f59e0b;"></span>
+            <span style="color: #fde68a;">Held Seats</span>
+          </div>
+          <div class="chart-legend-item">
+            <span class="chart-legend-line" style="background: #ef4444;"></span>
+            <span style="color: #fecaca;">Sold Seats</span>
+          </div>
+        </div>
+      </div>
+      <div class="chart-wrapper">
+        <canvas id="chart"></canvas>
+      </div>
+    </section>
+
+    <!-- Verify Consistency Section (Task D) -->
+    <section class="verify-card">
+      <div class="verify-header">
+        <div class="verify-title-group">
+          <h2 class="verify-title">System Invariant Verification</h2>
+          <p class="verify-subtitle">Calls <code>GET /api/v1/events/evt1/verify</code> to validate drain status and prevent double-bookings</p>
+        </div>
+        <button id="btn-verify" class="btn btn-primary">
+          🔍 Verify Consistency
+        </button>
+      </div>
+
+      <div id="verify-loading" style="display: none; padding: 1rem; color: #93c5fd; font-weight: 700;">
+        ⏳ Running database & inventory verification... please wait (up to 5s drain check)...
+      </div>
+
+      <div id="verify-results-container" style="display: none;">
+        <table class="verify-results-table">
+          <thead>
+            <tr>
+              <th style="width: 35%;">Invariant / Field</th>
+              <th style="width: 40%;">Reported Value</th>
+              <th style="width: 25%;">Status</th>
+            </tr>
+          </thead>
+          <tbody id="verify-tbody">
+            <!-- Dynamic verification rows populated by app.js -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    FlashSeat High-Contention Reservation Engine — Problem 9 Hack-a-Night 2026. Plain HTML + Vanilla JS.
+  </footer>
+
+  <!-- Conditional Mock Loader (?mock=1) -->
+  <script>
+    if (new URLSearchParams(window.location.search).get('mock') === '1') {
+      document.write('<script src="mock.js"><\/script>');
+    }
+  </script>
   <script src="app.js"></script>
 </body>
 </html>
