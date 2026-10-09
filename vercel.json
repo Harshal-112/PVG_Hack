@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "public": true,
+  "cleanUrls": true,
+  "outputDirectory": "web",
+  "rewrites": [
+    { "source": "/", "destination": "/index.html" },
+    { "source": "/dashboard", "destination": "/dashboard.html" },
+    { "source": "/events", "destination": "/events.html" },
+    { "source": "/login", "destination": "/login.html" },
+    { "source": "/ticket", "destination": "/ticket.html" }
+  ]
+}
