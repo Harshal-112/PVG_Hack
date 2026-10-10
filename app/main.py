@@ -1,5 +1,8 @@
 """FastAPI application entrypoint. Owned by [P2]."""
 
+import asyncio
+import logging
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 import time
@@ -19,6 +22,28 @@ from app import db
 from app.routes import admin, auth, baseline, events, payments, reservations, waiting_room
 from fastapi.middleware.cors import CORSMiddleware
 
+
+
+REAP_INTERVAL_SEC = float(os.getenv("REAP_INTERVAL_SEC", "1.0"))
+_log = logging.getLogger("flashseat.reaper")
+
+
+async def reaper_loop(inventory) -> None:
+    """Background sweeper: releases expired holds even when no client is calling the API."""
+    redis = getattr(inventory, "redis", None)
+    reap = getattr(inventory, "_reap_script", None)
+    if redis is None or reap is None:
+        return  # in-memory fallback reaps lazily on every call
+    while True:
+        try:
+            async for holds_key in redis.scan_iter(match="fr:*:holds", count=100):
+                base = holds_key[: -len("holds")]
+                await reap(keys=[base + "free", holds_key, base + "owners", base + "rids"], args=[])
+        except asyncio.CancelledError:
+            raise
+        except Exception as e:  # never let the sweeper die
+            _log.warning("reaper error: %s", e)
+        await asyncio.sleep(REAP_INTERVAL_SEC)
 
 
 @asynccontextmanager
@@ -57,7 +82,15 @@ async def lifespan(app: FastAPI):
         if hasattr(app.state.inventory, "redis"):
             waiting_room_service.set_redis(app.state.inventory.redis)
 
+    reaper_task = asyncio.create_task(reaper_loop(app.state.inventory))
+
     yield
+
+    reaper_task.cancel()
+    try:
+        await reaper_task
+    except (asyncio.CancelledError, Exception):
+        pass
 
     # Teardown on shutdown
     try:
