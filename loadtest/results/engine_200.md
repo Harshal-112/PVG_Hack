@@ -7,17 +7,17 @@
 
 | Metric | Value |
 | --- | --- |
-| Total HTTP Requests | 5180 |
+| Total HTTP Requests | 380 |
 | Reserve OK (201) | 200 |
-| Reserve Conflict (409) | 4800 |
+| Reserve Conflict (409) | 0 |
 | Reserve Rate Limited (429) | 0 |
 | Confirm OK (200) | 180 |
 | Confirm Expired (410) | 0 |
-| Reserve Latency p50 | 5760.00 ms |
-| Reserve Latency p90 | 6647.00 ms |
-| Reserve Latency p95 | 7375.00 ms |
+| Reserve Latency p50 | 1959.00 ms |
+| Reserve Latency p90 | 2344.10 ms |
+| Reserve Latency p95 | 2917.85 ms |
 | Reserve Latency p99 | N/A |
-| Reserve Latency Avg | 5672.36 ms |
+| Reserve Latency Avg | 2014.80 ms |
 
 ## Invariants Verification Table
 
