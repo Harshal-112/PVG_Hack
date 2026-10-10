@@ -190,7 +190,12 @@ async def main() -> None:
             if streams_res:
                 for stream_name, messages in streams_res:
                     if messages:
-                        await process_batch(pool, redis_client, messages)
+                        try:
+                            await process_batch(pool, redis_client, messages)
+                        except Exception as e:
+                            # DB down: leave messages un-ACKed; XAUTOCLAIM re-delivers them later
+                            logger.error("process_batch failed, will retry via XAUTOCLAIM: %s", e)
+                            await asyncio.sleep(2.0)
             else:
                 await asyncio.sleep(0.01)
 
