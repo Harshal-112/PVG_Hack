@@ -194,19 +194,22 @@ export default function DashboardView({
               <div className="space-y-3">
                 <div className="flex gap-3 items-center">
                   <img
-                    src={upcomingBooking.movie?.poster}
-                    alt={upcomingBooking.movie?.title}
+                    src={upcomingBooking.movie?.poster || '/posters/beyond_the_blue.png'}
+                    alt={upcomingBooking.movie?.title || 'Movie'}
                     className="w-12 h-16 object-cover rounded-xl bg-slate-900 shadow-sm flex-shrink-0"
+                    onError={(e) => {
+                      e.target.src = '/posters/beyond_the_blue.png';
+                    }}
                   />
                   <div>
                     <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                      {upcomingBooking.movie?.title}
+                      {upcomingBooking.movie?.title || 'Selected Movie'}
                     </h4>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                      {upcomingBooking.cinema}
+                      {typeof upcomingBooking.cinema === 'object' ? (upcomingBooking.cinema?.name || 'Apex Grand Cinemas • Screen 2') : (upcomingBooking.cinema || 'Apex Grand Cinemas • Screen 2')}
                     </p>
                     <div className="text-xs font-bold text-indigo-600 dark:text-indigo-400 mt-1">
-                      {upcomingBooking.time} • Seats {upcomingBooking.seats.join(', ')}
+                      {upcomingBooking.time} • Seats {(Array.isArray(upcomingBooking.seats) ? upcomingBooking.seats : []).join(', ')}
                     </div>
                   </div>
                 </div>

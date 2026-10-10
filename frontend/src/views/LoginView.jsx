@@ -358,9 +358,10 @@ export default function LoginView({ onLoginSuccess, onCancel }) {
         setStep('success');
 
         const isGoogle = authProvider === 'google';
-        const displayName = isGoogle && googleName.trim() 
+        const rawName = isGoogle && googleName.trim() 
           ? googleName.trim() 
-          : (data.user?.user_metadata?.full_name || cleanEmail.split('@')[0]);
+          : (data.user?.user_metadata?.full_name || data.user?.user_metadata?.name || cleanEmail.split('@')[0]);
+        const displayName = typeof rawName === 'object' ? (rawName.name || 'Member') : String(rawName);
 
         const verifiedUser = {
           id: data.user?.id || `usr_${Date.now()}`,
@@ -405,11 +406,14 @@ export default function LoginView({ onLoginSuccess, onCancel }) {
 
       setStep('success');
 
+      const rawBackendName = data.user?.display_name || cleanEmail.split('@')[0];
+      const backendName = typeof rawBackendName === 'object' ? (rawBackendName.name || 'Member') : String(rawBackendName);
+
       const verifiedUser = {
         id: data.user?.id || `usr_${Date.now()}`,
-        name: data.user?.display_name || cleanEmail.split('@')[0],
+        name: backendName,
         email: data.user?.email || cleanEmail,
-        initials: cleanEmail.substring(0, 2).toUpperCase(),
+        initials: backendName.substring(0, 2).toUpperCase(),
         provider: 'email_otp',
         sessionToken: data.session_token,
         isVerified: true,

@@ -26,7 +26,15 @@ export default function App() {
   const [bookingsList, setBookingsList] = useState(() => {
     try {
       const saved = localStorage.getItem('flashseat_bookings');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          return parsed.map((b) => ({
+            ...b,
+            cinema: typeof b.cinema === 'object' ? (b.cinema?.name || 'Apex Grand Cinemas • Screen 2') : (b.cinema || 'Apex Grand Cinemas • Screen 2'),
+          }));
+        }
+      }
     } catch {
       // fallback
     }
@@ -38,14 +46,20 @@ export default function App() {
     // Initial fetch from authoritative Supabase database
     fetchSharedBookings().then((remoteBookings) => {
       if (remoteBookings && Array.isArray(remoteBookings) && remoteBookings.length > 0) {
-        setBookingsList(remoteBookings);
+        setBookingsList(remoteBookings.map((b) => ({
+          ...b,
+          cinema: typeof b.cinema === 'object' ? (b.cinema?.name || 'Apex Grand Cinemas • Screen 2') : (b.cinema || 'Apex Grand Cinemas • Screen 2'),
+        })));
       }
     });
 
     const unsubscribe = subscribeToInventoryUpdates(async () => {
       const fresh = await fetchSharedBookings();
       if (fresh && Array.isArray(fresh) && fresh.length > 0) {
-        setBookingsList(fresh);
+        setBookingsList(fresh.map((b) => ({
+          ...b,
+          cinema: typeof b.cinema === 'object' ? (b.cinema?.name || 'Apex Grand Cinemas • Screen 2') : (b.cinema || 'Apex Grand Cinemas • Screen 2'),
+        })));
       }
     });
     return unsubscribe;
@@ -65,14 +79,33 @@ export default function App() {
     return localStorage.getItem('flashseat_theme') || 'light';
   });
 
+  // Helper to ensure name is string
+  const cleanUserName = (u) => {
+    if (!u) return 'Member';
+    const raw = u.user_metadata?.full_name || u.user_metadata?.name || u.name || u.email?.split('@')[0] || 'Member';
+    return typeof raw === 'object' ? (raw.name || 'Member') : String(raw);
+  };
+
   // User Authentication state: defaults to null so user must log in first
   const [currentUser, setCurrentUser] = useState(() => {
     try {
       const sessionUser = sessionStorage.getItem('flashseat_user');
-      if (sessionUser) return JSON.parse(sessionUser);
+      if (sessionUser) {
+        const u = JSON.parse(sessionUser);
+        return {
+          ...u,
+          name: typeof u.name === 'object' ? (u.name?.name || 'Member') : (u.name || 'Member'),
+        };
+      }
 
       const saved = localStorage.getItem('flashseat_user');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const u = JSON.parse(saved);
+        return {
+          ...u,
+          name: typeof u.name === 'object' ? (u.name?.name || 'Member') : (u.name || 'Member'),
+        };
+      }
     } catch {}
     
     return null; // Require login first!
@@ -99,11 +132,12 @@ export default function App() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user && !currentUser) {
         const u = session.user;
+        const nameStr = cleanUserName(u);
         const verifiedUser = {
           id: u.id,
-          name: u.user_metadata?.full_name || u.email?.split('@')[0] || 'Member',
+          name: nameStr,
           email: u.email,
-          initials: (u.user_metadata?.full_name || u.email || 'FS').substring(0, 2).toUpperCase(),
+          initials: nameStr.substring(0, 2).toUpperCase(),
           provider: u.app_metadata?.provider || 'google',
           sessionToken: session.access_token,
           isVerified: true,
@@ -116,11 +150,12 @@ export default function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         const u = session.user;
+        const nameStr = cleanUserName(u);
         const verifiedUser = {
           id: u.id,
-          name: u.user_metadata?.full_name || u.email?.split('@')[0] || 'Member',
+          name: nameStr,
           email: u.email,
-          initials: (u.user_metadata?.full_name || u.email || 'FS').substring(0, 2).toUpperCase(),
+          initials: nameStr.substring(0, 2).toUpperCase(),
           provider: u.app_metadata?.provider || 'google',
           sessionToken: session.access_token,
           isVerified: true,

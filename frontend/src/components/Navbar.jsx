@@ -163,7 +163,7 @@ export default function Navbar({
                   </div>
                   <div className="hidden xl:block text-left pr-1">
                     <div className="text-xs font-bold text-slate-800 dark:text-slate-100 leading-none truncate max-w-[110px]">
-                      {currentUser.name}
+                      {typeof currentUser?.name === 'object' ? (currentUser.name?.name || 'Member') : (currentUser?.name || 'Member')}
                     </div>
                     <div className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 leading-tight mt-0.5 flex items-center gap-1">
                       <ShieldCheck className="w-3 h-3 text-emerald-500 inline-block" />
@@ -178,7 +178,7 @@ export default function Navbar({
                   <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 p-2 z-50 animate-fadeIn">
                     <div className="p-3 border-b border-slate-100 dark:border-slate-800">
                       <div className="text-xs font-bold text-slate-800 dark:text-white truncate">
-                        {currentUser.name}
+                        {typeof currentUser?.name === 'object' ? (currentUser.name?.name || 'Member') : (currentUser?.name || 'Member')}
                       </div>
                       <div className="text-[10px] text-slate-400 dark:text-slate-500 truncate">
                         {currentUser.email}

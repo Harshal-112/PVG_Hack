@@ -7,6 +7,7 @@
  */
 
 import { supabase } from './supabaseClient';
+import { MOVIES } from '../data/mockData';
 
 const CHANNEL_NAME = 'flashseat_inventory_channel';
 const STORAGE_KEY_BOOKINGS = 'flashseat_bookings';
@@ -67,13 +68,47 @@ export function getScreeningId(movie, cinema, date, time) {
   return `${m}_${c}_${d}_${t}`;
 }
 
+// Helper to guarantee cinema is always a string and movie is an object
+function normalizeBooking(b) {
+  if (!b) return b;
+  const cinemaStr = typeof b.cinema === 'object' 
+    ? (b.cinema?.name || 'Apex Grand Cinemas • Screen 2') 
+    : (b.cinema || 'Apex Grand Cinemas • Screen 2');
+
+  let movieObj = b.movie;
+  if (!movieObj || typeof movieObj !== 'object') {
+    movieObj = { title: typeof b.movie === 'string' ? b.movie : 'Selected Movie' };
+  }
+  if (!movieObj.poster) {
+    const found = MOVIES.find((m) => m.title.toLowerCase() === (movieObj.title || '').toLowerCase());
+    if (found) {
+      movieObj = found;
+    } else {
+      movieObj = {
+        ...movieObj,
+        poster: '/posters/beyond_the_blue.png',
+        genre: ['Action', 'Sci-Fi'],
+        duration: '2h 15m',
+      };
+    }
+  }
+
+  return {
+    ...b,
+    cinema: cinemaStr,
+    movie: movieObj,
+  };
+}
+
 /**
  * Read the freshest bookings directly from local storage/cache (synchronous)
  */
 export function getSharedBookings() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY_BOOKINGS);
-    return raw ? JSON.parse(raw) : [];
+    if (!raw) return [];
+    const list = JSON.parse(raw);
+    return Array.isArray(list) ? list.map(normalizeBooking) : [];
   } catch {
     return [];
   }
@@ -91,23 +126,38 @@ export async function fetchSharedBookings() {
 
     if (error) throw error;
 
-    const remoteBookings = (data || []).map((row) => ({
-      bookingId: row.id,
-      screeningId: row.screening_id,
-      movie: { title: row.movie_title },
-      cinema: { name: row.cinema_name },
-      date: row.date,
-      time: row.time,
-      seats: Array.isArray(row.seats) ? row.seats : (typeof row.seats === 'string' ? JSON.parse(row.seats) : []),
-      totalAmount: Number(row.total_amount),
-      status: row.status,
-      paymentMethod: 'Online Verified',
-      transactionId: row.payment_id,
-      userEmail: row.user_email,
-      userName: row.user_name,
-      bookingDate: new Date(row.created_at).toLocaleString(),
-      isUpcoming: row.status === 'CONFIRMED',
-    }));
+    const remoteBookings = (data || []).map((row) => {
+      const cinemaName = typeof row.cinema_name === 'object'
+        ? (row.cinema_name?.name || 'Apex Grand Cinemas • Screen 2')
+        : (row.cinema_name || 'Apex Grand Cinemas • Screen 2');
+
+      const foundMovie = MOVIES.find((m) => m.title.toLowerCase() === (row.movie_title || '').toLowerCase());
+      const movieObj = foundMovie || {
+        id: (row.movie_title || 'movie').toLowerCase().replace(/[^a-z0-9]/g, '-'),
+        title: row.movie_title || 'Selected Movie',
+        poster: '/posters/beyond_the_blue.png',
+        genre: ['Action', 'Sci-Fi'],
+        duration: '2h 15m',
+      };
+
+      return normalizeBooking({
+        bookingId: row.id,
+        screeningId: row.screening_id,
+        movie: movieObj,
+        cinema: cinemaName,
+        date: row.date,
+        time: row.time,
+        seats: Array.isArray(row.seats) ? row.seats : (typeof row.seats === 'string' ? JSON.parse(row.seats) : []),
+        totalAmount: Number(row.total_amount),
+        status: row.status,
+        paymentMethod: 'Online Verified',
+        transactionId: row.payment_id,
+        userEmail: row.user_email,
+        userName: row.user_name,
+        bookingDate: new Date(row.created_at).toLocaleString(),
+        isUpcoming: row.status === 'CONFIRMED',
+      });
+    });
 
     // Merge with any offline/local bookings
     const local = getSharedBookings();
@@ -115,11 +165,11 @@ export async function fetchSharedBookings() {
     remoteBookings.forEach((b) => map.set(b.bookingId, b));
     local.forEach((b) => {
       if (!map.has(b.bookingId)) {
-        map.set(b.bookingId, b);
+        map.set(b.bookingId, normalizeBooking(b));
       }
     });
 
-    const merged = Array.from(map.values());
+    const merged = Array.from(map.values()).map(normalizeBooking);
     try {
       localStorage.setItem(STORAGE_KEY_BOOKINGS, JSON.stringify(merged));
     } catch {}
@@ -130,6 +180,7 @@ export async function fetchSharedBookings() {
     return getSharedBookings();
   }
 }
+
 
 /**
  * Fetch locked seats directly from Supabase locked_seats table
