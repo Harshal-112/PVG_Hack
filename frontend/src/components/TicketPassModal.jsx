@@ -97,7 +97,7 @@ export default function TicketPassModal({ booking, onClose, onViewBookings }) {
                 Theatre & Screen
               </span>
               <span className="font-bold text-slate-800 dark:text-slate-200 block truncate">
-                {booking.cinema}
+                {typeof booking.cinema === 'object' ? (booking.cinema?.name || 'Apex Grand Cinemas • Screen 2') : (booking.cinema || 'Apex Grand Cinemas • Screen 2')}
               </span>
             </div>
 

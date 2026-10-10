@@ -559,7 +559,7 @@ export default function BookingView({
                             {item.movie?.title}
                           </h4>
                           <p className="text-xs text-slate-500 dark:text-slate-400">
-                            {item.cinema}
+                            {typeof item.cinema === 'object' ? (item.cinema?.name || 'Apex Grand Cinemas • Screen 2') : (item.cinema || 'Apex Grand Cinemas • Screen 2')}
                           </p>
                           <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300 pt-1">
                             <span className="text-indigo-600 dark:text-indigo-400 font-bold">{item.date}</span>
@@ -567,7 +567,7 @@ export default function BookingView({
                             <span>{item.time}</span>
                           </div>
                           <div className="text-xs font-semibold text-slate-600 dark:text-slate-400">
-                            Seats: <span className="text-slate-900 dark:text-white font-bold">{item.seats.join(', ')}</span> ({item.tier})
+                            Seats: <span className="text-slate-900 dark:text-white font-bold">{(Array.isArray(item.seats) ? item.seats : []).join(', ')}</span> ({item.tier || 'Standard'})
                           </div>
                           {item.userName && (
                             <div className="text-[11px] text-slate-400 dark:text-slate-500 pt-0.5">
